@@ -1,3 +1,17 @@
+/*
+
+Volume:
+
+50 measures per 10 secs
+(15 sensors, 3 measures each + TIC 2 measures + voltage = 48 ~50)
+=> 157 680 000 measures / year
+
+actual test:
+100 000 measures need 575k storage
+
+=> 906MB / year
+*/
+
 package main
 
 import (
