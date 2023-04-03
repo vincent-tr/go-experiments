@@ -1,17 +1,3 @@
-/*
-
-Volume:
-
-50 measures per 10 secs
-(15 sensors, 3 measures each + TIC 2 measures + voltage = 48 ~50)
-=> 157 680 000 measures / year
-
-actual test:
-100 000 measures need 575k storage
-
-=> 906MB / year
-*/
-
 package main
 
 import (
@@ -21,8 +7,9 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
-	"github.com/gookit/config/v2"
-	"github.com/gookit/config/v2/yaml"
+	config "github.com/gookit/config/v2"
+	configYaml "github.com/gookit/config/v2/yaml"
+	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -45,11 +32,20 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 }
 
 func main() {
+	log.SetFormatter(&log.TextFormatter{
+		TimestampFormat: "2006-01-02 15:04:05",
+	})
+
+	logger := log.WithFields(log.Fields{
+		"name": "main",
+	})
+
+	logger.Info("Hello!")
 
 	config.WithOptions(config.ParseEnv)
 
 	// add driver for support yaml content
-	config.AddDriver(yaml.Driver)
+	config.AddDriver(configYaml.Driver)
 
 	err := config.LoadFiles("config.yaml")
 	if err != nil {
