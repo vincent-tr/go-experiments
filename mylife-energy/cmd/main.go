@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/url"
 	"time"
 
@@ -20,28 +19,30 @@ type Config struct {
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+	logger.WithField("message", msg).Info("Received message")
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("Connected")
+	logger.Info("Connected")
 }
 
 var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	fmt.Printf("Connect lost: %v\n", err)
+	logger.WithField("error", err).Info("Connection lost")
 }
 
-func main() {
+var logger *log.Entry
+
+func init() {
 	log.SetFormatter(&log.TextFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 
-	logger := log.WithFields(log.Fields{
+	logger = log.WithFields(log.Fields{
 		"name": "main",
 	})
+}
 
-	logger.Info("Hello!")
-
+func main() {
 	config.WithOptions(config.ParseEnv)
 
 	// add driver for support yaml content
@@ -58,7 +59,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("%+v\n", conf)
+	logger.WithField("config", conf).Info("Config")
 
 	// add default port if needed
 	serverUrl := conf.Bus.ServerUrl
@@ -89,5 +90,6 @@ func sub(client mqtt.Client) {
 	topic := "+/energy"
 	token := client.Subscribe(topic, 1, nil)
 	token.Wait()
-	fmt.Printf("Subscribed to topic: %s\n", topic)
+
+	logger.WithField("topic", topic).Info("Subscribed to topic")
 }
