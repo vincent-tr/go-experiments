@@ -1,4 +1,4 @@
-module experiment/mylife-energy
+module mylife-energy
 
 go 1.20
 

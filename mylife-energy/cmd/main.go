@@ -6,10 +6,13 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
+	logger "mylife-energy/pkg/logger"
+
 	config "github.com/gookit/config/v2"
 	configYaml "github.com/gookit/config/v2/yaml"
-	log "github.com/sirupsen/logrus"
 )
+
+var log = logger.CreateLogger("main")
 
 type Config struct {
 	Mongo string `mapstructure:"mongo"`
@@ -19,27 +22,15 @@ type Config struct {
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	logger.WithField("message", msg).Info("Received message")
+	log.WithFields(logger.Fields{"message": string(msg.Payload()), "topic": msg.Topic()}).Info("Received message")
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	logger.Info("Connected")
+	log.Info("Connected")
 }
 
 var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	logger.WithField("error", err).Info("Connection lost")
-}
-
-var logger *log.Entry
-
-func init() {
-	log.SetFormatter(&log.TextFormatter{
-		TimestampFormat: "2006-01-02 15:04:05",
-	})
-
-	logger = log.WithFields(log.Fields{
-		"name": "main",
-	})
+	log.WithField("error", err).Info("Connection lost")
 }
 
 func main() {
@@ -59,7 +50,7 @@ func main() {
 		panic(err)
 	}
 
-	logger.WithField("config", conf).Info("Config")
+	log.WithField("config", conf).Info("Config")
 
 	// add default port if needed
 	serverUrl := conf.Bus.ServerUrl
@@ -91,5 +82,5 @@ func sub(client mqtt.Client) {
 	token := client.Subscribe(topic, 1, nil)
 	token.Wait()
 
-	logger.WithField("topic", topic).Info("Subscribed to topic")
+	log.WithField("topic", topic).Info("Subscribed to topic")
 }
