@@ -13,7 +13,7 @@ import (
 var logger = log.CreateLogger("mqtt:client")
 
 func init() {
-	serviceRegistry.Register(&Mqtt{subscriptions: []*Subscription{}})
+	serviceRegistry.Register(&MqttService{subscriptions: []*Subscription{}})
 }
 
 type BusConfig struct {
@@ -25,12 +25,12 @@ type Subscription struct {
 	callback func(data []byte)
 }
 
-type Mqtt struct {
+type MqttService struct {
 	client        mqtt.Client
 	subscriptions []*Subscription
 }
 
-func (service *Mqtt) Init() error {
+func (service *MqttService) Init() error {
 	busConfig := BusConfig{}
 	config.BindStructure("bus", &busConfig)
 
@@ -71,21 +71,21 @@ func (service *Mqtt) Init() error {
 	return nil
 }
 
-func (service *Mqtt) Terminate() error {
+func (service *MqttService) Terminate() error {
 	service.client.Disconnect(250)
 	service.client = nil
 	return nil
 }
 
-func (service *Mqtt) ServiceName() string {
+func (service *MqttService) ServiceName() string {
 	return "mqtt"
 }
 
-func (service *Mqtt) Dependencies() []string {
+func (service *MqttService) Dependencies() []string {
 	return []string{}
 }
 
-func (service *Mqtt) Subscribe(topic string, callback func(data []byte)) {
+func (service *MqttService) Subscribe(topic string, callback func(data []byte)) {
 	subscription := &Subscription{topic, callback}
 	service.subscriptions = append(service.subscriptions, subscription)
 
@@ -96,7 +96,7 @@ func (service *Mqtt) Subscribe(topic string, callback func(data []byte)) {
 	logger.WithField("topic", topic).Info("Subscribed to topic")
 }
 
-func (service *Mqtt) subscribe(subscription *Subscription) {
+func (service *MqttService) subscribe(subscription *Subscription) {
 	service.client.Subscribe(subscription.topic, 0, func(client mqtt.Client, msg mqtt.Message) {
 		subscription.callback(msg.Payload())
 	})
