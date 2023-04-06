@@ -36,7 +36,7 @@ func (service *DatabaseService) Init() error {
 
 	logger.WithFields(log.Fields{"mongoUrl": mongoUrl, "dbName": dbName}).Info("Config")
 
-	opts := options.Client().ApplyURI(mongoUrl)
+	opts := options.Client().ApplyURI(mongoUrl).SetDirect(true)
 	client, err := mongo.Connect(context.TODO(), opts)
 	if err != nil {
 		return err
