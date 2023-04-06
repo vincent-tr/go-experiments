@@ -12,6 +12,7 @@ type Fields = log.Fields
 func init() {
 	log.SetFormatter(&log.TextFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
+		FullTimestamp:   true,
 	})
 
 	logLevel, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
