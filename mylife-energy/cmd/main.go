@@ -6,54 +6,40 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
-	logger "mylife-energy/pkg/logger"
-
-	config "github.com/gookit/config/v2"
-	configYaml "github.com/gookit/config/v2/yaml"
+	config "mylife-energy/pkg/config"
+	log "mylife-energy/pkg/log"
 )
 
-var log = logger.CreateLogger("main")
+var logger = log.CreateLogger("main")
 
-type Config struct {
-	Mongo string `mapstructure:"mongo"`
-	Bus   struct {
-		ServerUrl string `mapstructure:"serverUrl"`
-	} `mapstructure:"bus"`
+type MongoConfig = string
+
+type BusConfig struct {
+	ServerUrl string `mapstructure:"serverUrl"`
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	log.WithFields(logger.Fields{"message": string(msg.Payload()), "topic": msg.Topic()}).Info("Received message")
+	logger.WithFields(log.Fields{"message": string(msg.Payload()), "topic": msg.Topic()}).Info("Received message")
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	log.Info("Connected")
+	logger.Info("Connected")
 }
 
 var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	log.WithField("error", err).Info("Connection lost")
+	logger.WithField("error", err).Info("Connection lost")
 }
 
 func main() {
-	config.WithOptions(config.ParseEnv)
+	mongoConfig := config.GetString("mongo")
 
-	// add driver for support yaml content
-	config.AddDriver(configYaml.Driver)
+	busConfig := BusConfig{}
+	config.BindStructure("bus", &busConfig)
 
-	err := config.LoadFiles("config.yaml")
-	if err != nil {
-		panic(err)
-	}
-
-	conf := Config{}
-	err = config.Decode(&conf)
-	if err != nil {
-		panic(err)
-	}
-
-	log.WithField("config", conf).Info("Config")
+	logger.WithFields(log.Fields{"mongoConfig": mongoConfig, "busConfig": busConfig}).Info("Config")
 
 	// add default port if needed
-	serverUrl := conf.Bus.ServerUrl
+	serverUrl := busConfig.ServerUrl
 	uri, err := url.Parse(serverUrl)
 	if err == nil && uri.Port() == "" {
 		serverUrl += ":1883"
@@ -82,5 +68,5 @@ func sub(client mqtt.Client) {
 	token := client.Subscribe(topic, 1, nil)
 	token.Wait()
 
-	log.WithField("topic", topic).Info("Subscribed to topic")
+	logger.WithField("topic", topic).Info("Subscribed to topic")
 }
