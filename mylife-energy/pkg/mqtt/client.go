@@ -5,15 +5,15 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
-	config "mylife-energy/pkg/config"
-	log "mylife-energy/pkg/log"
-	serviceRegistry "mylife-energy/pkg/service"
+	"mylife-energy/pkg/config"
+	"mylife-energy/pkg/log"
+	"mylife-energy/pkg/services"
 )
 
 var logger = log.CreateLogger("mqtt:client")
 
 func init() {
-	serviceRegistry.Register(&MqttService{subscriptions: []*Subscription{}})
+	services.Register(&MqttService{subscriptions: []*Subscription{}})
 }
 
 type BusConfig struct {
@@ -22,7 +22,7 @@ type BusConfig struct {
 
 type Subscription struct {
 	topic    string
-	callback func(data []byte)
+	callback func(topic string, data []byte)
 }
 
 type MqttService struct {
@@ -41,6 +41,8 @@ func (service *MqttService) Init() error {
 		serverUrl += ":1883"
 	}
 
+	logger.WithField("serverUrl", serverUrl).Info("Config")
+
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(serverUrl)
 	opts.SetClientID("mylife-energy-collector")
@@ -58,7 +60,7 @@ func (service *MqttService) Init() error {
 	}
 
 	opts.OnConnectionLost = func(client mqtt.Client, err error) {
-		logger.WithField("error", err).Error("Connection lost")
+		logger.WithError(err).Error("Connection lost")
 	}
 
 	opts.AutoReconnect = true
@@ -85,7 +87,7 @@ func (service *MqttService) Dependencies() []string {
 	return []string{}
 }
 
-func (service *MqttService) Subscribe(topic string, callback func(data []byte)) {
+func (service *MqttService) Subscribe(topic string, callback func(topic string, data []byte)) {
 	subscription := &Subscription{topic, callback}
 	service.subscriptions = append(service.subscriptions, subscription)
 
@@ -98,16 +100,16 @@ func (service *MqttService) Subscribe(topic string, callback func(data []byte)) 
 
 func (service *MqttService) subscribe(subscription *Subscription) {
 	service.client.Subscribe(subscription.topic, 0, func(client mqtt.Client, msg mqtt.Message) {
-		subscription.callback(msg.Payload())
+		subscription.callback(msg.Topic(), msg.Payload())
 	})
 }
 
 // Shortcuts
 
-func Subscribe(topic string, callback func(data []byte)) {
+func Subscribe(topic string, callback func(topic string, data []byte)) {
 	getService().Subscribe(topic, callback)
 }
 
 func getService() *MqttService {
-	return serviceRegistry.GetService[*MqttService]("mqtt")
+	return services.GetService[*MqttService]("mqtt")
 }
