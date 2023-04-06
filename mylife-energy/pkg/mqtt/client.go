@@ -101,3 +101,13 @@ func (service *MqttService) subscribe(subscription *Subscription) {
 		subscription.callback(msg.Payload())
 	})
 }
+
+// Shortcuts
+
+func Subscribe(topic string, callback func(data []byte)) {
+	getService().Subscribe(topic, callback)
+}
+
+func getService() *MqttService {
+	return serviceRegistry.GetService[*MqttService]("mqtt")
+}
