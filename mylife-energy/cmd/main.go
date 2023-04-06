@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	mqtt "mylife-energy/pkg/mqtt"
 	serviceRegistry "mylife-energy/pkg/service"
 
@@ -14,20 +12,39 @@ var logger = log.CreateLogger("main")
 
 type MongoConfig = string
 
-func main() {
+type MainService struct {
+}
 
-	mongoConfig := config.GetString("mongo")
-
-	logger.WithField("mongoConfig", mongoConfig).Info("Config")
-
-	serviceRegistry.Init()
-
-	mqtt := serviceRegistry.GetService[*mqtt.Mqtt]("mqtt")
+func (service *MainService) Init() error {
+	mqtt := serviceRegistry.GetService[*mqtt.MqttService]("mqtt")
 	mqtt.Subscribe("+/energy", func(data []byte) {
 		logger.WithField("msg", string(data)).Info("Message")
 	})
 
-	time.Sleep(30 * time.Second)
+	return nil
+}
 
-	serviceRegistry.Terminate()
+func (service *MainService) Terminate() error {
+
+	return nil
+}
+
+func (service *MainService) ServiceName() string {
+	return "main"
+}
+
+func (service *MainService) Dependencies() []string {
+	return []string{"mqtt"}
+}
+
+func init() {
+	serviceRegistry.Register(&MainService{})
+}
+
+func main() {
+
+	mongoConfig := config.GetString("mongo")
+	logger.WithField("mongoConfig", mongoConfig).Info("Config")
+
+	serviceRegistry.RunServices([]string{"main"})
 }
