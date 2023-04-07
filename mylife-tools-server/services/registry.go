@@ -1,7 +1,7 @@
 package services
 
 import (
-	log "mylife-energy/pkg/log"
+	log "mylife-tools-server/log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,7 +15,7 @@ type orderData struct {
 var registry = make(map[string]Service)
 var running = []Service{}
 
-var logger = log.CreateLogger("service:registry")
+var logger = log.CreateLogger("mylife:server:services")
 
 func Register(service Service) {
 	name := service.ServiceName()

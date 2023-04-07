@@ -1,8 +1,8 @@
-module mylife-energy
+module mylife-tools-server
 
 go 1.20
 
-replace mylife-tools-server => ../mylife-tools-server
+require github.com/sirupsen/logrus v1.9.0
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.2 // indirect
@@ -20,7 +20,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect
@@ -34,5 +33,4 @@ require (
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
-	mylife-tools-server v0.0.0-00010101000000-000000000000 // indirect
 )

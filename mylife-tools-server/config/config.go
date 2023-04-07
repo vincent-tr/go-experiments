@@ -4,10 +4,10 @@ import (
 	config "github.com/gookit/config/v2"
 	yaml "github.com/gookit/config/v2/yaml"
 
-	log "mylife-energy/pkg/log"
+	log "mylife-tools-server/log"
 )
 
-var logger = log.CreateLogger("config")
+var logger = log.CreateLogger("mylife:server:config")
 var conf *config.Config
 
 func init() {

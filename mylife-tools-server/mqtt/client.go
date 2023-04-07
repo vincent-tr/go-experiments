@@ -5,12 +5,12 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 
-	"mylife-energy/pkg/config"
-	"mylife-energy/pkg/log"
-	"mylife-energy/pkg/services"
+	"mylife-tools-server/config"
+	"mylife-tools-server/log"
+	"mylife-tools-server/services"
 )
 
-var logger = log.CreateLogger("mqtt:client")
+var logger = log.CreateLogger("mylife:server:mqtt")
 
 func init() {
 	services.Register(&MqttService{subscriptions: []*Subscription{}})

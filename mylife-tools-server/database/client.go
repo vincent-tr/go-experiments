@@ -4,15 +4,15 @@ import (
 	"context"
 	"net/url"
 
-	"mylife-energy/pkg/config"
-	"mylife-energy/pkg/log"
-	"mylife-energy/pkg/services"
+	"mylife-tools-server/config"
+	"mylife-tools-server/log"
+	"mylife-tools-server/services"
 
 	mongo "go.mongodb.org/mongo-driver/mongo"
 	options "go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var logger = log.CreateLogger("mongo:client")
+var logger = log.CreateLogger("mylife:server:mongo")
 
 func init() {
 	services.Register(&DatabaseService{})

@@ -1,16 +1,18 @@
-package main
+package collector
 
 import (
 	"context"
 	"encoding/json"
 	"time"
 
-	"mylife-energy/pkg/database"
-	"mylife-energy/pkg/log"
-	"mylife-energy/pkg/mqtt"
-	"mylife-energy/pkg/services"
-	"mylife-energy/pkg/utils"
+	"mylife-tools-server/database"
+	"mylife-tools-server/log"
+	"mylife-tools-server/mqtt"
+	"mylife-tools-server/services"
+	"mylife-tools-server/utils"
 )
+
+var logger = log.CreateLogger("mylife:energy:collector")
 
 type Message struct {
 	Id                string  `json:"id"`
