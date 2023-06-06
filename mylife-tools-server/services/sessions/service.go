@@ -1,8 +1,11 @@
 package sessions
 
 import (
+	"mylife-tools-server/log"
 	"mylife-tools-server/services"
 )
+
+var logger = log.CreateLogger("mylife:server:sessions")
 
 func init() {
 	services.Register(&SessionService{})
