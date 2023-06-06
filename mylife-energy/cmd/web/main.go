@@ -3,7 +3,7 @@ package main
 import (
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
-	"mylife-tools-server/sessions"
+	"mylife-tools-server/services/sessions"
 )
 
 var logger = log.CreateLogger("mylife:energy:test")
