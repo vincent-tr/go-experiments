@@ -1,4 +1,4 @@
-# from root repo: "docker build -t go-mylife-energy -f docker/Dockerfile ."
+
 
 FROM golang:1.18 as build
 
@@ -10,10 +10,10 @@ RUN go mod download
 # RUN go vet -v
 # RUN go test -v
 
-RUN CGO_ENABLED=0 go build -o /go/bin/mylife-energy cmd/main.go
+RUN CGO_ENABLED=0 go build -o /go/bin/collector cmd/collector/*.go
 
 FROM gcr.io/distroless/static-debian11
 
-COPY --from=build /go/bin/mylife-energy /
+COPY --from=build /go/bin/collector /
 COPY --from=build /go/src/app/mylife-energy/config.yaml /
-CMD ["/mylife-energy"]
+CMD ["/collector"]
