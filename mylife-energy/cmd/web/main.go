@@ -3,6 +3,7 @@ package main
 import (
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
+	_ "mylife-tools-server/services/io"
 	"mylife-tools-server/services/sessions"
 )
 
@@ -36,7 +37,7 @@ func (service *TestService) ServiceName() string {
 }
 
 func (service *TestService) Dependencies() []string {
-	return []string{"sessions"}
+	return []string{"sessions", "io"}
 }
 
 func init() {
