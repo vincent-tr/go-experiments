@@ -48,9 +48,9 @@ func Test1(t *testing.T) {
 	svc := initService()
 	defer svc.Terminate()
 
-	method := svc.Lookup("test", "api1")
-	if method == nil {
-		t.Fatal("Method nil")
+	method, err := svc.Lookup("test", "api1")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	msg := []byte(`{ "service": "test", "method": "api1", "id": "fourty two" }`)
@@ -70,9 +70,9 @@ func Test2(t *testing.T) {
 	svc := initService()
 	defer svc.Terminate()
 
-	method := svc.Lookup("test", "api1")
-	if method == nil {
-		t.Fatal("Method nil")
+	method, err := svc.Lookup("test", "api1")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	msg := []byte(`{ "service": "test", "method": "api1", "id": "42" }`)
@@ -92,9 +92,9 @@ func Test3(t *testing.T) {
 	svc := initService()
 	defer svc.Terminate()
 
-	method := svc.Lookup("test", "api2")
-	if method == nil {
-		t.Fatal("Method nil")
+	method, err := svc.Lookup("test", "api2")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	msg := []byte(`{ "service": "test", "method": "api1", "toto": 42 }`)
