@@ -44,9 +44,7 @@ type CollectorService struct {
 
 func (service *CollectorService) Init() error {
 	service.records = make(chan Record, 100)
-	service.worker = utils.InitWorker(func(exit chan struct{}) {
-		service.workerEntry(exit)
-	})
+	service.worker = utils.InitWorker(service.workerEntry)
 
 	mqtt.Subscribe("+/energy", func(topic string, data []byte) {
 		service.handleMessage(topic, data)
