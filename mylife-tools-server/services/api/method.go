@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"mylife-tools-server/services/sessions"
 	"reflect"
@@ -42,15 +41,14 @@ func newMethod(callee Callee) *Method {
 	return method
 }
 
-func (method *Method) Call(session *sessions.Session, message []byte) (any, error) {
-	inputValue := reflect.New(method.input)
-	if err := json.Unmarshal(message, inputValue.Interface()); err != nil {
-		return nil, err
-	}
+func (method *Method) InputType() reflect.Type {
+	return method.input
+}
 
-	fmt.Printf("inputValue %+v\n", inputValue)
+func (method *Method) Call(session *sessions.Session, input reflect.Value) (any, error) {
+	fmt.Printf("inputValue %+v\n", input)
 
-	inputValues := []reflect.Value{reflect.ValueOf(session), inputValue.Elem()}
+	inputValues := []reflect.Value{reflect.ValueOf(session), input}
 	fmt.Printf("method.callee %+v\n", method.callee)
 	outputValues := method.callee.Call(inputValues)
 	if len(outputValues) != 2 {

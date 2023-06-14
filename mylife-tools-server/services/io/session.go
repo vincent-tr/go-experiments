@@ -9,6 +9,7 @@ import (
 	"mylife-tools-server/services"
 	"mylife-tools-server/services/api"
 	"mylife-tools-server/services/sessions"
+	"reflect"
 
 	"mylife-tools-server/utils"
 
@@ -219,7 +220,14 @@ func (ioSession *IOSession) dispatch(data []byte) {
 		return
 	}
 
-	output, err := method.Call(ioSession.session, data)
+	methodInput := reflect.New(method.InputType())
+	if err := json.Unmarshal(data, methodInput.Interface()); err != nil {
+		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Error on Unmarshal")
+		ioSession.replyError(&input, err)
+		return
+	}
+
+	output, err := method.Call(ioSession.session, methodInput.Elem())
 	if err != nil {
 		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Error on method call")
 		ioSession.replyError(&input, err)
