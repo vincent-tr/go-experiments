@@ -2,7 +2,6 @@ package io
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"mylife-tools-server/log"
@@ -167,27 +166,20 @@ func (ioSession *IOSession) Close() {
 }
 
 func (ioSession *IOSession) send(payloadParts ...any) {
+	jsonObj := newJsonObject()
 	// merge parts json into one payload
-	var merged = make(map[string]any)
-
 	for _, part := range payloadParts {
-		partial, err := json.Marshal(part)
+		err := jsonObj.marshal(part)
 		if err != nil {
-			logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Serialization error")
-			return
-		}
-
-		err = json.Unmarshal(partial, &merged)
-		if err != nil {
-			logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Serialization error")
+			logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Marshal error")
 			return
 		}
 	}
 
-	data, err := json.Marshal(merged)
+	data, err := serializeJsonObject(jsonObj)
 
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Serialization error")
+		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Serialize error")
 		return
 	}
 
@@ -195,11 +187,17 @@ func (ioSession *IOSession) send(payloadParts ...any) {
 }
 
 func (ioSession *IOSession) dispatch(data []byte) {
+	jsonObj, err := deserializeJsonObject(data)
+	if err != nil {
+		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Deserialize error")
+		return
+	}
+
 	var engine payloadEngine
-	err := json.Unmarshal(data, &engine)
+	err = jsonObj.unmarshal(&engine)
 
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Deserialization error")
+		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Unmarshal error")
 		return
 	}
 
@@ -209,7 +207,12 @@ func (ioSession *IOSession) dispatch(data []byte) {
 	}
 
 	var input payloadCallInput
-	err = json.Unmarshal(data, &input)
+	err = jsonObj.unmarshal(&input)
+
+	if err != nil {
+		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Unmarshal error")
+		return
+	}
 
 	api := services.GetService[api.ApiService]("api")
 
@@ -221,8 +224,8 @@ func (ioSession *IOSession) dispatch(data []byte) {
 	}
 
 	methodInput := reflect.New(method.InputType())
-	if err := json.Unmarshal(data, methodInput.Interface()); err != nil {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Error on Unmarshal")
+	if err := jsonObj.unmarshal(methodInput.Interface()); err != nil {
+		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Unmarshal error")
 		ioSession.replyError(&input, err)
 		return
 	}
