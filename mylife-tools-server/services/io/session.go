@@ -7,6 +7,7 @@ import (
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
 	"mylife-tools-server/services/api"
+	"mylife-tools-server/services/io/serialization"
 	"mylife-tools-server/services/sessions"
 	"reflect"
 
@@ -166,17 +167,17 @@ func (ioSession *IOSession) Close() {
 }
 
 func (ioSession *IOSession) send(payloadParts ...any) {
-	jsonObj := newJsonObject()
+	jsonObj := serialization.NewJsonObject()
 	// merge parts json into one payload
 	for _, part := range payloadParts {
-		err := jsonObj.marshal(part)
+		err := jsonObj.Marshal(part)
 		if err != nil {
 			logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Marshal error")
 			return
 		}
 	}
 
-	data, err := serializeJsonObject(jsonObj)
+	data, err := serialization.SerializeJsonObject(jsonObj)
 
 	if err != nil {
 		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Serialize error")
@@ -187,14 +188,14 @@ func (ioSession *IOSession) send(payloadParts ...any) {
 }
 
 func (ioSession *IOSession) dispatch(data []byte) {
-	jsonObj, err := deserializeJsonObject(data)
+	jsonObj, err := serialization.DeserializeJsonObject(data)
 	if err != nil {
 		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Deserialize error")
 		return
 	}
 
 	var engine payloadEngine
-	err = jsonObj.unmarshal(&engine)
+	err = jsonObj.Unmarshal(&engine)
 
 	if err != nil {
 		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Unmarshal error")
@@ -207,7 +208,7 @@ func (ioSession *IOSession) dispatch(data []byte) {
 	}
 
 	var input payloadCallInput
-	err = jsonObj.unmarshal(&input)
+	err = jsonObj.Unmarshal(&input)
 
 	if err != nil {
 		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Unmarshal error")
@@ -224,7 +225,7 @@ func (ioSession *IOSession) dispatch(data []byte) {
 	}
 
 	methodInput := reflect.New(method.InputType())
-	if err := jsonObj.unmarshal(methodInput.Interface()); err != nil {
+	if err := jsonObj.Unmarshal(methodInput.Interface()); err != nil {
 		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Unmarshal error")
 		ioSession.replyError(&input, err)
 		return

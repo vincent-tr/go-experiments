@@ -1,4 +1,4 @@
-package io
+package serialization
 
 import (
 	"encoding/base64"
