@@ -9,7 +9,7 @@ import (
 type serializerPlugin interface {
 	Type() reflect.Type
 	TypeId() string
-	Encode(value reflect.Value) interface{}
+	Encode(value reflect.Value) (interface{}, error)
 	Decode(raw interface{}) (reflect.Value, error)
 }
 
@@ -48,10 +48,10 @@ func init() {
 	nativeTypes[getType[bool]()] = serializationNoop
 }
 
-func serializeValue(value interface{}) interface{} {
+func serializeValue(value interface{}) (interface{}, error) {
 	// special case to handle nil
 	if value == nil {
-		return nil
+		return nil, nil
 	}
 
 	valueType := reflect.TypeOf(value)
@@ -60,34 +60,48 @@ func serializeValue(value interface{}) interface{} {
 	if ok {
 		obj := make(map[string]interface{})
 		obj["__type"] = plugin.TypeId()
-		obj["value"] = plugin.Encode(reflect.ValueOf(value))
-		return obj
+
+		pluginValue, err := plugin.Encode(reflect.ValueOf(value))
+		if err != nil {
+			return nil, err
+		}
+
+		obj["value"] = pluginValue
+		return obj, nil
 	}
 
 	if serKind, ok := nativeTypes[valueType]; ok {
 		switch serKind {
 		case serializationNoop:
-			return value
+			return value, nil
 
 		case serializationMap:
 			mapValue := value.(map[string]interface{})
 			obj := make(map[string]interface{})
 			for key, value := range mapValue {
-				obj[key] = serializeValue(value)
+				newValue, err := serializeValue(value)
+				if err != nil {
+					return nil, err
+				}
+				obj[key] = newValue
 			}
-			return obj
+			return obj, nil
 
 		case serializationSlice:
 			sliceValue := value.([]interface{})
 			slice := make([]interface{}, len(sliceValue))
 			for i, value := range sliceValue {
-				slice[i] = serializeValue(value)
+				newValue, err := serializeValue(value)
+				if err != nil {
+					return nil, err
+				}
+				slice[i] = newValue
 			}
-			return slice
+			return slice, nil
 		}
 	}
 
-	panic(fmt.Sprintf("Unsupported value found: %+v", value))
+	return nil, errors.New(fmt.Sprintf("Unsupported value found: %+v", value))
 }
 
 func deserializeValue(value interface{}) (interface{}, error) {

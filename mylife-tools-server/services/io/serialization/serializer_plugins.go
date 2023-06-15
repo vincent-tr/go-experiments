@@ -25,10 +25,10 @@ func (plugin dateSerializerPlugin) TypeId() string {
 	return "date"
 }
 
-func (plugin dateSerializerPlugin) Encode(value reflect.Value) interface{} {
+func (plugin dateSerializerPlugin) Encode(value reflect.Value) (interface{}, error) {
 	time := value.Interface().(time.Time)
 	msec := time.UnixMilli()
-	return float64(msec)
+	return float64(msec), nil
 }
 
 func (plugin dateSerializerPlugin) Decode(raw interface{}) (reflect.Value, error) {
@@ -53,7 +53,7 @@ func (plugin errorSerializerPlugin) TypeId() string {
 	return "error"
 }
 
-func (plugin errorSerializerPlugin) Encode(value reflect.Value) interface{} {
+func (plugin errorSerializerPlugin) Encode(value reflect.Value) (interface{}, error) {
 	err := value.Interface().(error)
 	obj := make(map[string]interface{})
 
@@ -61,7 +61,7 @@ func (plugin errorSerializerPlugin) Encode(value reflect.Value) interface{} {
 	// TODO: use stacktrace
 	obj["stacktrace"] = err.Error()
 
-	return obj
+	return obj, nil
 }
 
 func (plugin errorSerializerPlugin) Decode(raw interface{}) (reflect.Value, error) {
@@ -88,9 +88,10 @@ func (plugin bufferSerializerPlugin) TypeId() string {
 	return "buffer"
 }
 
-func (plugin bufferSerializerPlugin) Encode(value reflect.Value) interface{} {
+func (plugin bufferSerializerPlugin) Encode(value reflect.Value) (interface{}, error) {
 	buffer := value.Interface().([]byte)
-	return base64.StdEncoding.EncodeToString(buffer)
+	raw := base64.StdEncoding.EncodeToString(buffer)
+	return raw, nil
 }
 
 func (plugin bufferSerializerPlugin) Decode(raw interface{}) (reflect.Value, error) {

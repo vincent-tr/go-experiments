@@ -29,7 +29,11 @@ func DeserializeJsonObject(raw []byte) (*JsonObject, error) {
 }
 
 func SerializeJsonObject(obj *JsonObject) ([]byte, error) {
-	encoded := serializeValue(obj.fields)
+	encoded, err := serializeValue(obj.fields)
+	if err != nil {
+		return nil, err
+	}
+
 	return json.Marshal(encoded)
 }
 
