@@ -1,6 +1,7 @@
 package io
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 )
@@ -69,8 +70,9 @@ func serializeValue(value interface{}) interface{} {
 			return value
 
 		case serializationMap:
+			mapValue := value.(map[string]interface{})
 			obj := make(map[string]interface{})
-			for key, value := range value.(map[string]interface{}) {
+			for key, value := range mapValue {
 				obj[key] = serializeValue(value)
 			}
 			return obj
@@ -86,6 +88,82 @@ func serializeValue(value interface{}) interface{} {
 	}
 
 	panic(fmt.Sprintf("Unsupported value found: %+v", value))
+}
+
+func deserializeValue(value interface{}) (interface{}, error) {
+	// special case to handle nil
+	if value == nil {
+		return nil, nil
+	}
+
+	valueType := reflect.TypeOf(value)
+
+	if serKind, ok := nativeTypes[valueType]; ok {
+		switch serKind {
+		case serializationNoop:
+			return value, nil
+
+		case serializationMap:
+			// Test for plugin object
+			mapValue := value.(map[string]interface{})
+			if pluginType, ok := getPluginType(mapValue); ok {
+				plugin, ok := pluginsById[pluginType]
+				if !ok {
+					return nil, errors.New(fmt.Sprintf("Plugin '%s' not found", plugin))
+				}
+
+				pluginValue, ok := mapValue["value"]
+				if !ok {
+					return nil, errors.New("Plugin without value")
+				}
+
+				reflectValue, err := plugin.Decode(pluginValue)
+				if err != nil {
+					return nil, err
+				}
+
+				return reflectValue.Interface(), nil
+			}
+
+			obj := make(map[string]interface{})
+			for key, value := range mapValue {
+				newValue, err := deserializeValue(value)
+				if err != nil {
+					return nil, err
+				}
+				obj[key] = newValue
+			}
+			return obj, nil
+
+		case serializationSlice:
+			sliceValue := value.([]interface{})
+			slice := make([]interface{}, len(sliceValue))
+			for i, value := range sliceValue {
+				newValue, err := deserializeValue(value)
+				if err != nil {
+					return nil, err
+				}
+				slice[i] = newValue
+			}
+			return slice, nil
+		}
+	}
+
+	panic(fmt.Sprintf("Unsupported value found: %+v", value))
+}
+
+func getPluginType(mapValue map[string]interface{}) (string, bool) {
+	pluginRawType, ok := mapValue["__type"]
+	if !ok {
+		return "", false
+	}
+
+	pluginType, ok := pluginRawType.(string)
+	if !ok {
+		return "", false
+	}
+
+	return pluginType, true
 }
 
 func getType[T any]() reflect.Type {
