@@ -46,7 +46,7 @@ type payloadCallOutput struct {
 }
 
 type payloadCallError struct {
-	Error Error `json:"error"`
+	Error error `json:"error"`
 }
 
 func makeSession(session *sessions.Session, socket *websocket.Conn) IOSession {
@@ -259,6 +259,6 @@ func (ioSession *IOSession) replyError(input *payloadCallInput, err error) {
 	ioSession.send(
 		payloadEngine{Engine: "call"},
 		payloadCallOutput{Transaction: input.Transaction},
-		payloadCallError{Error: Error{err}},
+		payloadCallError{Error: err},
 	)
 }

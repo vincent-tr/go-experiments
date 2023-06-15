@@ -1,116 +1,94 @@
 package io
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"time"
+	"reflect"
 )
 
-type serializedData[T any] struct {
-	Type  string `json:"__type"`
-	Value T      `json:"value"`
+type serializerPlugin interface {
+	Type() reflect.Type
+	TypeId() string
+	Encode(value reflect.Value) interface{}
+	Decode(raw interface{}) (reflect.Value, error)
 }
 
-// Note: move to metadata?
+type serializationKind uint
 
-type Error struct {
-	error
+const (
+	serializationNoop serializationKind = iota
+	serializationMap
+	serializationSlice
+)
+
+var pluginsById = make(map[string]serializerPlugin)
+var pluginsByType = make(map[reflect.Type]serializerPlugin)
+var nativeTypes = make(map[reflect.Type]serializationKind)
+
+func registerEncoder(plugin serializerPlugin) {
+	pluginsById[plugin.TypeId()] = plugin
+	pluginsByType[plugin.Type()] = plugin
 }
 
-type errorData struct {
-	Message    string `json:"message"`
-	StackTrace string `json:"stacktrace"`
+/*
+   native handled json types:
+   - String
+   - Float64
+   - Map: map[string]interface{}
+   - Slice: []interface{}
+   - Bool
+   - nil
+*/
+
+func init() {
+	nativeTypes[getType[string]()] = serializationNoop
+	nativeTypes[getType[float64]()] = serializationNoop
+	nativeTypes[getType[map[string]interface{}]()] = serializationMap
+	nativeTypes[getType[[]interface{}]()] = serializationSlice
+	nativeTypes[getType[bool]()] = serializationNoop
 }
 
-func (obj Error) MarshalJSON() ([]byte, error) {
-	return marshal("error", errorData{
-		Message: obj.Error(),
-		// TODO: use stacktrace
-		StackTrace: obj.Error(),
-	})
-}
-
-func (obj *Error) UnmarshalJSON(data []byte) error {
-	errData := errorData{}
-
-	err := unmarshal(data, "error", &errData)
-	if err != nil {
-		return err
+func serializeValue(value interface{}) interface{} {
+	// special case to handle nil
+	if value == nil {
+		return nil
 	}
 
-	// TODO: use stacktrace
-	obj.error = errors.New(errData.Message)
+	valueType := reflect.TypeOf(value)
 
-	return nil
-}
-
-type Time struct {
-	time.Time
-}
-
-func (obj Time) MarshalJSON() ([]byte, error) {
-	msec := obj.UnixMilli()
-	return marshal("date", msec)
-}
-
-func (obj *Time) UnmarshalJSON(data []byte) error {
-	var msec int64
-
-	err := unmarshal(data, "date", &msec)
-	if err != nil {
-		return err
+	plugin, ok := pluginsByType[valueType]
+	if ok {
+		obj := make(map[string]interface{})
+		obj["__type"] = plugin.TypeId()
+		obj["value"] = plugin.Encode(reflect.ValueOf(value))
+		return obj
 	}
 
-	*obj = Time{time.UnixMilli(msec)}
-	return nil
+	if serKind, ok := nativeTypes[valueType]; ok {
+		switch serKind {
+		case serializationNoop:
+			return value
+
+		case serializationMap:
+			obj := make(map[string]interface{})
+			for key, value := range value.(map[string]interface{}) {
+				obj[key] = serializeValue(value)
+			}
+			return obj
+
+		case serializationSlice:
+			sliceValue := value.([]interface{})
+			slice := make([]interface{}, len(sliceValue))
+			for i, value := range sliceValue {
+				slice[i] = serializeValue(value)
+			}
+			return slice
+		}
+	}
+
+	panic(fmt.Sprintf("Unsupported value found: %+v", value))
 }
 
-type Buffer []byte
-
-func (obj Buffer) MarshalJSON() ([]byte, error) {
-	str := base64.StdEncoding.EncodeToString(obj)
-	return marshal("buffer", str)
-}
-
-func (obj *Buffer) UnmarshalJSON(data []byte) error {
-	var str string
-
-	err := unmarshal(data, "buffer", &str)
-	if err != nil {
-		return err
-	}
-
-	buffer, err := base64.StdEncoding.DecodeString(str)
-	if err != nil {
-		return err
-	}
-
-	*obj = buffer
-	return nil
-}
-
-func marshal[T any](dataType string, data T) ([]byte, error) {
-	rawObj := serializedData[T]{
-		Type:  dataType,
-		Value: data,
-	}
-
-	return json.Marshal(&rawObj)
-}
-
-func unmarshal[T any](raw []byte, dataType string, data *T) error {
-	rawObj := serializedData[*T]{Value: data}
-
-	err := json.Unmarshal(raw, &rawObj)
-	if err != nil {
-		return err
-	}
-
-	if rawObj.Type != dataType {
-		return errors.New(fmt.Sprintf("Bad object type '%s' (expected '%s')", rawObj.Type, dataType))
-	}
-
-	return nil
+func getType[T any]() reflect.Type {
+	var ptr *T = nil
+	return reflect.TypeOf(ptr).Elem()
 }
