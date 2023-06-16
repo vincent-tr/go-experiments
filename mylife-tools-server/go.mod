@@ -4,6 +4,8 @@ go 1.20
 
 require github.com/sirupsen/logrus v1.9.0
 
+require github.com/iancoleman/strcase v0.2.0 // indirect
+
 require (
 	github.com/eclipse/paho.mqtt.golang v1.4.2 // indirect
 	github.com/fatih/color v1.14.1 // indirect

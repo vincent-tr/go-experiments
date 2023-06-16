@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/iancoleman/strcase"
 	"golang.org/x/exp/constraints"
 )
 
@@ -26,6 +27,38 @@ Avec attributes pour overrides
    - Bool
    - nil
 */
+
+func marshalMerge(value reflect.Value, dest map[string]interface{}) error {
+	valueType := value.Type()
+
+	if valueType.Kind() != reflect.Struct {
+		return errors.New(fmt.Sprintf("Cannot marshal-merge value of type '%s'", valueType.String()))
+	}
+
+	for fieldIndex := 0; fieldIndex < valueType.NumField(); fieldIndex++ {
+		field := valueType.Field(fieldIndex)
+		if !field.IsExported() {
+			continue
+		}
+
+		fieldName := strcase.ToLowerCamel(field.Name)
+		fieldValue := value.Field(fieldIndex)
+
+		marshaledValue, err := marshalValue(fieldValue)
+		if err != nil {
+			return err
+		}
+
+		dest[fieldName] = marshaledValue
+	}
+
+	return nil
+}
+
+func unmarshalUnmerge(value reflect.Value, dest map[string]interface{}) error {
+	return errors.New("TODO")
+
+}
 
 func marshalValue(value reflect.Value) (interface{}, error) {
 	if !value.IsValid() {
@@ -68,6 +101,31 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 		return float64(value.Interface().(uint32)), nil
 	case reflect.Uint64:
 		return float64(value.Interface().(uint64)), nil
+
+	case reflect.Pointer:
+		if value.IsNil() {
+			return nil, nil
+		}
+		return marshalValue(value.Elem())
+
+	case reflect.Struct:
+		dest := make(map[string]interface{})
+		err := marshalMerge(value, dest)
+		if err != nil {
+			return nil, err
+		}
+		return dest, nil
+
+	case reflect.Slice:
+		dest := make([]interface{}, value.Len())
+		for index := 0; index < value.Len(); index++ {
+			marshaledValue, err := marshalValue(value.Index(index))
+			if err != nil {
+				return nil, err
+			}
+			dest[index] = marshaledValue
+		}
+		return dest, nil
 	}
 
 	// TODO: slice and map, pointer

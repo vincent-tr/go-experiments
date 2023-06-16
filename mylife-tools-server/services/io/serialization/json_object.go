@@ -2,6 +2,7 @@ package serialization
 
 import (
 	"encoding/json"
+	"reflect"
 )
 
 type JsonObject struct {
@@ -38,29 +39,9 @@ func SerializeJsonObject(obj *JsonObject) ([]byte, error) {
 }
 
 func (obj *JsonObject) Marshal(value any) error {
-	partial, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(partial, &obj.fields)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return marshalMerge(reflect.ValueOf(value), obj.fields)
 }
 
 func (obj *JsonObject) Unmarshal(value any) error {
-	raw, err := json.Marshal(obj.fields)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(raw, value)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return unmarshalUnmerge(reflect.ValueOf(value), obj.fields)
 }
