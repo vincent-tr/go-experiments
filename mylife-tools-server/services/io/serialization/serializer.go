@@ -56,8 +56,8 @@ func serializeValue(value interface{}) (interface{}, error) {
 
 	valueType := reflect.TypeOf(value)
 
-	plugin, ok := pluginsByType[valueType]
-	if ok {
+	plugin := findPluginByConcreteType(valueType)
+	if plugin != nil {
 		obj := make(map[string]interface{})
 		obj["__type"] = plugin.TypeId()
 
@@ -101,7 +101,7 @@ func serializeValue(value interface{}) (interface{}, error) {
 		}
 	}
 
-	return nil, errors.New(fmt.Sprintf("Unsupported value found: %+v", value))
+	return nil, errors.New(fmt.Sprintf("Unsupported value found: '%+v' of type '%s'", value, valueType.String()))
 }
 
 func deserializeValue(value interface{}) (interface{}, error) {
@@ -183,4 +183,29 @@ func getPluginType(mapValue map[string]interface{}) (string, bool) {
 func getType[T any]() reflect.Type {
 	var ptr *T = nil
 	return reflect.TypeOf(ptr).Elem()
+}
+
+func findPluginByConcreteType(valueType reflect.Type) serializerPlugin {
+	// Find exact match
+	plugin, ok := pluginsByType[valueType]
+	if ok {
+		return plugin
+	}
+
+	plugin = lookupPluginByConcreteType(valueType)
+
+	// Add it (even if nil) to cache it
+	pluginsByType[valueType] = plugin
+
+	return plugin
+}
+
+func lookupPluginByConcreteType(valueType reflect.Type) serializerPlugin {
+	for pluginType, plugin := range pluginsByType {
+		if valueType.AssignableTo(pluginType) {
+			return plugin
+		}
+	}
+
+	return nil
 }

@@ -168,7 +168,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 	if _, ok := pluginsByType[valueType]; ok {
 		// There is a dedicated plugin for that, no need to handle this
 		rawValue := reflect.ValueOf(raw)
-		if valueType != rawValue.Type() {
+		if !rawValue.Type().AssignableTo(valueType) {
 			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", valueType.String(), rawValue.Type().String()))
 		}
 
