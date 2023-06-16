@@ -43,5 +43,5 @@ func (obj *JsonObject) Marshal(value any) error {
 }
 
 func (obj *JsonObject) Unmarshal(value any) error {
-	return unmarshalUnmerge(reflect.ValueOf(value), obj.fields)
+	return unmarshalUnmerge(obj.fields, reflect.Indirect(reflect.ValueOf(value)))
 }

@@ -55,9 +55,36 @@ func marshalMerge(value reflect.Value, dest map[string]interface{}) error {
 	return nil
 }
 
-func unmarshalUnmerge(value reflect.Value, dest map[string]interface{}) error {
-	return errors.New("TODO")
+func unmarshalUnmerge(raw map[string]interface{}, value reflect.Value) error {
+	valueType := value.Type()
 
+	if valueType.Kind() != reflect.Struct {
+		return errors.New(fmt.Sprintf("Cannot unmarshal-unmerge value of type '%s'", valueType.String()))
+	}
+
+	for fieldIndex := 0; fieldIndex < valueType.NumField(); fieldIndex++ {
+		field := valueType.Field(fieldIndex)
+		if !field.IsExported() {
+			continue
+		}
+
+		fieldName := strcase.ToLowerCamel(field.Name)
+		fieldValue := value.Field(fieldIndex)
+
+		rawValue, ok := raw[fieldName]
+		if !ok {
+			return errors.New(fmt.Sprintf("Cannot unmarshal-unmerge value of type '%s': value not found for field '%s'", valueType.String(), fieldName))
+		}
+
+		err := unmarshalValue(rawValue, fieldValue)
+		if err != nil {
+			return err
+		}
+
+		delete(raw, fieldName)
+	}
+
+	return nil
 }
 
 func marshalValue(value reflect.Value) (interface{}, error) {
@@ -128,8 +155,6 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 		return dest, nil
 	}
 
-	// TODO: slice and map, pointer
-
 	return nil, errors.New(fmt.Sprintf("Cannot marshal type '%s'", valueType.String()))
 }
 
@@ -153,64 +178,87 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 
 	switch valueType.Kind() {
 	case reflect.String:
-		if err := unmarshalTypedValue[string](raw, value); err != nil {
-			return err
-		}
+		return unmarshalTypedValue[string](raw, value)
 	case reflect.Bool:
-		if err := unmarshalTypedValue[bool](raw, value); err != nil {
-			return err
-		}
+		return unmarshalTypedValue[bool](raw, value)
 	case reflect.Float32:
-		if err := unmarshalNumericValue[float32](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[float32](raw, value)
 	case reflect.Float64:
-		if err := unmarshalNumericValue[float64](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[float64](raw, value)
 	case reflect.Int:
-		if err := unmarshalNumericValue[int](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[int](raw, value)
 	case reflect.Int8:
-		if err := unmarshalNumericValue[int8](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[int8](raw, value)
 	case reflect.Int16:
-		if err := unmarshalNumericValue[int16](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[int16](raw, value)
 	case reflect.Int32:
-		if err := unmarshalNumericValue[int32](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[int32](raw, value)
 	case reflect.Int64:
-		if err := unmarshalNumericValue[int64](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[int64](raw, value)
 	case reflect.Uint:
-		if err := unmarshalNumericValue[uint](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[uint](raw, value)
 	case reflect.Uint8:
-		if err := unmarshalNumericValue[uint8](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[uint8](raw, value)
 	case reflect.Uint16:
-		if err := unmarshalNumericValue[uint16](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[uint16](raw, value)
 	case reflect.Uint32:
-		if err := unmarshalNumericValue[uint32](raw, value); err != nil {
-			return err
-		}
+		return unmarshalNumericValue[uint32](raw, value)
 	case reflect.Uint64:
-		if err := unmarshalNumericValue[uint64](raw, value); err != nil {
+		return unmarshalNumericValue[uint64](raw, value)
+
+	case reflect.Pointer:
+		if raw == nil {
+			// Leave it to nil
+			value.SetZero()
+			return nil
+		}
+
+		newValue := reflect.New(valueType.Elem())
+		err := unmarshalValue(raw, newValue.Elem())
+		if err != nil {
 			return err
 		}
-	}
 
-	// TODO: slice and map
+		value.Set(newValue)
+		return nil
+
+	case reflect.Struct:
+		rawMap, ok := raw.(map[string]interface{})
+		if !ok {
+			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", value.Type().String(), reflect.TypeOf(raw).String()))
+		}
+
+		err := unmarshalUnmerge(rawMap, value)
+		if err != nil {
+			return err
+		}
+
+		if len(rawMap) > 0 {
+			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s': some fields are unmarshaled", value.Type().String(), reflect.TypeOf(raw).String()))
+		}
+
+		return nil
+
+	case reflect.Slice:
+		rawSlice, ok := raw.([]interface{})
+		if !ok {
+			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", value.Type().String(), reflect.TypeOf(raw).String()))
+		}
+
+		sliceLen := len(rawSlice)
+		sliceValue := reflect.MakeSlice(valueType, sliceLen, sliceLen)
+
+		for index := 0; index < sliceLen; index++ {
+			err := unmarshalValue(rawSlice[index], sliceValue.Index(index))
+			if err != nil {
+				return err
+			}
+		}
+
+		value.Set(sliceValue)
+
+		return nil
+	}
 
 	return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s'", valueType.String()))
 }
@@ -218,7 +266,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 func unmarshalTypedValue[T any](raw interface{}, value reflect.Value) error {
 	typedValue, ok := raw.(T)
 	if !ok {
-		return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", value.Type().String(), getType[T]().String()))
+		return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", value.Type().String(), reflect.TypeOf(raw).String()))
 	}
 
 	value.Set(reflect.ValueOf(typedValue))
@@ -228,7 +276,7 @@ func unmarshalTypedValue[T any](raw interface{}, value reflect.Value) error {
 func unmarshalNumericValue[T constraints.Integer | constraints.Float](raw interface{}, value reflect.Value) error {
 	floatValue, ok := raw.(float64)
 	if !ok {
-		return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", value.Type().String(), getType[T]().String()))
+		return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", value.Type().String(), reflect.TypeOf(raw).String()))
 	}
 
 	value.Set(reflect.ValueOf(T(floatValue)))
