@@ -1,17 +1,17 @@
-package sessions
+package utils
 
 import "sync"
 
-type idGenerator struct {
+type IdGenerator struct {
 	mutex sync.Mutex
 	last  int
 }
 
-func newIdGenerator() idGenerator {
-	return idGenerator{last: 0}
+func NewIdGenerator() IdGenerator {
+	return IdGenerator{last: 0}
 }
 
-func (generator *idGenerator) Next() int {
+func (generator *IdGenerator) Next() int {
 	generator.mutex.Lock()
 	defer generator.mutex.Unlock()
 

@@ -18,15 +18,14 @@ type TestService struct {
 }
 
 func (service *TestService) Init() error {
-	var sessionsService = services.GetService[*sessions.SessionService]("sessions")
-	service.session = sessionsService.NewSession()
+	sessions.NewSession()
+	service.session = sessions.NewSession()
 
 	return nil
 }
 
 func (service *TestService) Terminate() error {
-	var sessionsService = services.GetService[*sessions.SessionService]("sessions")
-	sessionsService.CloseSession(service.session)
+	sessions.CloseSession(service.session)
 	service.session = nil
 
 	return nil

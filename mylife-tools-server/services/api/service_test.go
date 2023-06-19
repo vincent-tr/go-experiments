@@ -35,8 +35,8 @@ func api2(session *sessions.Session, in input2) (output2, error) {
 
 var def = MakeDefinition("test", api1, api2)
 
-func initService() ApiService {
-	svc := ApiService{}
+func initService() apiService {
+	svc := apiService{}
 	svc.Init()
 
 	svc.RegisterService(def)

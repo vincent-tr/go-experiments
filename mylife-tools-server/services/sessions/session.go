@@ -38,6 +38,15 @@ func (session *Session) RegisterStateObject(id string, state SessionStateObject)
 	}
 }
 
+func (session *Session) FindStateObject(id string) SessionStateObject {
+	object, ok := session.state[id]
+	if ok {
+		return object
+	} else {
+		return nil
+	}
+}
+
 func (session *Session) GetStateObject(id string) SessionStateObject {
 	object, ok := session.state[id]
 	if !ok {

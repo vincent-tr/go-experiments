@@ -10,7 +10,7 @@ import (
 var logger = log.CreateLogger("mylife:server:api")
 
 func init() {
-	services.Register(&ApiService{})
+	services.Register(&apiService{})
 }
 
 type serviceImpl struct {
@@ -18,17 +18,17 @@ type serviceImpl struct {
 	methods map[string]*Method
 }
 
-type ApiService struct {
+type apiService struct {
 	services map[string]*serviceImpl
 }
 
-func (service *ApiService) Init() error {
+func (service *apiService) Init() error {
 	service.services = make(map[string]*serviceImpl)
 
 	return nil
 }
 
-func (service *ApiService) Terminate() error {
+func (service *apiService) Terminate() error {
 	for serviceName, _ := range service.services {
 		delete(service.services, serviceName)
 		logger.WithField("serviceName", serviceName).Info("Service unregistered")
@@ -37,7 +37,7 @@ func (service *ApiService) Terminate() error {
 	return nil
 }
 
-func (service *ApiService) Lookup(serviceName string, methodName string) (*Method, error) {
+func (service *apiService) Lookup(serviceName string, methodName string) (*Method, error) {
 	svc, ok := service.services[serviceName]
 
 	if !ok {
@@ -53,7 +53,7 @@ func (service *ApiService) Lookup(serviceName string, methodName string) (*Metho
 	return method, nil
 }
 
-func (service *ApiService) RegisterService(def ServiceDefinition) {
+func (service *apiService) RegisterService(def ServiceDefinition) {
 	if _, ok := service.services[def.Name]; ok {
 		logger.WithField("serviceName", def.Name).Fatal("Service already exists")
 	}
@@ -69,10 +69,24 @@ func (service *ApiService) RegisterService(def ServiceDefinition) {
 	logger.WithField("serviceName", svc.name).Info("Service registered")
 }
 
-func (service *ApiService) ServiceName() string {
+func (service *apiService) ServiceName() string {
 	return "api"
 }
 
-func (service *ApiService) Dependencies() []string {
+func (service *apiService) Dependencies() []string {
 	return []string{}
+}
+
+func getService() *apiService {
+	return services.GetService[*apiService]("api")
+}
+
+// Public access
+
+func RegisterService(def ServiceDefinition) {
+	getService().RegisterService(def)
+}
+
+func Lookup(serviceName string, methodName string) (*Method, error) {
+	return getService().Lookup(serviceName, methodName)
 }

@@ -12,38 +12,52 @@ import (
 var logger = log.CreateLogger("mylife:server:io")
 
 func init() {
-	services.Register(&IOService{})
+	services.Register(&ioService{})
 }
 
-type IOService struct {
+type ioService struct {
 }
 
-func (service *IOService) Init() error {
+func (service *ioService) Init() error {
 	return nil
 }
 
-func (service *IOService) Terminate() error {
+func (service *ioService) Terminate() error {
 	return nil
 }
 
-func (service *IOService) ServiceName() string {
+func (service *ioService) ServiceName() string {
 	return "io"
 }
 
-func (service *IOService) Dependencies() []string {
+func (service *ioService) Dependencies() []string {
 	return []string{"api", "sessions"}
 }
 
-func (service *IOService) Handler(witer http.ResponseWriter, reader *http.Request) {
-	socket, err := websocket.Accept(witer, reader, nil)
+func (service *ioService) Handler(writer http.ResponseWriter, reader *http.Request) {
+	socket, err := websocket.Accept(writer, reader, nil)
 	if err != nil {
 		logger.WithField("error", err).Error("Accept error")
 		return
 	}
 
-	sessionService := services.GetService[sessions.SessionService]("sessions")
-	session := sessionService.NewSession()
+	session := sessions.NewSession()
 
 	ioSession := makeSession(session, socket)
 	session.RegisterStateObject("io", ioSession)
+}
+
+func getService() *ioService {
+	return services.GetService[*ioService]("io")
+}
+
+// Public access
+
+func GetHandler(name string) func(writer http.ResponseWriter, reader *http.Request) {
+	return getService().Handler
+}
+
+func NotifySession(session sessions.Session, notification any) {
+	ios := session.GetStateObject("io").(*ioSession)
+	ios.notify(notification)
 }

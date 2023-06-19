@@ -13,25 +13,25 @@ import (
 var logger = log.CreateLogger("mylife:server:mqtt")
 
 func init() {
-	services.Register(&MqttService{subscriptions: []*Subscription{}})
+	services.Register(&mqttService{subscriptions: []*subscription{}})
 }
 
-type BusConfig struct {
+type busConfig struct {
 	ServerUrl string `mapstructure:"serverUrl"`
 }
 
-type Subscription struct {
+type subscription struct {
 	topic    string
 	callback func(topic string, data []byte)
 }
 
-type MqttService struct {
+type mqttService struct {
 	client        mqtt.Client
-	subscriptions []*Subscription
+	subscriptions []*subscription
 }
 
-func (service *MqttService) Init() error {
-	busConfig := BusConfig{}
+func (service *mqttService) Init() error {
+	busConfig := busConfig{}
 	config.BindStructure("bus", &busConfig)
 
 	// add default port if needed
@@ -73,43 +73,43 @@ func (service *MqttService) Init() error {
 	return nil
 }
 
-func (service *MqttService) Terminate() error {
+func (service *mqttService) Terminate() error {
 	service.client.Disconnect(250)
 	service.client = nil
 	return nil
 }
 
-func (service *MqttService) ServiceName() string {
+func (service *mqttService) ServiceName() string {
 	return "mqtt"
 }
 
-func (service *MqttService) Dependencies() []string {
+func (service *mqttService) Dependencies() []string {
 	return []string{}
 }
 
-func (service *MqttService) Subscribe(topic string, callback func(topic string, data []byte)) {
-	subscription := &Subscription{topic, callback}
-	service.subscriptions = append(service.subscriptions, subscription)
+func (service *mqttService) Subscribe(topic string, callback func(topic string, data []byte)) {
+	sub := &subscription{topic, callback}
+	service.subscriptions = append(service.subscriptions, sub)
 
 	if service.client.IsConnected() {
-		service.subscribe(subscription)
+		service.subscribe(sub)
 	}
 
 	logger.WithField("topic", topic).Info("Subscribed to topic")
 }
 
-func (service *MqttService) subscribe(subscription *Subscription) {
-	service.client.Subscribe(subscription.topic, 0, func(client mqtt.Client, msg mqtt.Message) {
-		subscription.callback(msg.Topic(), msg.Payload())
+func (service *mqttService) subscribe(sub *subscription) {
+	service.client.Subscribe(sub.topic, 0, func(client mqtt.Client, msg mqtt.Message) {
+		sub.callback(msg.Topic(), msg.Payload())
 	})
 }
 
-// Shortcuts
+func getService() *mqttService {
+	return services.GetService[*mqttService]("mqtt")
+}
+
+// Public access
 
 func Subscribe(topic string, callback func(topic string, data []byte)) {
 	getService().Subscribe(topic, callback)
-}
-
-func getService() *MqttService {
-	return services.GetService[*MqttService]("mqtt")
 }

@@ -3,39 +3,40 @@ package sessions
 import (
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
+	"mylife-tools-server/utils"
 )
 
 var logger = log.CreateLogger("mylife:server:sessions")
 
 func init() {
-	services.Register(&SessionService{})
+	services.Register(&sessionService{})
 }
 
-type SessionService struct {
+type sessionService struct {
 	sessions map[int]*Session
-	idGen    idGenerator
+	idGen    utils.IdGenerator
 }
 
-func (service *SessionService) Init() error {
+func (service *sessionService) Init() error {
 	service.sessions = make(map[int]*Session)
-	service.idGen = newIdGenerator()
+	service.idGen = utils.NewIdGenerator()
 
 	return nil
 }
 
-func (service *SessionService) Terminate() error {
+func (service *sessionService) Terminate() error {
 	return nil
 }
 
-func (service *SessionService) ServiceName() string {
+func (service *sessionService) ServiceName() string {
 	return "sessions"
 }
 
-func (service *SessionService) Dependencies() []string {
+func (service *sessionService) Dependencies() []string {
 	return []string{}
 }
 
-func (service *SessionService) NewSession() *Session {
+func (service *sessionService) NewSession() *Session {
 	var id = service.idGen.Next()
 	var session = &Session{id: id}
 	service.sessions[id] = session
@@ -43,8 +44,22 @@ func (service *SessionService) NewSession() *Session {
 	return session
 }
 
-func (service *SessionService) CloseSession(session *Session) {
+func (service *sessionService) CloseSession(session *Session) {
 	delete(service.sessions, session.id)
 	session.terminate()
 	logger.WithField("sessionId", session.id).Debug("Session closed")
+}
+
+func getService() *sessionService {
+	return services.GetService[*sessionService]("sessions")
+}
+
+// Public access
+
+func NewSession() *Session {
+	return getService().NewSession()
+}
+
+func CloseSession(session *Session) {
+	getService().CloseSession(session)
 }

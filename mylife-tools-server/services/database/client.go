@@ -15,17 +15,17 @@ import (
 var logger = log.CreateLogger("mylife:server:mongo")
 
 func init() {
-	services.Register(&DatabaseService{})
+	services.Register(&databaseService{})
 }
 
 type Collection = mongo.Collection
 
-type DatabaseService struct {
+type databaseService struct {
 	client   *mongo.Client
 	database *mongo.Database
 }
 
-func (service *DatabaseService) Init() error {
+func (service *databaseService) Init() error {
 	mongoUrl := config.GetString("mongo")
 
 	parsedUrl, err := url.Parse(mongoUrl)
@@ -48,28 +48,28 @@ func (service *DatabaseService) Init() error {
 	return nil
 }
 
-func (service *DatabaseService) Terminate() error {
+func (service *databaseService) Terminate() error {
 	return service.client.Disconnect(context.TODO())
 }
 
-func (service *DatabaseService) ServiceName() string {
+func (service *databaseService) ServiceName() string {
 	return "database"
 }
 
-func (service *DatabaseService) Dependencies() []string {
+func (service *databaseService) Dependencies() []string {
 	return []string{}
 }
 
-func (service *DatabaseService) GetCollection(name string) *Collection {
+func (service *databaseService) GetCollection(name string) *Collection {
 	return service.database.Collection(name)
 }
 
-// Shortcuts
+func getService() *databaseService {
+	return services.GetService[*databaseService]("database")
+}
+
+// Public access
 
 func GetCollection(name string) *Collection {
 	return getService().GetCollection(name)
-}
-
-func getService() *DatabaseService {
-	return services.GetService[*DatabaseService]("database")
 }

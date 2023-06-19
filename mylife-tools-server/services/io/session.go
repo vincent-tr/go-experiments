@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"mylife-tools-server/log"
-	"mylife-tools-server/services"
 	"mylife-tools-server/services/api"
 	"mylife-tools-server/services/io/serialization"
 	"mylife-tools-server/services/sessions"
@@ -16,7 +15,7 @@ import (
 	"nhooyr.io/websocket"
 )
 
-type IOSession struct {
+type ioSession struct {
 	session      *sessions.Session
 	socket       *websocket.Conn
 	worker       utils.Worker
@@ -50,8 +49,8 @@ type payloadCallError struct {
 	Error error `json:"error"`
 }
 
-func makeSession(session *sessions.Session, socket *websocket.Conn) IOSession {
-	ioSession := IOSession{
+func makeSession(session *sessions.Session, socket *websocket.Conn) ioSession {
+	ios := ioSession{
 		session:      session,
 		socket:       socket,
 		writeChannel: make(chan []byte, 5),
@@ -59,40 +58,39 @@ func makeSession(session *sessions.Session, socket *websocket.Conn) IOSession {
 		errorChannel: make(chan error),
 	}
 
-	ioSession.worker = utils.InitWorker(ioSession.workerEntry)
+	ios.worker = utils.InitWorker(ios.workerEntry)
 
-	return ioSession
+	return ios
 }
 
-func (ioSession *IOSession) workerEntry(exit chan struct{}) {
-	stopRead := ioSession.startReadSocket()
-	stopWrite := ioSession.startWriteSocket()
+func (ios *ioSession) workerEntry(exit chan struct{}) {
+	stopRead := ios.startReadSocket()
+	stopWrite := ios.startWriteSocket()
 
 	for {
 		select {
-		case data := <-ioSession.readChannel:
-			logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "message": data}).Trace("Socket received data")
-			ioSession.dispatch(data)
+		case data := <-ios.readChannel:
+			logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "message": data}).Trace("Socket received data")
+			ios.dispatch(data)
 
-		case err := <-ioSession.errorChannel:
+		case err := <-ios.errorChannel:
 			status := websocket.CloseStatus(err)
 
 			switch status {
 			case -1:
-				logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Socket error")
+				logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Socket error")
 				continue
 
 			case websocket.StatusNormalClosure:
-				logger.WithField("sessionId", ioSession.session.Id()).Info("Socket closed")
+				logger.WithField("sessionId", ios.session.Id()).Info("Socket closed")
 
 			default:
-				logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Info("Socket closed with error")
+				logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Info("Socket closed with error")
 			}
 
 			// Avoid deadlock
 			go func() {
-				sessionService := services.GetService[sessions.SessionService]("sessions")
-				sessionService.CloseSession(ioSession.session)
+				sessions.CloseSession(ios.session)
 			}()
 
 		case <-exit:
@@ -103,7 +101,7 @@ func (ioSession *IOSession) workerEntry(exit chan struct{}) {
 	}
 }
 
-func (ioSession *IOSession) startReadSocket() func() {
+func (ios *ioSession) startReadSocket() func() {
 	ctx, cancel := context.WithCancelCause(context.Background())
 
 	stop := func() {
@@ -112,17 +110,17 @@ func (ioSession *IOSession) startReadSocket() func() {
 
 	go func() {
 		for {
-			msgType, data, err := ioSession.socket.Read(ctx)
+			msgType, data, err := ios.socket.Read(ctx)
 
 			if errors.Is(err, exitCause{}) {
 				return
 			} else if msgType != websocket.MessageText {
-				ioSession.errorChannel <- errors.New(fmt.Sprintf("Expected message of type text, got %s", msgType.String()))
+				ios.errorChannel <- errors.New(fmt.Sprintf("Expected message of type text, got %s", msgType.String()))
 				continue
 			} else if err != nil {
-				ioSession.errorChannel <- err
+				ios.errorChannel <- err
 			} else {
-				ioSession.readChannel <- data
+				ios.readChannel <- data
 			}
 		}
 	}()
@@ -130,7 +128,7 @@ func (ioSession *IOSession) startReadSocket() func() {
 	return stop
 }
 
-func (ioSession *IOSession) startWriteSocket() func() {
+func (ios *ioSession) startWriteSocket() func() {
 	ctx, cancel := context.WithCancelCause(context.Background())
 	exitChannel := make(chan struct{}, 1)
 
@@ -142,14 +140,14 @@ func (ioSession *IOSession) startWriteSocket() func() {
 	go func() {
 		for {
 			select {
-			case data := <-ioSession.writeChannel:
-				logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "message": data}).Trace("Socket send data")
-				err := ioSession.socket.Write(ctx, websocket.MessageText, data)
+			case data := <-ios.writeChannel:
+				logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "message": data}).Trace("Socket send data")
+				err := ios.socket.Write(ctx, websocket.MessageText, data)
 
 				if errors.Is(err, exitCause{}) {
 					return
 				} else if err != nil {
-					ioSession.errorChannel <- err
+					ios.errorChannel <- err
 				}
 
 			case <-exitChannel:
@@ -161,18 +159,18 @@ func (ioSession *IOSession) startWriteSocket() func() {
 	return stop
 }
 
-func (ioSession *IOSession) Close() {
-	ioSession.worker.Terminate()
-	ioSession.socket.Close(websocket.StatusNormalClosure, "")
+func (ios *ioSession) Close() {
+	ios.worker.Terminate()
+	ios.socket.Close(websocket.StatusNormalClosure, "")
 }
 
-func (ioSession *IOSession) send(payloadParts ...any) {
+func (ios *ioSession) send(payloadParts ...any) {
 	jsonObj := serialization.NewJsonObject()
 	// merge parts json into one payload
 	for _, part := range payloadParts {
 		err := jsonObj.Marshal(part)
 		if err != nil {
-			logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Marshal error")
+			logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Marshal error")
 			return
 		}
 	}
@@ -180,17 +178,17 @@ func (ioSession *IOSession) send(payloadParts ...any) {
 	data, err := serialization.SerializeJsonObject(jsonObj)
 
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Serialize error")
+		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Serialize error")
 		return
 	}
 
-	ioSession.writeChannel <- data
+	ios.writeChannel <- data
 }
 
-func (ioSession *IOSession) dispatch(data []byte) {
+func (ios *ioSession) dispatch(data []byte) {
 	jsonObj, err := serialization.DeserializeJsonObject(data)
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Deserialize error")
+		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Deserialize error")
 		return
 	}
 
@@ -198,12 +196,12 @@ func (ioSession *IOSession) dispatch(data []byte) {
 	err = jsonObj.Unmarshal(&engine)
 
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Unmarshal error")
+		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Unmarshal error")
 		return
 	}
 
 	if engine.Engine != "call" {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "engine": engine.Engine}).Debug("Got message with unexpected engine, ignored")
+		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "engine": engine.Engine}).Debug("Got message with unexpected engine, ignored")
 		return
 	}
 
@@ -211,53 +209,51 @@ func (ioSession *IOSession) dispatch(data []byte) {
 	err = jsonObj.Unmarshal(&input)
 
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Unmarshal error")
+		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Unmarshal error")
 		return
 	}
 
-	api := services.GetService[api.ApiService]("api")
-
 	method, err := api.Lookup(input.Service, input.Method)
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Error on api lookup")
-		ioSession.replyError(&input, err)
+		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Error on api lookup")
+		ios.replyError(&input, err)
 		return
 	}
 
 	methodInput := reflect.New(method.InputType())
 	if err := jsonObj.Unmarshal(methodInput.Interface()); err != nil {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Unmarshal error")
-		ioSession.replyError(&input, err)
+		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Unmarshal error")
+		ios.replyError(&input, err)
 		return
 	}
 
-	output, err := method.Call(ioSession.session, methodInput.Elem())
+	output, err := method.Call(ios.session, methodInput.Elem())
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "error": err}).Error("Error on method call")
-		ioSession.replyError(&input, err)
+		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Error on method call")
+		ios.replyError(&input, err)
 		return
 	}
 
-	ioSession.reply(&input, output)
+	ios.reply(&input, output)
 }
 
-func (ioSession *IOSession) Notify(notification any) {
-	ioSession.send(
+func (ios *ioSession) notify(notification any) {
+	ios.send(
 		payloadEngine{Engine: "notify"},
 		notification,
 	)
 }
 
-func (ioSession *IOSession) reply(input *payloadCallInput, output any) {
-	ioSession.send(
+func (ios *ioSession) reply(input *payloadCallInput, output any) {
+	ios.send(
 		payloadEngine{Engine: "call"},
 		payloadCallOutput{Transaction: input.Transaction},
 		output,
 	)
 }
 
-func (ioSession *IOSession) replyError(input *payloadCallInput, err error) {
-	ioSession.send(
+func (ios *ioSession) replyError(input *payloadCallInput, err error) {
+	ios.send(
 		payloadEngine{Engine: "call"},
 		payloadCallOutput{Transaction: input.Transaction},
 		payloadCallError{Error: err},
