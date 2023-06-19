@@ -39,6 +39,8 @@ func (event *Event[TEntity]) After() *TEntity {
 }
 
 type IContainer[TEntity EntityConstraint] interface {
+	IEventEmitter[Event[TEntity]]
+
 	Name() string
 	Find(id string) (*TEntity, bool)
 	Get(id string) (*TEntity, error)
