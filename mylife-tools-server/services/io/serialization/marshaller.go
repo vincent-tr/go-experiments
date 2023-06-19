@@ -9,24 +9,21 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-/*
-Custom marshal/unmarshal
-Avec plugins
-Basé sur interface{}
-Avec others = map[string]interface{}
-Avec bonne casse par défaut
-Avec attributes pour overrides
-*/
+type Marshaller interface {
+	Marshal() (interface{}, error)
+}
 
-/*
-   native handled json types:
-   - String
-   - Float64
-   - Map: map[string]interface{}
-   - Slice: []interface{}
-   - Bool
-   - nil
-*/
+type Unmarshaller interface {
+	Unmarshal(raw interface{}) error
+}
+
+func Marshal(value any) (interface{}, error) {
+	return marshalValue(reflect.Indirect(reflect.ValueOf(value)))
+}
+
+func Unmarshal(raw interface{}, value any) error {
+	return unmarshalValue(raw, reflect.Indirect(reflect.ValueOf(value)))
+}
 
 func marshalMerge(value reflect.Value, dest map[string]interface{}) error {
 	valueType := value.Type()
@@ -87,6 +84,21 @@ func unmarshalUnmerge(raw map[string]interface{}, value reflect.Value) error {
 	return nil
 }
 
+func getIfImplements[T interface{}](value reflect.Value) T {
+	if value.CanAddr() && value.Kind() != reflect.Pointer {
+		value = value.Addr()
+	}
+
+	iface, ok := value.Interface().(T)
+
+	if ok {
+		return iface
+	} else {
+		var noop T
+		return noop
+	}
+}
+
 func marshalValue(value reflect.Value) (interface{}, error) {
 	if !value.IsValid() {
 		return nil, nil
@@ -97,6 +109,10 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 	if _, ok := pluginsByType[valueType]; ok {
 		// There is a dedicated plugin for that, no need to handle this
 		return value.Interface(), nil
+	}
+
+	if marshaller := getIfImplements[Marshaller](value); marshaller != nil {
+		return marshaller.Marshal()
 	}
 
 	switch valueType.Kind() {
@@ -174,6 +190,10 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 
 		value.Set(rawValue)
 		return nil
+	}
+
+	if unmarshaller := getIfImplements[Unmarshaller](value); unmarshaller != nil {
+		return unmarshaller.Unmarshal(raw)
 	}
 
 	switch valueType.Kind() {

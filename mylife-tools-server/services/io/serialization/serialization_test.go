@@ -20,16 +20,29 @@ type payload struct {
 	Err          error
 	Buf          []byte
 	Time         time.Time
+	Custom       customPayload
 }
 
 type subPayload struct {
 	Value string
 }
 
-const JSON_VALUE = `{"buf":{"__type":"buffer","value":"AAEC"},"err":{"__type":"error","value":{"message":"Test error","stacktrace":"Test error"}},"time":{"__type":"date","value":946681200000},"value1":42,"value2":"toto","value3":true,"value4":{"value":"titi"},"value5":null,"value6":{"value":"toto"},"value7":["titi","tata","toto"]}`
+type customPayload struct {
+	field string
+}
 
-func createPayload() payload {
-	return payload{
+func (payload *customPayload) Marshal() (interface{}, error) {
+	return Marshal(payload.field)
+}
+
+func (payload *customPayload) Unmarshal(raw interface{}) error {
+	return Unmarshal(raw, &payload.field)
+}
+
+const JSON_VALUE = `{"buf":{"__type":"buffer","value":"AAEC"},"custom":"custom","err":{"__type":"error","value":{"message":"Test error","stacktrace":"Test error"}},"time":{"__type":"date","value":946681200000},"value1":42,"value2":"toto","value3":true,"value4":{"value":"titi"},"value5":null,"value6":{"value":"toto"},"value7":["titi","tata","toto"]}`
+
+func createPayload() *payload {
+	return &payload{
 		privateValue: 12,
 		Value1:       42,
 		Value2:       "toto",
@@ -41,6 +54,7 @@ func createPayload() payload {
 		Err:          errors.New("Test error"),
 		Buf:          []byte{0, 1, 2},
 		Time:         time.Date(2000, 01, 01, 0, 0, 0, 0, time.Local),
+		Custom:       customPayload{field: "custom"},
 	}
 }
 
@@ -69,8 +83,8 @@ func TestUnmarshal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	val := payload{}
-	err = obj.Unmarshal(&val)
+	val := &payload{}
+	err = obj.Unmarshal(val)
 	if err != nil {
 		t.Fatal(err)
 	}

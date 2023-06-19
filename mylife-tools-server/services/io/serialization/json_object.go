@@ -39,7 +39,7 @@ func SerializeJsonObject(obj *JsonObject) ([]byte, error) {
 }
 
 func (obj *JsonObject) Marshal(value any) error {
-	return marshalMerge(reflect.ValueOf(value), obj.fields)
+	return marshalMerge(reflect.Indirect(reflect.ValueOf(value)), obj.fields)
 }
 
 func (obj *JsonObject) Unmarshal(value any) error {
