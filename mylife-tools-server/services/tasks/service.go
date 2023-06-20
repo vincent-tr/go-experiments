@@ -49,6 +49,8 @@ func (service *taskService) createQueue(id string) error {
 	queue := newTaskQueue(id)
 	service.queues[id] = queue
 
+	logger.WithField("queueId", queue.id).Debug("Queue created")
+
 	return nil
 }
 
@@ -60,6 +62,8 @@ func (service *taskService) closeQueue(id string) error {
 
 	queue.close()
 	delete(service.queues, id)
+
+	logger.WithField("queueId", queue.id).Debug("Queue closed")
 
 	return nil
 }
