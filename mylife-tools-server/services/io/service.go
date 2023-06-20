@@ -7,7 +7,7 @@ import (
 	"mylife-tools-server/services/tasks"
 	"net/http"
 
-	"nhooyr.io/websocket"
+	socketio "github.com/googollee/go-socket.io"
 )
 
 var logger = log.CreateLogger("mylife:server:io")
@@ -17,13 +17,53 @@ func init() {
 }
 
 type ioService struct {
+	server *socketio.Server
 }
 
 func (service *ioService) Init() error {
-	return tasks.CreateQueue("io")
+	if err := tasks.CreateQueue("io"); err != nil {
+		return err
+	}
+
+	service.server = socketio.NewServer(nil)
+
+	service.server.OnConnect("/", func(socket socketio.Conn) error {
+		session := sessions.NewSession()
+		ioSession := newIoSession(session, socket)
+		session.RegisterStateObject("io", ioSession)
+		socket.SetContext(ioSession)
+		return nil
+	})
+
+	service.server.OnEvent("/", "message", func(socket socketio.Conn, msg string) {
+		ioSession := getIoSession(socket)
+		ioSession.dispatch(msg)
+	})
+
+	service.server.OnError("/", func(socket socketio.Conn, err error) {
+		ioSession := getIoSession(socket)
+		logger.WithError(err).WithField("sessionId", ioSession.session.Id()).Error("Got error on socket")
+	})
+
+	service.server.OnDisconnect("/", func(socket socketio.Conn, reason string) {
+		ioSession := getIoSession(socket)
+		sessions.CloseSession(ioSession.session)
+	})
+
+	go func() {
+		if err := service.server.Serve(); err != nil {
+			logger.WithError(err).Error("socketio listen error")
+		}
+	}()
+
+	return nil
 }
 
 func (service *ioService) Terminate() error {
+	if err := service.server.Close(); err != nil {
+		return err
+	}
+
 	return tasks.CloseQueue("io")
 }
 
@@ -35,17 +75,8 @@ func (service *ioService) Dependencies() []string {
 	return []string{"api", "sessions", "tasks"}
 }
 
-func (service *ioService) Handler(writer http.ResponseWriter, reader *http.Request) {
-	socket, err := websocket.Accept(writer, reader, nil)
-	if err != nil {
-		logger.WithField("error", err).Error("Accept error")
-		return
-	}
-
-	session := sessions.NewSession()
-
-	ioSession := makeSession(session, socket)
-	session.RegisterStateObject("io", ioSession)
+func getIoSession(socket socketio.Conn) *ioSession {
+	return socket.Context().(*ioSession)
 }
 
 func getService() *ioService {
@@ -54,7 +85,7 @@ func getService() *ioService {
 
 // Public access
 
-func GetHandler(name string) func(writer http.ResponseWriter, reader *http.Request) {
+func GetHandler() func(writer http.ResponseWriter, reader *http.Request) {
 	return getService().Handler
 }
 

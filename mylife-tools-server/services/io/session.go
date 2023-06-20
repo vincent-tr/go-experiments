@@ -1,8 +1,6 @@
 package io
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"mylife-tools-server/log"
 	"mylife-tools-server/services/api"
@@ -10,18 +8,12 @@ import (
 	"mylife-tools-server/services/sessions"
 	"reflect"
 
-	"mylife-tools-server/utils"
-
-	"nhooyr.io/websocket"
+	socketio "github.com/googollee/go-socket.io"
 )
 
 type ioSession struct {
-	session      *sessions.Session
-	socket       *websocket.Conn
-	worker       *utils.Worker
-	writeChannel chan []byte
-	readChannel  chan []byte
-	errorChannel chan error
+	session *sessions.Session
+	socket  socketio.Conn
 }
 
 type exitCause struct {
@@ -49,119 +41,17 @@ type payloadCallError struct {
 	Error error `json:"error"`
 }
 
-func makeSession(session *sessions.Session, socket *websocket.Conn) ioSession {
-	ios := ioSession{
-		session:      session,
-		socket:       socket,
-		writeChannel: make(chan []byte, 5),
-		readChannel:  make(chan []byte, 5),
-		errorChannel: make(chan error),
+func newIoSession(session *sessions.Session, socket socketio.Conn) *ioSession {
+	return &ioSession{
+		session: session,
+		socket:  socket,
 	}
-
-	ios.worker = utils.NewWorker(ios.workerEntry)
-
-	return ios
-}
-
-func (ios *ioSession) workerEntry(exit chan struct{}) {
-	stopRead := ios.startReadSocket()
-	stopWrite := ios.startWriteSocket()
-
-	for {
-		select {
-		case data := <-ios.readChannel:
-			logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "message": data}).Trace("Socket received data")
-			ios.dispatch(data)
-
-		case err := <-ios.errorChannel:
-			status := websocket.CloseStatus(err)
-
-			switch status {
-			case -1:
-				logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Socket error")
-				continue
-
-			case websocket.StatusNormalClosure:
-				logger.WithField("sessionId", ios.session.Id()).Info("Socket closed")
-
-			default:
-				logger.WithError(err).WithField("sessionId", ios.session.Id()).Info("Socket closed with error")
-			}
-
-			// Avoid deadlock
-			go func() {
-				sessions.CloseSession(ios.session)
-			}()
-
-		case <-exit:
-			stopRead()
-			stopWrite()
-			return
-		}
-	}
-}
-
-func (ios *ioSession) startReadSocket() func() {
-	ctx, cancel := context.WithCancelCause(context.Background())
-
-	stop := func() {
-		cancel(exitCause{})
-	}
-
-	go func() {
-		for {
-			msgType, data, err := ios.socket.Read(ctx)
-
-			if errors.Is(err, exitCause{}) {
-				return
-			} else if msgType != websocket.MessageText {
-				ios.errorChannel <- errors.New(fmt.Sprintf("Expected message of type text, got %s", msgType.String()))
-				continue
-			} else if err != nil {
-				ios.errorChannel <- err
-			} else {
-				ios.readChannel <- data
-			}
-		}
-	}()
-
-	return stop
-}
-
-func (ios *ioSession) startWriteSocket() func() {
-	ctx, cancel := context.WithCancelCause(context.Background())
-	exitChannel := make(chan struct{}, 1)
-
-	stop := func() {
-		exitChannel <- struct{}{}
-		cancel(exitCause{})
-	}
-
-	go func() {
-		for {
-			select {
-			case data := <-ios.writeChannel:
-				logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "message": data}).Trace("Socket send data")
-				err := ios.socket.Write(ctx, websocket.MessageText, data)
-
-				if errors.Is(err, exitCause{}) {
-					return
-				} else if err != nil {
-					ios.errorChannel <- err
-				}
-
-			case <-exitChannel:
-				return
-			}
-		}
-	}()
-
-	return stop
 }
 
 func (ios *ioSession) Close() {
-	ios.worker.Terminate()
-	ios.socket.Close(websocket.StatusNormalClosure, "")
+	if err := ios.socket.Close(); err != nil {
+		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Error closing socket")
+	}
 }
 
 func (ios *ioSession) send(payloadParts ...any) {
@@ -182,11 +72,11 @@ func (ios *ioSession) send(payloadParts ...any) {
 		return
 	}
 
-	ios.writeChannel <- data
+	ios.socket.Emit("message", string(data))
 }
 
-func (ios *ioSession) dispatch(data []byte) {
-	jsonObj, err := serialization.DeserializeJsonObject(data)
+func (ios *ioSession) dispatch(msg string) {
+	jsonObj, err := serialization.DeserializeJsonObject([]byte(msg))
 	if err != nil {
 		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Deserialize error")
 		return
