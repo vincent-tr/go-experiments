@@ -48,7 +48,10 @@ func Init(services []string) {
 func Terminate() {
 	logger.Debug("Service registry terminate")
 
-	for _, service := range running {
+	// terminate in reverse order
+	for index := len(running) - 1; index >= 0; index-- {
+		service := running[index]
+
 		if err := service.Terminate(); err != nil {
 			logger.WithFields(log.Fields{"name": service.ServiceName(), "error": err}).Fatal("Service terminate failed")
 		}
