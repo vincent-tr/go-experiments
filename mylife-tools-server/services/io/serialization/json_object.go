@@ -13,6 +13,14 @@ func NewJsonObject() *JsonObject {
 	return &JsonObject{fields: make(map[string]interface{})}
 }
 
+func IntoJsonObject(data map[string]interface{}) *JsonObject {
+	return &JsonObject{fields: data}
+}
+
+func FromJsonObject(obj *JsonObject) map[string]interface{} {
+	return obj.fields
+}
+
 func DeserializeJsonObject(raw []byte) (*JsonObject, error) {
 	encoded := make(map[string]interface{})
 	err := json.Unmarshal(raw, &encoded)

@@ -8,7 +8,7 @@ import (
 	"mylife-tools-server/services/sessions"
 	"reflect"
 
-	socketio "github.com/googollee/go-socket.io"
+	socketio "github.com/vchitai/go-socket.io/v4"
 )
 
 type ioSession struct {
@@ -65,25 +65,20 @@ func (ios *ioSession) send(payloadParts ...any) {
 		}
 	}
 
-	data, err := serialization.SerializeJsonObject(jsonObj)
+	data := serialization.FromJsonObject(jsonObj)
+	ios.socket.Emit("message", data)
 
-	if err != nil {
-		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Serialize error")
-		return
-	}
-
-	ios.socket.Emit("message", string(data))
+	logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "data": data}).Debug("Sent message")
 }
 
-func (ios *ioSession) dispatch(msg string) {
-	jsonObj, err := serialization.DeserializeJsonObject([]byte(msg))
-	if err != nil {
-		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Deserialize error")
-		return
-	}
+func (ios *ioSession) dispatch(data map[string]interface{}) {
+
+	logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "data": data}).Debug("Got message")
+
+	jsonObj := serialization.IntoJsonObject(data)
 
 	var engine payloadEngine
-	err = jsonObj.Unmarshal(&engine)
+	err := jsonObj.Unmarshal(&engine)
 
 	if err != nil {
 		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Unmarshal error")

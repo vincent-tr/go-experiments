@@ -38,7 +38,13 @@ func (service *sessionService) Dependencies() []string {
 
 func (service *sessionService) newSession() *Session {
 	var id = service.idGen.Next()
-	var session = &Session{id: id}
+
+	var session = &Session{
+		id:          id,
+		onTerminate: make([]TerminateCallback, 0),
+		state:       make(map[string]interface{}),
+	}
+
 	service.sessions[id] = session
 	logger.WithField("sessionId", session.id).Debug("New session")
 	return session

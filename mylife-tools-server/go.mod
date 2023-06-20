@@ -3,14 +3,18 @@ module mylife-tools-server
 go 1.20
 
 require (
-	github.com/googollee/go-socket.io v1.7.0
 	github.com/iancoleman/strcase v0.2.0
 	github.com/sirupsen/logrus v1.9.0
+	github.com/vchitai/go-socket.io/v4 v4.1.9
 )
 
 require (
-	github.com/gofrs/uuid v4.0.0+incompatible // indirect
-	github.com/gomodule/redigo v1.8.4 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/redis/go-redis/v9 v9.0.2 // indirect
 )
 
 require (
@@ -21,7 +25,7 @@ require (
 	github.com/gookit/color v1.5.2 // indirect
 	github.com/gookit/config/v2 v2.2.1
 	github.com/gookit/goutil v0.6.6
-	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

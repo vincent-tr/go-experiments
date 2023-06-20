@@ -1,13 +1,14 @@
 package io
 
 import (
+	"context"
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
 	"mylife-tools-server/services/sessions"
 	"mylife-tools-server/services/tasks"
 	"net/http"
 
-	socketio "github.com/googollee/go-socket.io"
+	socketio "github.com/vchitai/go-socket.io/v4"
 )
 
 var logger = log.CreateLogger("mylife:server:io")
@@ -27,26 +28,53 @@ func (service *ioService) Init() error {
 
 	service.server = socketio.NewServer(nil)
 
-	service.server.OnConnect("/", func(socket socketio.Conn) error {
+	service.server.OnConnect("/", func(socket socketio.Conn, dispatchData map[string]interface{}) error {
 		session := sessions.NewSession()
 		ioSession := newIoSession(session, socket)
 		session.RegisterStateObject("io", ioSession)
-		socket.SetContext(ioSession)
+		socket.SetContext(context.WithValue(context.TODO(), "ioSession", ioSession))
+
+		logger.WithFields(log.Fields{"sessionId": ioSession.session.Id(), "socketId": socket.ID()}).Debug("New IO session")
+
 		return nil
 	})
 
-	service.server.OnEvent("/", "message", func(socket socketio.Conn, msg string) {
+	service.server.OnEvent("/", "message", func(socket socketio.Conn, data map[string]interface{}) {
 		ioSession := getIoSession(socket)
-		ioSession.dispatch(msg)
+
+		if ioSession == nil {
+			logger.WithField("socketId", socket.ID()).Error("Got message but could not get associoated session")
+			return
+		}
+
+		ioSession.dispatch(data)
 	})
 
 	service.server.OnError("/", func(socket socketio.Conn, err error) {
 		ioSession := getIoSession(socket)
-		logger.WithError(err).WithField("sessionId", ioSession.session.Id()).Error("Got error on socket")
+
+		fields := log.Fields{}
+		if socket != nil {
+			fields["socketId"] = socket.ID()
+		}
+
+		if ioSession != nil {
+			fields["sessionId"] = ioSession.session.Id()
+		}
+
+		logger.WithError(err).WithFields(fields).Error("Got error on socket")
 	})
 
-	service.server.OnDisconnect("/", func(socket socketio.Conn, reason string) {
+	service.server.OnDisconnect("/", func(socket socketio.Conn, reason string, dispatchData map[string]interface{}) {
 		ioSession := getIoSession(socket)
+
+		if ioSession == nil {
+			logger.WithField("socketId", socket.ID()).Error("Got socket disconnection but could not get associoated session")
+			return
+		}
+
+		logger.WithField("sessionId", ioSession.session.Id()).Debug("IO session disconnected")
+
 		sessions.CloseSession(ioSession.session)
 	})
 
@@ -76,7 +104,16 @@ func (service *ioService) Dependencies() []string {
 }
 
 func getIoSession(socket socketio.Conn) *ioSession {
-	return socket.Context().(*ioSession)
+	if socket == nil {
+		return nil
+	}
+
+	ios, ok := socket.Context().Value("ioSession").(*ioSession)
+	if ok {
+		return ios
+	} else {
+		return nil
+	}
 }
 
 func getService() *ioService {
