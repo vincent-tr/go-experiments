@@ -36,7 +36,7 @@ func (service *sessionService) Dependencies() []string {
 	return []string{}
 }
 
-func (service *sessionService) NewSession() *Session {
+func (service *sessionService) newSession() *Session {
 	var id = service.idGen.Next()
 	var session = &Session{id: id}
 	service.sessions[id] = session
@@ -44,7 +44,7 @@ func (service *sessionService) NewSession() *Session {
 	return session
 }
 
-func (service *sessionService) CloseSession(session *Session) {
+func (service *sessionService) closeSession(session *Session) {
 	delete(service.sessions, session.id)
 	session.terminate()
 	logger.WithField("sessionId", session.id).Debug("Session closed")
@@ -57,9 +57,9 @@ func getService() *sessionService {
 // Public access
 
 func NewSession() *Session {
-	return getService().NewSession()
+	return getService().newSession()
 }
 
 func CloseSession(session *Session) {
-	getService().CloseSession(session)
+	getService().closeSession(session)
 }
