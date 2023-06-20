@@ -30,11 +30,11 @@ type payloadEngine struct {
 type payloadCallInput struct {
 	Service     string `json:"service"`
 	Method      string `json:"method"`
-	Transaction string `json:"transaction"`
+	Transaction uint64 `json:"transaction"`
 }
 
 type payloadCallOutput struct {
-	Transaction string `json:"transaction"`
+	Transaction uint64 `json:"transaction"`
 }
 
 type payloadCallError struct {
