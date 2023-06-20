@@ -74,7 +74,7 @@ func (service *taskService) getQueue(id string) (*taskQueue, error) {
 }
 
 func getService() *taskService {
-	return services.GetService[*taskService]("sessions")
+	return services.GetService[*taskService]("tasks")
 }
 
 // Public access
