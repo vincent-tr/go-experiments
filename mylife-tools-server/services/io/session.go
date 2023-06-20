@@ -220,21 +220,23 @@ func (ios *ioSession) dispatch(data []byte) {
 		return
 	}
 
-	methodInput := reflect.New(method.InputType())
-	if err := jsonObj.Unmarshal(methodInput.Interface()); err != nil {
-		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Unmarshal error")
-		ios.replyError(&input, err)
-		return
-	}
+	SubmitIoTask(fmt.Sprintf("call/%s/%s", input.Service, input.Method), func() {
+		methodInput := reflect.New(method.InputType())
+		if err := jsonObj.Unmarshal(methodInput.Interface()); err != nil {
+			logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Unmarshal error")
+			ios.replyError(&input, err)
+			return
+		}
 
-	output, err := method.Call(ios.session, methodInput.Elem())
-	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Error on method call")
-		ios.replyError(&input, err)
-		return
-	}
+		output, err := method.Call(ios.session, methodInput.Elem())
+		if err != nil {
+			logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Error on method call")
+			ios.replyError(&input, err)
+			return
+		}
 
-	ios.reply(&input, output)
+		ios.reply(&input, output)
+	})
 }
 
 func (ios *ioSession) notify(notification any) {

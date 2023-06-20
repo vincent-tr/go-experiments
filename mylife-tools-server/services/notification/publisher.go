@@ -1,6 +1,7 @@
 package notification
 
 import (
+	"fmt"
 	"mylife-tools-server/services/io"
 	"mylife-tools-server/services/sessions"
 	"mylife-tools-server/services/store"
@@ -58,7 +59,19 @@ func newViewPublisher[TEntity store.EntityConstraint](session *sessions.Session,
 			return
 		}
 
+		first := len(publisher.pendings) == 0
+
 		publisher.pendings = append(publisher.pendings, payload)
+
+		// On first push, submit the task
+		if first {
+			io.SubmitIoTask(fmt.Sprintf("notify/%i", publisher.id), func() {
+				payload := &notifyPayload{View: publisher.id, List: publisher.pendings}
+				io.NotifySession(*publisher.session, payload)
+
+				publisher.pendings = publisher.pendings[:0]
+			})
+		}
 	}
 
 	publisher.view.AddListener(publisher.callback)
@@ -75,15 +88,4 @@ func (publisher *viewPublisher[TEntity]) close() {
 	publisher.view.RemoveListener(publisher.callback)
 
 	// publisher.view.Close()
-}
-
-func (publisher *viewPublisher[TEntity]) publish() {
-	if len(publisher.pendings) == 0 {
-		return
-	}
-
-	ioSession := publisher.session.GetStateObject("io").(io.IOSession)
-	ioSession.Notify(&notifyPayload{View: publisher.id, List: publisher.pendings})
-
-	publisher.pendings = publisher.pendings[:0]
 }

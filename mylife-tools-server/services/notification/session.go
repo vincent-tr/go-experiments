@@ -52,11 +52,3 @@ func (session *notificationSession) closeView(viewId int) {
 
 	logger.WithFields(log.Fields{"viewId": viewId, "sessionId": session.session.Id()}).Debug("View unregistered")
 }
-
-// TODO: publish all after process
-
-func (session *notificationSession) publish() {
-	for _, publisher := range session.publishers {
-		publisher.publish()
-	}
-}
