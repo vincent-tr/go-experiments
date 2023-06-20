@@ -85,8 +85,8 @@ func getService() *ioService {
 
 // Public access
 
-func GetHandler() func(writer http.ResponseWriter, reader *http.Request) {
-	return getService().Handler
+func GetHandler() http.Handler {
+	return getService().server
 }
 
 func NotifySession(session sessions.Session, notification any) {

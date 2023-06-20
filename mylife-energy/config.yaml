@@ -1,3 +1,5 @@
 mongo: ${MONGO_URL|mongodb://localhost/mylife-energy}
 bus:
   serverUrl: ${BUS_SERVER|tcp://rpi-dev-home-main}
+webServer:
+  address: :${WEB_PORT|80}
