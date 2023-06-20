@@ -12,8 +12,11 @@ func NewWorker(callback func(exit chan struct{})) *Worker {
 	}
 
 	go func() {
+		defer func() {
+			worker.done <- struct{}{}
+		}()
+
 		callback(worker.exit)
-		worker.done <- struct{}{}
 	}()
 
 	return worker

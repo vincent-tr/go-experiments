@@ -73,6 +73,10 @@ func (queue *taskQueue) submit(name string, taskImpl Task) error {
 }
 
 func (queue *taskQueue) workerEntry() {
+	defer func() {
+		queue.done <- struct{}{}
+	}()
+
 	for {
 		task := <-queue.tasks
 
@@ -83,7 +87,6 @@ func (queue *taskQueue) workerEntry() {
 		task.run(queue)
 	}
 
-	queue.done <- struct{}{}
 }
 
 type task struct {
