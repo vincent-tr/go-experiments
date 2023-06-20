@@ -12,7 +12,7 @@ import (
 	options "go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var logger = log.CreateLogger("mylife:server:mongo")
+var logger = log.CreateLogger("mylife:server:database")
 
 func init() {
 	services.Register(&databaseService{})
