@@ -78,14 +78,14 @@ func (ios *ioSession) workerEntry(exit chan struct{}) {
 
 			switch status {
 			case -1:
-				logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Socket error")
+				logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Socket error")
 				continue
 
 			case websocket.StatusNormalClosure:
 				logger.WithField("sessionId", ios.session.Id()).Info("Socket closed")
 
 			default:
-				logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Info("Socket closed with error")
+				logger.WithError(err).WithField("sessionId", ios.session.Id()).Info("Socket closed with error")
 			}
 
 			// Avoid deadlock
@@ -170,7 +170,7 @@ func (ios *ioSession) send(payloadParts ...any) {
 	for _, part := range payloadParts {
 		err := jsonObj.Marshal(part)
 		if err != nil {
-			logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Marshal error")
+			logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Marshal error")
 			return
 		}
 	}
@@ -178,7 +178,7 @@ func (ios *ioSession) send(payloadParts ...any) {
 	data, err := serialization.SerializeJsonObject(jsonObj)
 
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Serialize error")
+		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Serialize error")
 		return
 	}
 
@@ -188,7 +188,7 @@ func (ios *ioSession) send(payloadParts ...any) {
 func (ios *ioSession) dispatch(data []byte) {
 	jsonObj, err := serialization.DeserializeJsonObject(data)
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Deserialize error")
+		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Deserialize error")
 		return
 	}
 
@@ -196,7 +196,7 @@ func (ios *ioSession) dispatch(data []byte) {
 	err = jsonObj.Unmarshal(&engine)
 
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Unmarshal error")
+		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Unmarshal error")
 		return
 	}
 
@@ -209,13 +209,13 @@ func (ios *ioSession) dispatch(data []byte) {
 	err = jsonObj.Unmarshal(&input)
 
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Unmarshal error")
+		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Unmarshal error")
 		return
 	}
 
 	method, err := api.Lookup(input.Service, input.Method)
 	if err != nil {
-		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Error on api lookup")
+		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Error on api lookup")
 		ios.replyError(&input, err)
 		return
 	}
@@ -223,14 +223,14 @@ func (ios *ioSession) dispatch(data []byte) {
 	SubmitIoTask(fmt.Sprintf("call/%s/%s", input.Service, input.Method), func() {
 		methodInput := reflect.New(method.InputType())
 		if err := jsonObj.Unmarshal(methodInput.Interface()); err != nil {
-			logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Unmarshal error")
+			logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Unmarshal error")
 			ios.replyError(&input, err)
 			return
 		}
 
 		output, err := method.Call(ios.session, methodInput.Elem())
 		if err != nil {
-			logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "error": err}).Error("Error on method call")
+			logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Error on method call")
 			ios.replyError(&input, err)
 			return
 		}

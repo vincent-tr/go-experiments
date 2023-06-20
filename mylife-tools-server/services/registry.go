@@ -38,7 +38,7 @@ func Init(services []string) {
 	for _, name := range data.order {
 		service := mustService(name)
 		if err := service.Init(); err != nil {
-			logger.WithFields(log.Fields{"name": service.ServiceName(), "error": err}).Fatal("Service init failed")
+			logger.WithError(err).WithField("name", service.ServiceName()).Fatal("Service init failed")
 		}
 
 		running = append(running, service)
@@ -53,7 +53,7 @@ func Terminate() {
 		service := running[index]
 
 		if err := service.Terminate(); err != nil {
-			logger.WithFields(log.Fields{"name": service.ServiceName(), "error": err}).Fatal("Service terminate failed")
+			logger.WithError(err).WithField("name", service.ServiceName()).Fatal("Service terminate failed")
 		}
 	}
 }

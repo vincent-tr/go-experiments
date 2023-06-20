@@ -75,7 +75,7 @@ func (service *CollectorService) handleMessage(topic string, data []byte) {
 
 	message := Message{}
 	if err := json.Unmarshal(data, &message); err != nil {
-		logger.WithFields(log.Fields{"error": err, "data": data}).Error("Error reading JSON")
+		logger.WithError(err).WithField("data", data).Error("Error reading JSON")
 		return
 	}
 
