@@ -18,7 +18,7 @@ import (
 type ioSession struct {
 	session      *sessions.Session
 	socket       *websocket.Conn
-	worker       utils.Worker
+	worker       *utils.Worker
 	writeChannel chan []byte
 	readChannel  chan []byte
 	errorChannel chan error
@@ -58,7 +58,7 @@ func makeSession(session *sessions.Session, socket *websocket.Conn) ioSession {
 		errorChannel: make(chan error),
 	}
 
-	ios.worker = utils.InitWorker(ios.workerEntry)
+	ios.worker = utils.NewWorker(ios.workerEntry)
 
 	return ios
 }

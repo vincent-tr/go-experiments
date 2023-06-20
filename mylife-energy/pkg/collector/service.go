@@ -39,12 +39,12 @@ type Record struct {
 
 type CollectorService struct {
 	records chan Record
-	worker  utils.Worker
+	worker  *utils.Worker
 }
 
 func (service *CollectorService) Init() error {
 	service.records = make(chan Record, 100)
-	service.worker = utils.InitWorker(service.workerEntry)
+	service.worker = utils.NewWorker(service.workerEntry)
 
 	mqtt.Subscribe("+/energy", func(topic string, data []byte) {
 		service.handleMessage(topic, data)

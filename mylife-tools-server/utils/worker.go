@@ -5,8 +5,8 @@ type Worker struct {
 	done chan struct{}
 }
 
-func InitWorker(callback func(exit chan struct{})) Worker {
-	worker := Worker{
+func NewWorker(callback func(exit chan struct{})) *Worker {
+	worker := &Worker{
 		exit: make(chan struct{}, 1),
 		done: make(chan struct{}, 1),
 	}
@@ -19,7 +19,7 @@ func InitWorker(callback func(exit chan struct{})) Worker {
 	return worker
 }
 
-func (worker Worker) Terminate() {
+func (worker *Worker) Terminate() {
 	worker.exit <- struct{}{}
 	<-worker.done
 }
