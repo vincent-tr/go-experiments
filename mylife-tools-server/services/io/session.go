@@ -65,7 +65,12 @@ func (ios *ioSession) send(payloadParts ...any) {
 		}
 	}
 
-	data := serialization.FromJsonObject(jsonObj)
+	data, err := serialization.SerializeJsonObjectIntermediate(jsonObj)
+	if err != nil {
+		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Serialize error")
+		return
+	}
+
 	ios.socket.Emit("message", data)
 
 	logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "data": data}).Debug("Sent message")
@@ -75,11 +80,14 @@ func (ios *ioSession) dispatch(data map[string]interface{}) {
 
 	logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "data": data}).Debug("Got message")
 
-	jsonObj := serialization.IntoJsonObject(data)
+	jsonObj, err := serialization.DeserializeJsonObjectIntermediate(data)
+	if err != nil {
+		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Deseralize error")
+		return
+	}
 
 	var engine payloadEngine
-	err := jsonObj.Unmarshal(&engine)
-
+	err = jsonObj.Unmarshal(&engine)
 	if err != nil {
 		logger.WithError(err).WithField("sessionId", ios.session.Id()).Error("Unmarshal error")
 		return

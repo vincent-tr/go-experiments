@@ -13,21 +13,7 @@ func NewJsonObject() *JsonObject {
 	return &JsonObject{fields: make(map[string]interface{})}
 }
 
-func IntoJsonObject(data map[string]interface{}) *JsonObject {
-	return &JsonObject{fields: data}
-}
-
-func FromJsonObject(obj *JsonObject) map[string]interface{} {
-	return obj.fields
-}
-
-func DeserializeJsonObject(raw []byte) (*JsonObject, error) {
-	encoded := make(map[string]interface{})
-	err := json.Unmarshal(raw, &encoded)
-	if err != nil {
-		return nil, err
-	}
-
+func DeserializeJsonObjectIntermediate(encoded map[string]interface{}) (*JsonObject, error) {
 	fields, err := deserializeValue(encoded)
 	if err != nil {
 		return nil, err
@@ -37,13 +23,27 @@ func DeserializeJsonObject(raw []byte) (*JsonObject, error) {
 	return obj, nil
 }
 
+func DeserializeJsonObject(raw []byte) (*JsonObject, error) {
+	encoded := make(map[string]interface{})
+	err := json.Unmarshal(raw, &encoded)
+	if err != nil {
+		return nil, err
+	}
+
+	return DeserializeJsonObjectIntermediate(encoded)
+}
+
 func SerializeJsonObject(obj *JsonObject) ([]byte, error) {
-	encoded, err := serializeValue(obj.fields)
+	encoded, err := SerializeJsonObjectIntermediate(obj)
 	if err != nil {
 		return nil, err
 	}
 
 	return json.Marshal(encoded)
+}
+
+func SerializeJsonObjectIntermediate(obj *JsonObject) (interface{}, error) {
+	return serializeValue(obj.fields)
 }
 
 func (obj *JsonObject) Marshal(value any) error {
