@@ -17,6 +17,30 @@ type Unmarshaller interface {
 	Unmarshal(raw interface{}) error
 }
 
+type StructMarshallerHelper struct {
+	fields map[string]interface{}
+	err    error
+}
+
+func NewStructMarshallerHelper() *StructMarshallerHelper {
+	return &StructMarshallerHelper{
+		fields: make(map[string]interface{}),
+		err:    nil,
+	}
+}
+
+func (helper *StructMarshallerHelper) Add(key string, value any) {
+	if helper.err != nil {
+		return
+	}
+
+	helper.fields[key], helper.err = Marshal(value)
+}
+
+func (helper *StructMarshallerHelper) Build() (interface{}, error) {
+	return helper.fields, helper.err
+}
+
 func Marshal(value any) (interface{}, error) {
 	return marshalValue(reflect.Indirect(reflect.ValueOf(value)))
 }
