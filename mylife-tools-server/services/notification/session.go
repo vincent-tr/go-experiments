@@ -10,14 +10,14 @@ import (
 type notificationSession struct {
 	session    *sessions.Session
 	idGen      utils.IdGenerator
-	publishers map[int]iviewPublisher
+	publishers map[uint64]iviewPublisher
 }
 
 func newNotificationSession(session *sessions.Session) *notificationSession {
 	return &notificationSession{
 		session:    session,
 		idGen:      utils.NewIdGenerator(),
-		publishers: make(map[int]iviewPublisher),
+		publishers: make(map[uint64]iviewPublisher),
 	}
 }
 
@@ -28,18 +28,18 @@ func (notificationSession *notificationSession) Close() {
 }
 
 // Cannot use generics as member functions
-func registerView[TEntity store.EntityConstraint](session *notificationSession, view store.IContainer[TEntity]) int {
+func registerView[TEntity store.EntityConstraint](session *notificationSession, view store.IContainer[TEntity]) uint64 {
 	viewId := session.idGen.Next()
 	publisher := newViewPublisher[TEntity](session.session, viewId, view)
 
 	session.publishers[viewId] = publisher
 
-	logger.WithFields(log.Fields{"viewId": viewId, "sessionId": session.Id()}).Debug("View registered")
+	logger.WithFields(log.Fields{"viewId": viewId, "sessionId": session.session.Id()}).Debug("View registered")
 
 	return viewId
 }
 
-func (session *notificationSession) closeView(viewId int) {
+func (session *notificationSession) closeView(viewId uint64) {
 	publisher, exists := session.publishers[viewId]
 
 	if !exists {

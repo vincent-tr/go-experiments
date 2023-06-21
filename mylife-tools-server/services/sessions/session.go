@@ -13,12 +13,12 @@ type Closable interface {
 }
 
 type Session struct {
-	id          int
+	id          uint64
 	onTerminate []TerminateCallback
 	state       map[string]interface{}
 }
 
-func (session *Session) Id() int {
+func (session *Session) Id() uint64 {
 	return session.id
 }
 

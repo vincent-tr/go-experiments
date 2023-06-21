@@ -18,24 +18,23 @@ type notifyUnsetPayload struct {
 }
 
 type notifyPayload struct {
-	View int
+	View uint64
 	List []any
 }
 
 type iviewPublisher interface {
 	close()
-	publish()
 }
 
 type viewPublisher[TEntity store.EntityConstraint] struct {
 	session  *sessions.Session
-	id       int
+	id       uint64
 	view     store.IContainer[TEntity]
 	callback func(event *store.Event[TEntity])
 	pendings []any
 }
 
-func newViewPublisher[TEntity store.EntityConstraint](session *sessions.Session, id int, view store.IContainer[TEntity]) *viewPublisher[TEntity] {
+func newViewPublisher[TEntity store.EntityConstraint](session *sessions.Session, id uint64, view store.IContainer[TEntity]) *viewPublisher[TEntity] {
 	publisher := &viewPublisher[TEntity]{
 		session:  session,
 		id:       id,

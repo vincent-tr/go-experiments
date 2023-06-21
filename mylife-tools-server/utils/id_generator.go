@@ -4,14 +4,14 @@ import "sync"
 
 type IdGenerator struct {
 	mutex sync.Mutex
-	last  int
+	last  uint64
 }
 
 func NewIdGenerator() IdGenerator {
 	return IdGenerator{last: 0}
 }
 
-func (generator *IdGenerator) Next() int {
+func (generator *IdGenerator) Next() uint64 {
 	generator.mutex.Lock()
 	defer generator.mutex.Unlock()
 

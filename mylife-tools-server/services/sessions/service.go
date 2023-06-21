@@ -13,12 +13,12 @@ func init() {
 }
 
 type sessionService struct {
-	sessions map[int]*Session
+	sessions map[uint64]*Session
 	idGen    utils.IdGenerator
 }
 
 func (service *sessionService) Init(arg interface{}) error {
-	service.sessions = make(map[int]*Session)
+	service.sessions = make(map[uint64]*Session)
 	service.idGen = utils.NewIdGenerator()
 
 	return nil

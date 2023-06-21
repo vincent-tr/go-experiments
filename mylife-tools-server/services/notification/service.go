@@ -48,12 +48,12 @@ func getService() *notificationService {
 
 // Public access
 
-func NotifyView[TEntity store.EntityConstraint](session *sessions.Session, view store.IContainer[TEntity]) int {
+func NotifyView[TEntity store.EntityConstraint](session *sessions.Session, view store.IContainer[TEntity]) uint64 {
 	notificationSession := getService().getNotifications(session)
 	return registerView[TEntity](notificationSession, view)
 }
 
-func UnnotifyView(session *sessions.Session, viewId int) {
+func UnnotifyView(session *sessions.Session, viewId uint64) {
 	notificationSession := getService().getNotifications(session)
 	notificationSession.closeView(viewId)
 }
