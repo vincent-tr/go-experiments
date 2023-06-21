@@ -7,11 +7,10 @@ import (
 )
 
 type input1 struct {
-	Id string `json:"id"`
+	Id string
 }
 
 type input2 struct {
-	Toto int `json:"toto"`
 }
 
 type output1 = string

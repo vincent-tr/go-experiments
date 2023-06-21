@@ -24,21 +24,21 @@ func (err exitCause) Error() string {
 }
 
 type payloadEngine struct {
-	Engine string `json:"engine"`
+	Engine string
 }
 
 type payloadCallInput struct {
-	Service     string `json:"service"`
-	Method      string `json:"method"`
-	Transaction uint64 `json:"transaction"`
+	Service     string
+	Method      string
+	Transaction uint64
 }
 
 type payloadCallOutput struct {
-	Transaction uint64 `json:"transaction"`
+	Transaction uint64
 }
 
 type payloadCallError struct {
-	Error error `json:"error"`
+	Error error
 }
 
 func newIoSession(session *sessions.Session, socket socketio.Conn) *ioSession {
