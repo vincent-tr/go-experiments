@@ -64,12 +64,7 @@ func newViewPublisher[TEntity store.Entity](session *sessions.Session, id uint64
 
 		// On first push, submit the task
 		if first {
-			io.SubmitIoTask(fmt.Sprintf("notify/%i", publisher.id), func() {
-				payload := &notifyPayload{View: publisher.id, List: publisher.pendings}
-				io.NotifySession(*publisher.session, payload)
-
-				publisher.pendings = publisher.pendings[:0]
-			})
+			publisher.submitPendings()
 		}
 	}
 
@@ -80,6 +75,10 @@ func newViewPublisher[TEntity store.Entity](session *sessions.Session, id uint64
 		publisher.pendings = append(publisher.pendings, payload)
 	}
 
+	if len(publisher.pendings) > 0 {
+		publisher.submitPendings()
+	}
+
 	return publisher
 }
 
@@ -87,4 +86,13 @@ func (publisher *viewPublisher[TEntity]) close() {
 	publisher.view.RemoveListener(&publisher.callback)
 
 	// publisher.view.Close()
+}
+
+func (publisher *viewPublisher[TEntity]) submitPendings() {
+	io.SubmitIoTask(fmt.Sprintf("notify/%d", publisher.id), func() {
+		payload := &notifyPayload{View: publisher.id, List: publisher.pendings}
+		io.NotifySession(*publisher.session, payload)
+
+		publisher.pendings = publisher.pendings[:0]
+	})
 }
