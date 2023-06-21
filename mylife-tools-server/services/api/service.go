@@ -47,7 +47,7 @@ func (service *apiService) Lookup(serviceName string, methodName string) (*Metho
 	method, ok := svc.methods[methodName]
 
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Method '%s does not exist on service '%s'", methodName, serviceName))
+		return nil, errors.New(fmt.Sprintf("Method '%s' does not exist on service '%s'", methodName, serviceName))
 	}
 
 	return method, nil

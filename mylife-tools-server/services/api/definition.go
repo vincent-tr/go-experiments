@@ -13,10 +13,6 @@ type ServiceDefinition struct {
 	Methods map[string]Callee
 }
 
-type ServiceDefinitionBuilder struct {
-	def ServiceDefinition
-}
-
 func MakeDefinition(name string, callees ...Callee) ServiceDefinition {
 	def := ServiceDefinition{
 		Name:    name,
