@@ -46,16 +46,11 @@ func (method *Method) InputType() reflect.Type {
 }
 
 func (method *Method) Call(session *sessions.Session, input reflect.Value) (any, error) {
-	fmt.Printf("inputValue %+v\n", input)
-
 	inputValues := []reflect.Value{reflect.ValueOf(session), input}
-	fmt.Printf("method.callee %+v\n", method.callee)
 	outputValues := method.callee.Call(inputValues)
 	if len(outputValues) != 2 {
 		panic("Invalid outputValues size")
 	}
-
-	fmt.Printf("output values %+v\n", outputValues)
 
 	output := outputValues[0].Interface()
 	err := toError(outputValues[1].Interface())
