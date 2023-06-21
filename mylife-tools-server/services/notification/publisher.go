@@ -70,7 +70,7 @@ func newViewPublisher[TEntity store.Entity](session *sessions.Session, id uint64
 
 	publisher.view.AddListener(&publisher.callback)
 
-	for obj := range view.List() {
+	for _, obj := range view.List() {
 		payload := &notifySetPayload{Type: "set", Object: obj}
 		publisher.pendings = append(publisher.pendings, payload)
 	}
