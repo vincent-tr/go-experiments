@@ -48,7 +48,7 @@ func getService() *notificationService {
 
 // Public access
 
-func NotifyView[TEntity store.EntityConstraint](session *sessions.Session, view store.IContainer[TEntity]) uint64 {
+func NotifyView[TEntity store.Entity](session *sessions.Session, view store.IContainer[TEntity]) uint64 {
 	notificationSession := getService().getNotifications(session)
 	return registerView[TEntity](notificationSession, view)
 }

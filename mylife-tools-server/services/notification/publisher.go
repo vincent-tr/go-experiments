@@ -26,7 +26,7 @@ type iviewPublisher interface {
 	close()
 }
 
-type viewPublisher[TEntity store.EntityConstraint] struct {
+type viewPublisher[TEntity store.Entity] struct {
 	session  *sessions.Session
 	id       uint64
 	view     store.IContainer[TEntity]
@@ -34,7 +34,7 @@ type viewPublisher[TEntity store.EntityConstraint] struct {
 	pendings []any
 }
 
-func newViewPublisher[TEntity store.EntityConstraint](session *sessions.Session, id uint64, view store.IContainer[TEntity]) *viewPublisher[TEntity] {
+func newViewPublisher[TEntity store.Entity](session *sessions.Session, id uint64, view store.IContainer[TEntity]) *viewPublisher[TEntity] {
 	publisher := &viewPublisher[TEntity]{
 		session:  session,
 		id:       id,
@@ -51,7 +51,7 @@ func newViewPublisher[TEntity store.EntityConstraint](session *sessions.Session,
 			payload = &notifySetPayload{Type: "set", Object: event.After()}
 
 		case store.Remove:
-			payload = &notifyUnsetPayload{Type: "unset", ObjectId: (*event.Before()).Id()}
+			payload = &notifyUnsetPayload{Type: "unset", ObjectId: event.Before().Id()}
 
 		default:
 			logger.WithField("eventType", event.Type()).Error("Unexpected event type")
@@ -73,7 +73,7 @@ func newViewPublisher[TEntity store.EntityConstraint](session *sessions.Session,
 		}
 	}
 
-	publisher.view.AddListener(publisher.callback)
+	publisher.view.AddListener(&publisher.callback)
 
 	for obj := range view.List() {
 		payload := &notifySetPayload{Type: "set", Object: obj}
@@ -84,7 +84,7 @@ func newViewPublisher[TEntity store.EntityConstraint](session *sessions.Session,
 }
 
 func (publisher *viewPublisher[TEntity]) close() {
-	publisher.view.RemoveListener(publisher.callback)
+	publisher.view.RemoveListener(&publisher.callback)
 
 	// publisher.view.Close()
 }

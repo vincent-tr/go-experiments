@@ -1,8 +1,8 @@
 package store
 
 type IEventEmitter[TEvent any] interface {
-	AddListener(callback func(event *TEvent))
-	RemoveListener(callback func(event *TEvent))
+	AddListener(callback *func(event *TEvent))
+	RemoveListener(callback *func(event *TEvent))
 }
 
 type EventEmitter[TEvent any] struct {
@@ -22,7 +22,7 @@ func (emitter *EventEmitter[TEvent]) RemoveListener(callback *func(event *TEvent
 }
 
 func (emitter *EventEmitter[TEvent]) Emit(event *TEvent) {
-	for callback, _ := range emitter.callbacks {
+	for callback := range emitter.callbacks {
 		(*callback)(event)
 	}
 }

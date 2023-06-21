@@ -28,7 +28,7 @@ func (notificationSession *notificationSession) Close() {
 }
 
 // Cannot use generics as member functions
-func registerView[TEntity store.EntityConstraint](session *notificationSession, view store.IContainer[TEntity]) uint64 {
+func registerView[TEntity store.Entity](session *notificationSession, view store.IContainer[TEntity]) uint64 {
 	viewId := session.idGen.Next()
 	publisher := newViewPublisher[TEntity](session.session, viewId, view)
 
