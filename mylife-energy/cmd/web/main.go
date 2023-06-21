@@ -1,8 +1,11 @@
 package main
 
 import (
+	"errors"
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
+	"mylife-tools-server/services/api"
+	"mylife-tools-server/services/sessions"
 	_ "mylife-tools-server/services/web"
 )
 
@@ -10,6 +13,11 @@ var logger = log.CreateLogger("mylife:energy:test")
 
 func main() {
 	args := make(map[string]interface{})
+
+	args["api"] = []api.ServiceDefinition{
+		api.MakeDefinition("common", notifySensors),
+	}
+
 	services.RunServices([]string{"test", "web"}, args)
 }
 
@@ -34,4 +42,8 @@ func (service *testService) Dependencies() []string {
 
 func init() {
 	services.Register(&testService{})
+}
+
+func notifySensors(session *sessions.Session, in struct{}) (string, error) {
+	return "", errors.New("TODO")
 }
