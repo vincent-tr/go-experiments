@@ -25,6 +25,14 @@ type apiService struct {
 func (service *apiService) Init(arg interface{}) error {
 	service.services = make(map[string]*serviceImpl)
 
+	if arg != nil {
+		defs := arg.([]ServiceDefinition)
+
+		for _, def := range defs {
+			service.RegisterService(def)
+		}
+	}
+
 	return nil
 }
 
