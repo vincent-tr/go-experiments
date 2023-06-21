@@ -22,7 +22,7 @@ type apiService struct {
 	services map[string]*serviceImpl
 }
 
-func (service *apiService) Init() error {
+func (service *apiService) Init(arg interface{}) error {
 	service.services = make(map[string]*serviceImpl)
 
 	return nil

@@ -21,7 +21,7 @@ type ioService struct {
 	server *socketio.Server
 }
 
-func (service *ioService) Init() error {
+func (service *ioService) Init(arg interface{}) error {
 	if err := tasks.CreateQueue("io"); err != nil {
 		return err
 	}

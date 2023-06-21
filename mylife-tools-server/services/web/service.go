@@ -28,7 +28,7 @@ type webService struct {
 
 // https://stackoverflow.com/questions/39320025/how-to-stop-http-listenandserve
 
-func (service *webService) Init() error {
+func (service *webService) Init(arg interface{}) error {
 	webServerConfig := webServerConfig{}
 	config.BindStructure("webServer", &webServerConfig)
 

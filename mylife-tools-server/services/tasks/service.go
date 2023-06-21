@@ -19,7 +19,7 @@ type taskService struct {
 	queues map[string]*taskQueue
 }
 
-func (service *taskService) Init() error {
+func (service *taskService) Init(arg interface{}) error {
 	service.queues = make(map[string]*taskQueue)
 
 	return nil

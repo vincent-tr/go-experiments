@@ -1,7 +1,7 @@
 package services
 
 type Service interface {
-	Init() error
+	Init(arg interface{}) error
 	Terminate() error
 
 	ServiceName() string

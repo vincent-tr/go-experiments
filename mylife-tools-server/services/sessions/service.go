@@ -17,7 +17,7 @@ type sessionService struct {
 	idGen    utils.IdGenerator
 }
 
-func (service *sessionService) Init() error {
+func (service *sessionService) Init(arg interface{}) error {
 	service.sessions = make(map[int]*Session)
 	service.idGen = utils.NewIdGenerator()
 

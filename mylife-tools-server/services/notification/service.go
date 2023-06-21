@@ -16,7 +16,7 @@ func init() {
 type notificationService struct {
 }
 
-func (service *notificationService) Init() error {
+func (service *notificationService) Init(arg interface{}) error {
 	return nil
 }
 

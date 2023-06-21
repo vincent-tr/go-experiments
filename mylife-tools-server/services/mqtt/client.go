@@ -30,7 +30,7 @@ type mqttService struct {
 	subscriptions []*subscription
 }
 
-func (service *mqttService) Init() error {
+func (service *mqttService) Init(arg interface{}) error {
 	busConfig := busConfig{}
 	config.BindStructure("bus", &busConfig)
 

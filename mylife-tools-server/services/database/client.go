@@ -25,7 +25,7 @@ type databaseService struct {
 	database *mongo.Database
 }
 
-func (service *databaseService) Init() error {
+func (service *databaseService) Init(arg interface{}) error {
 	mongoUrl := config.GetString("mongo")
 
 	parsedUrl, err := url.Parse(mongoUrl)

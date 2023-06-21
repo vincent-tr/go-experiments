@@ -27,7 +27,7 @@ func Register(service Service) {
 	logger.WithField("name", name).Info("Service registered")
 }
 
-func Init(services []string) {
+func Init(services []string, args map[string]interface{}) {
 	logger.WithField("services", services).Debug("Service registry init")
 
 	data := orderData{order: []string{}, set: make(map[string]struct{})}
@@ -37,7 +37,7 @@ func Init(services []string) {
 
 	for _, name := range data.order {
 		service := mustService(name)
-		if err := service.Init(); err != nil {
+		if err := service.Init(args[name]); err != nil {
 			logger.WithError(err).WithField("name", service.ServiceName()).Fatal("Service init failed")
 		}
 
@@ -58,8 +58,8 @@ func Terminate() {
 	}
 }
 
-func RunServices(services []string) {
-	Init(services)
+func RunServices(services []string, args map[string]interface{}) {
+	Init(services, args)
 	waitSignal()
 	Terminate()
 }

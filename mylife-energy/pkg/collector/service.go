@@ -42,7 +42,7 @@ type CollectorService struct {
 	worker  *utils.Worker
 }
 
-func (service *CollectorService) Init() error {
+func (service *CollectorService) Init(arg interface{}) error {
 	service.records = make(chan Record, 100)
 	service.worker = utils.NewWorker(service.workerEntry)
 

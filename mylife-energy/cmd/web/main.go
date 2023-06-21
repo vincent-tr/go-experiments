@@ -9,13 +9,14 @@ import (
 var logger = log.CreateLogger("mylife:energy:test")
 
 func main() {
-	services.RunServices([]string{"test", "web"})
+	args := make(map[string]interface{})
+	services.RunServices([]string{"test", "web"}, args)
 }
 
 type testService struct {
 }
 
-func (service *testService) Init() error {
+func (service *testService) Init(arg interface{}) error {
 	return nil
 }
 
