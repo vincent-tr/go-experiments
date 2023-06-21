@@ -35,6 +35,7 @@ type payloadCallInput struct {
 
 type payloadCallOutput struct {
 	Transaction uint64
+	Result      any
 }
 
 type payloadCallError struct {
@@ -142,8 +143,7 @@ func (ios *ioSession) notify(notification any) {
 func (ios *ioSession) reply(input *payloadCallInput, output any) {
 	ios.send(
 		payloadEngine{Engine: "call"},
-		payloadCallOutput{Transaction: input.Transaction},
-		output,
+		payloadCallOutput{Transaction: input.Transaction, Result: output},
 	)
 }
 

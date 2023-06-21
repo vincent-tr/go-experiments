@@ -169,7 +169,7 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 	case reflect.Uint64:
 		return float64(value.Interface().(uint64)), nil
 
-	case reflect.Pointer:
+	case reflect.Pointer, reflect.Interface:
 		if value.IsNil() {
 			return nil, nil
 		}
@@ -250,7 +250,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 	case reflect.Uint64:
 		return unmarshalNumericValue[uint64](raw, value)
 
-	case reflect.Pointer:
+	case reflect.Pointer, reflect.Interface:
 		if raw == nil {
 			// Leave it to nil
 			value.SetZero()
