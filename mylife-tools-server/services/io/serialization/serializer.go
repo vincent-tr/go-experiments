@@ -3,6 +3,7 @@ package serialization
 import (
 	"errors"
 	"fmt"
+	"mylife-tools-server/log"
 	"reflect"
 )
 
@@ -12,6 +13,8 @@ type serializerPlugin interface {
 	Encode(value reflect.Value) (interface{}, error)
 	Decode(raw interface{}) (reflect.Value, error)
 }
+
+var logger = log.CreateLogger("mylife:server:io:serialization")
 
 type serializationKind uint
 
@@ -28,6 +31,7 @@ var nativeTypes = make(map[reflect.Type]serializationKind)
 func registerEncoder(plugin serializerPlugin) {
 	pluginsById[plugin.TypeId()] = plugin
 	pluginsByType[plugin.Type()] = plugin
+	logger.Debugf("Added plugin '%s' for type '%s'", plugin.TypeId(), plugin.Type().String())
 }
 
 /*
@@ -196,6 +200,12 @@ func findPluginByConcreteType(valueType reflect.Type) serializerPlugin {
 
 	// Add it (even if nil) to cache it
 	pluginsByType[valueType] = plugin
+
+	if plugin != nil {
+		logger.Tracef("Associated plugin '%s' to type '%s'", plugin.TypeId(), valueType.String())
+	} else {
+		logger.Tracef("Associated plugin '<nil>' to type '%s'", valueType.String())
+	}
 
 	return plugin
 }

@@ -145,7 +145,7 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 
 	valueType := reflect.TypeOf(value.Interface())
 
-	if _, ok := pluginsByType[valueType]; ok {
+	if findPluginByConcreteType(valueType) != nil {
 		// There is a dedicated plugin for that, no need to handle this
 		return value.Interface(), nil
 	}
@@ -221,7 +221,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 
 	valueType := reflect.TypeOf(value.Interface())
 
-	if _, ok := pluginsByType[valueType]; ok {
+	if findPluginByConcreteType(valueType) != nil {
 		// There is a dedicated plugin for that, no need to handle this
 		rawValue := reflect.ValueOf(raw)
 		if !rawValue.Type().AssignableTo(valueType) {
