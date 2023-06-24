@@ -201,7 +201,6 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 	case reflect.Slice:
 		dest := make([]interface{}, value.Len())
 		for index := 0; index < value.Len(); index++ {
-			fmt.Printf("marshalValue %+v %+v\n", value.Index(index).Type(), reflect.TypeOf(value.Index(index).Interface()))
 			marshaledValue, err := marshalValue(value.Index(index))
 			if err != nil {
 				return nil, err
