@@ -65,7 +65,7 @@ func Unmarshal(raw interface{}, value any) error {
 }
 
 func marshalMerge(value reflect.Value, dest map[string]interface{}) error {
-	valueType := value.Type()
+	valueType := reflect.TypeOf(value.Interface())
 
 	if valueType.Kind() != reflect.Struct {
 		return errors.New(fmt.Sprintf("Cannot marshal-merge value of type '%s'", valueType.String()))
@@ -92,7 +92,7 @@ func marshalMerge(value reflect.Value, dest map[string]interface{}) error {
 }
 
 func unmarshalUnmerge(raw map[string]interface{}, value reflect.Value) error {
-	valueType := value.Type()
+	valueType := reflect.TypeOf(value.Interface())
 
 	if valueType.Kind() != reflect.Struct {
 		return errors.New(fmt.Sprintf("Cannot unmarshal-unmerge value of type '%s'", valueType.String()))
@@ -143,7 +143,7 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 		return nil, nil
 	}
 
-	valueType := value.Type()
+	valueType := reflect.TypeOf(value.Interface())
 
 	if _, ok := pluginsByType[valueType]; ok {
 		// There is a dedicated plugin for that, no need to handle this
@@ -201,6 +201,7 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 	case reflect.Slice:
 		dest := make([]interface{}, value.Len())
 		for index := 0; index < value.Len(); index++ {
+			fmt.Printf("marshalValue %+v %+v\n", value.Index(index).Type(), reflect.TypeOf(value.Index(index).Interface()))
 			marshaledValue, err := marshalValue(value.Index(index))
 			if err != nil {
 				return nil, err
@@ -218,7 +219,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 		return errors.New("Unmarshal: cannot set value")
 	}
 
-	valueType := value.Type()
+	valueType := reflect.TypeOf(value.Interface())
 
 	if _, ok := pluginsByType[valueType]; ok {
 		// There is a dedicated plugin for that, no need to handle this
@@ -289,7 +290,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 	case reflect.Struct:
 		rawMap, ok := raw.(map[string]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", value.Type().String(), reflect.TypeOf(raw).String()))
+			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", valueType.String(), reflect.TypeOf(raw).String()))
 		}
 
 		err := unmarshalUnmerge(rawMap, value)
@@ -298,7 +299,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 		}
 
 		if len(rawMap) > 0 {
-			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s': some fields are unmarshaled", value.Type().String(), reflect.TypeOf(raw).String()))
+			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s': some fields are unmarshaled", valueType.String(), reflect.TypeOf(raw).String()))
 		}
 
 		return nil
@@ -306,7 +307,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 	case reflect.Slice:
 		rawSlice, ok := raw.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", value.Type().String(), reflect.TypeOf(raw).String()))
+			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", valueType.String(), reflect.TypeOf(raw).String()))
 		}
 
 		sliceLen := len(rawSlice)
@@ -330,7 +331,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 func unmarshalTypedValue[T any](raw interface{}, value reflect.Value) error {
 	typedValue, ok := raw.(T)
 	if !ok {
-		return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", value.Type().String(), reflect.TypeOf(raw).String()))
+		return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", reflect.TypeOf(value.Interface()).String(), reflect.TypeOf(raw).String()))
 	}
 
 	value.Set(reflect.ValueOf(typedValue))
@@ -340,7 +341,7 @@ func unmarshalTypedValue[T any](raw interface{}, value reflect.Value) error {
 func unmarshalNumericValue[T constraints.Integer | constraints.Float](raw interface{}, value reflect.Value) error {
 	floatValue, ok := raw.(float64)
 	if !ok {
-		return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", value.Type().String(), reflect.TypeOf(raw).String()))
+		return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", reflect.TypeOf(value.Interface()).String(), reflect.TypeOf(raw).String()))
 	}
 
 	value.Set(reflect.ValueOf(T(floatValue)))
