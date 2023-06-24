@@ -22,6 +22,21 @@ type StructMarshallerHelper struct {
 	err    error
 }
 
+// Opaque marshalled value.
+// Useful for value that we have to return back as-this.
+type Opaque struct {
+	value interface{}
+}
+
+func (o *Opaque) Marshal() (interface{}, error) {
+	return o.value, nil
+}
+
+func (o *Opaque) Unmarshal(raw interface{}) error {
+	o.value = raw
+	return nil
+}
+
 func NewStructMarshallerHelper() *StructMarshallerHelper {
 	return &StructMarshallerHelper{
 		fields: make(map[string]interface{}),
@@ -217,6 +232,11 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 	}
 
 	if unmarshaller := getIfImplements[Unmarshaller](value); unmarshaller != nil {
+		if value.IsNil() {
+			value.Set(reflect.New(valueType.Elem()))
+			unmarshaller = getIfImplements[Unmarshaller](value)
+		}
+
 		return unmarshaller.Unmarshal(raw)
 	}
 

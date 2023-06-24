@@ -30,11 +30,11 @@ type payloadEngine struct {
 type payloadCallInput struct {
 	Service     string
 	Method      string
-	Transaction uint64
+	Transaction *serialization.Opaque
 }
 
 type payloadCallOutput struct {
-	Transaction uint64
+	Transaction *serialization.Opaque
 	Result      any
 }
 
