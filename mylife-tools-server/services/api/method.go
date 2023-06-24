@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"mylife-tools-server/services/sessions"
 	"reflect"
 )
@@ -12,7 +11,6 @@ type Method struct {
 }
 
 func newMethod(callee Callee) *Method {
-	fmt.Printf("callee %+v\n", callee)
 	method := &Method{}
 
 	method.callee = reflect.ValueOf(callee)
