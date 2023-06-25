@@ -33,10 +33,12 @@ docker build -t go-mylife-energy-web -f docker/web/Dockerfile .
 TODO: one image with command switch for collector/web (like gallery?)
 
 ```
+db.measures.createIndex( { "sensor.sensorId": 1,  "timestamp": -1 } );
+```
+
+```
 db.measures.aggregate([
-                     { $match: { "sensor.sensorId": {$regex : "real"} } },
-                     { $sort: { timestamp: 1 } },
-                     { $group: { _id: "$sensor.sensorId", timestamp: { $last: "$timestamp" }, value: { $last: "$value" } } },
-                     { $sort: { _id: 1 } }
-                   ]).toArray()
+  { $sort: { "sensor.sensorId": 1, timestamp: -1 } },
+  { $group: { _id: "$sensor.sensorId", timestamp: { $first: "$timestamp" }, value: { $first: "$value" } } }
+]).toArray();
 ```

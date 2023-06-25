@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var measures *store.Container[*Measure]
@@ -56,30 +55,40 @@ func initMeasures() {
 	go func() {
 		time.Sleep(time.Second)
 
-		logger.Debugf("Start query")
+		for {
+			begin := time.Now()
+			fetchResults()
+			elapsed := time.Since(begin).Seconds() * 1000
+			logger.WithField("elapsedMs", elapsed).Debug("Fetch results")
 
-		col := database.GetCollection("measures")
-
-		stage1 := bson.D{{"$match", bson.D{{"sensor.sensorId", bson.D{{"$regex", "real"}}}}}}
-		stage2 := bson.D{{"$sort", bson.D{{"timestamp", 1}}}}
-		stage3 := bson.D{{"$group", bson.D{{"_id", "$sensor.sensorId"}, {"timestamp", bson.D{{"$last", "$timestamp"}}}, {"value", bson.D{{"$last", "$value"}}}}}}
-		stage4 := bson.D{{"$sort", bson.D{{"_id", 1}}}}
-
-		cursor, err := col.Aggregate(context.TODO(), mongo.Pipeline{stage1, stage2, stage3, stage4})
-
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-
-		var results []interface{}
-
-		if err = cursor.All(context.TODO(), &results); err != nil {
-			logger.Error(err)
-		}
-
-		for _, result := range results {
-			logger.Infof("Item: %+v\n", result)
+			time.Sleep(time.Second * 5)
 		}
 	}()
+
+}
+
+func fetchResults() {
+	col := database.GetCollection("measures")
+
+	cursor, err := col.Aggregate(context.TODO(), []bson.M{
+		{"$sort": bson.M{"sensor.sensorId": 1, "timestamp": -1}},
+		{"$group": bson.M{"_id": "$sensor.sensorId", "timestamp": bson.M{"$first": "$timestamp"}, "value": bson.M{"$first": "$value"}}},
+	})
+
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+
+	defer cursor.Close(context.TODO())
+
+	var results []interface{}
+
+	if err = cursor.All(context.TODO(), &results); err != nil {
+		logger.Error(err)
+	}
+
+	for _, result := range results {
+		logger.Infof("Item: %+v\n", result)
+	}
 }

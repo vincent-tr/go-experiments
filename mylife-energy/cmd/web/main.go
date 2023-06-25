@@ -21,7 +21,7 @@ func main() {
 		api.MakeDefinition("common", notifySensors, notifyMeasures),
 	}
 
-	services.RunServices([]string{"test", "web"}, args)
+	services.RunServices([]string{"test", "web", "database"}, args)
 }
 
 func unnotify(session *sessions.Session, arg struct{ viewId uint64 }) error {
