@@ -4,7 +4,6 @@ import "mylife-tools-server/services/io/serialization"
 
 type Sensor struct {
 	id                string
-	sensorId          string
 	deviceClass       string
 	stateClass        string
 	unitOfMeasurement string
@@ -13,10 +12,6 @@ type Sensor struct {
 
 func (sensor *Sensor) Id() string {
 	return sensor.id
-}
-
-func (sensor *Sensor) SensorId() string {
-	return sensor.sensorId
 }
 
 func (sensor *Sensor) DeviceClass() string {
@@ -39,11 +34,28 @@ func (sensor *Sensor) Marshal() (interface{}, error) {
 	helper := serialization.NewStructMarshallerHelper()
 
 	helper.Add("_id", sensor.id)
-	helper.Add("sensorId", sensor.sensorId)
 	helper.Add("deviceClass", sensor.deviceClass)
 	helper.Add("stateClass", sensor.stateClass)
 	helper.Add("unitOfMeasurement", sensor.unitOfMeasurement)
 	helper.Add("accuracyDecimals", sensor.accuracyDecimals)
 
 	return helper.Build()
+}
+
+func makeSensorFromData(data *mongoSensor) *Sensor {
+	return &Sensor{
+		id:                data.SensorId,
+		deviceClass:       data.DeviceClass,
+		stateClass:        data.StateClass,
+		unitOfMeasurement: data.UnitOfMeasurement,
+		accuracyDecimals:  data.AccuracyDecimals,
+	}
+}
+
+func sensorsEqual(a *Sensor, b *Sensor) bool {
+	return a.id == b.id &&
+		a.deviceClass == b.deviceClass &&
+		a.stateClass == b.stateClass &&
+		a.unitOfMeasurement == b.unitOfMeasurement &&
+		a.accuracyDecimals == b.accuracyDecimals
 }

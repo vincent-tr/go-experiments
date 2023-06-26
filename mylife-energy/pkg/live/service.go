@@ -64,34 +64,52 @@ func (service *liveService) sync() {
 	results, err := fetchResults()
 
 	if err != nil {
-		logger.WithError(err).Error("error")
+		logger.WithError(err).Error("Error fetching results")
 		return
 	}
 
+	newMeasures := make([]*Measure, 0)
+	newSensors := make([]*Sensor, 0)
+
+	for _, result := range results {
+		newMeasure := makeMeasureFromData(&result)
+		newMeasures = append(newMeasures, newMeasure)
+
+		newSensor := makeSensorFromData(&result.Sensor)
+		newSensors = append(newSensors, newSensor)
+	}
+
 	io.SubmitIoTask("live/sync", func() {
-		for _, result := range results {
-			logger.Infof("Item: %+v\n", result)
+		syncEntity[*Measure](service.measures, newMeasures, measuresEqual)
+		syncEntity[*Sensor](service.sensors, newSensors, sensorsEqual)
+	})
+}
+
+func syncEntity[TEntity store.Entity](container *store.Container[TEntity], list []TEntity, equals func(a TEntity, b TEntity) bool) {
+
+	removeSet := make(map[string]struct{})
+
+	for _, obj := range container.List() {
+		removeSet[obj.Id()] = struct{}{}
+	}
+
+	for _, obj := range list {
+		delete(removeSet, obj.Id())
+	}
+
+	for id := range removeSet {
+		container.Delete(id)
+	}
+
+	for _, obj := range list {
+		existing, exists := container.Find(obj.Id())
+
+		if exists && equals(obj, existing) {
+			continue
 		}
 
-		service.measures.Set(&Measure{
-			id:        "id1",
-			timestamp: time.Now(),
-			value:     42,
-			sensor:    "the sensor",
-		})
-
-		service.sensors.Set(&Sensor{
-			id:                "test",
-			sensorId:          "sensorId",
-			deviceClass:       "deviceClass",
-			stateClass:        "stateClass",
-			unitOfMeasurement: "unitOfMeasurement",
-			accuracyDecimals:  42,
-		})
-
-		// reflect.DeepEqual
-
-	})
+		container.Set(obj)
+	}
 }
 
 func getService() *liveService {

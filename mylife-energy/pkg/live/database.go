@@ -20,7 +20,7 @@ type mongoSensor struct {
 	DeviceClass       string `bson:"deviceClass"`
 	StateClass        string `bson:"stateClass"`
 	UnitOfMeasurement string `bson:"unitOfMeasurement"`
-	AccuracyDecimals  int    `bson:"accuracyDecimals"`
+	AccuracyDecimals  uint   `bson:"accuracyDecimals"`
 }
 
 func fetchResults() ([]mongoMeasure, error) {
