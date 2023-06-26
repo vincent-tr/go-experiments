@@ -14,7 +14,7 @@ import (
 
 var logger = log.CreateLogger("mylife:energy:collector")
 
-type Message struct {
+type message struct {
 	Id                string  `json:"id"`
 	DeviceClass       string  `json:"device_class"`
 	StateClass        string  `json:"state_class"`
@@ -23,7 +23,7 @@ type Message struct {
 	Value             float64 `json:"value"`
 }
 
-type SensorData struct {
+type sensorData struct {
 	SensorId          string `bson:"sensorId"`
 	DeviceClass       string `bson:"deviceClass"`
 	StateClass        string `bson:"stateClass"`
@@ -31,19 +31,19 @@ type SensorData struct {
 	AccuracyDecimals  int    `bson:"accuracyDecimals"`
 }
 
-type Record struct {
+type record struct {
 	Timestamp time.Time  `bson:"timestamp"`
-	Sensor    SensorData `bson:"sensor"`
+	Sensor    sensorData `bson:"sensor"`
 	Value     float64    `bson:"value"`
 }
 
-type CollectorService struct {
-	records chan Record
+type collectorService struct {
+	records chan record
 	worker  *utils.Worker
 }
 
-func (service *CollectorService) Init(arg interface{}) error {
-	service.records = make(chan Record, 100)
+func (service *collectorService) Init(arg interface{}) error {
+	service.records = make(chan record, 100)
 	service.worker = utils.NewWorker(service.workerEntry)
 
 	mqtt.Subscribe("+/energy", func(topic string, data []byte) {
@@ -53,35 +53,35 @@ func (service *CollectorService) Init(arg interface{}) error {
 	return nil
 }
 
-func (service *CollectorService) Terminate() error {
+func (service *collectorService) Terminate() error {
 
 	return nil
 }
 
-func (service *CollectorService) ServiceName() string {
+func (service *collectorService) ServiceName() string {
 	return "collector"
 }
 
-func (service *CollectorService) Dependencies() []string {
+func (service *collectorService) Dependencies() []string {
 	return []string{"mqtt", "database"}
 }
 
 func init() {
-	services.Register(&CollectorService{})
+	services.Register(&collectorService{})
 }
 
-func (service *CollectorService) handleMessage(topic string, data []byte) {
+func (service *collectorService) handleMessage(topic string, data []byte) {
 	logger.WithFields(log.Fields{"data": string(data), "topic": topic}).Debug("Got message")
 
-	message := Message{}
+	message := message{}
 	if err := json.Unmarshal(data, &message); err != nil {
 		logger.WithError(err).WithField("data", data).Error("Error reading JSON")
 		return
 	}
 
-	record := Record{
+	record := record{
 		Timestamp: time.Now(),
-		Sensor: SensorData{
+		Sensor: sensorData{
 			SensorId:          message.Id,
 			DeviceClass:       message.DeviceClass,
 			StateClass:        message.StateClass,
@@ -94,7 +94,7 @@ func (service *CollectorService) handleMessage(topic string, data []byte) {
 	service.records <- record
 }
 
-func (service *CollectorService) workerEntry(exit chan struct{}) {
+func (service *collectorService) workerEntry(exit chan struct{}) {
 	collection := database.GetCollection("measures")
 
 	for {
