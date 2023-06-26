@@ -1,7 +1,6 @@
 package tasks
 
 import (
-	"errors"
 	"fmt"
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
@@ -43,7 +42,7 @@ func (service *taskService) Dependencies() []string {
 
 func (service *taskService) createQueue(id string) error {
 	if _, exists := service.queues[id]; exists {
-		return errors.New(fmt.Sprintf("Cannot create queue '%s': already exists", id))
+		return fmt.Errorf("Cannot create queue '%s': already exists", id)
 	}
 
 	queue := newTaskQueue(id)
@@ -57,7 +56,7 @@ func (service *taskService) createQueue(id string) error {
 func (service *taskService) closeQueue(id string) error {
 	queue, exists := service.queues[id]
 	if !exists {
-		return errors.New(fmt.Sprintf("Cannot close queue '%s': does not exists", id))
+		return fmt.Errorf("Cannot close queue '%s': does not exists", id)
 	}
 
 	queue.close()
@@ -71,7 +70,7 @@ func (service *taskService) closeQueue(id string) error {
 func (service *taskService) getQueue(id string) (*taskQueue, error) {
 	queue, exists := service.queues[id]
 	if !exists {
-		return nil, errors.New(fmt.Sprintf("Cannot get queue '%s': does not exists", id))
+		return nil, fmt.Errorf("Cannot get queue '%s': does not exists", id)
 	}
 
 	return queue, nil

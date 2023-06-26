@@ -68,7 +68,7 @@ func marshalMerge(value reflect.Value, dest map[string]interface{}) error {
 	valueType := reflect.TypeOf(value.Interface())
 
 	if valueType.Kind() != reflect.Struct {
-		return errors.New(fmt.Sprintf("Cannot marshal-merge value of type '%s'", valueType.String()))
+		return fmt.Errorf("Cannot marshal-merge value of type '%s'", valueType.String())
 	}
 
 	for fieldIndex := 0; fieldIndex < valueType.NumField(); fieldIndex++ {
@@ -95,7 +95,7 @@ func unmarshalUnmerge(raw map[string]interface{}, value reflect.Value) error {
 	valueType := reflect.TypeOf(value.Interface())
 
 	if valueType.Kind() != reflect.Struct {
-		return errors.New(fmt.Sprintf("Cannot unmarshal-unmerge value of type '%s'", valueType.String()))
+		return fmt.Errorf("Cannot unmarshal-unmerge value of type '%s'", valueType.String())
 	}
 
 	for fieldIndex := 0; fieldIndex < valueType.NumField(); fieldIndex++ {
@@ -109,7 +109,7 @@ func unmarshalUnmerge(raw map[string]interface{}, value reflect.Value) error {
 
 		rawValue, ok := raw[fieldName]
 		if !ok {
-			return errors.New(fmt.Sprintf("Cannot unmarshal-unmerge value of type '%s': value not found for field '%s'", valueType.String(), fieldName))
+			return fmt.Errorf("Cannot unmarshal-unmerge value of type '%s': value not found for field '%s'", valueType.String(), fieldName)
 		}
 
 		err := unmarshalValue(rawValue, fieldValue)
@@ -210,7 +210,7 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 		return dest, nil
 	}
 
-	return nil, errors.New(fmt.Sprintf("Cannot marshal type '%s'", valueType.String()))
+	return nil, fmt.Errorf("Cannot marshal type '%s'", valueType.String())
 }
 
 func unmarshalValue(raw interface{}, value reflect.Value) error {
@@ -224,7 +224,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 		// There is a dedicated plugin for that, no need to handle this
 		rawValue := reflect.ValueOf(raw)
 		if !rawValue.Type().AssignableTo(valueType) {
-			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", valueType.String(), rawValue.Type().String()))
+			return fmt.Errorf("Cannot unmarshal value of type '%s' from '%s'", valueType.String(), rawValue.Type().String())
 		}
 
 		value.Set(rawValue)
@@ -289,7 +289,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 	case reflect.Struct:
 		rawMap, ok := raw.(map[string]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", valueType.String(), reflect.TypeOf(raw).String()))
+			return fmt.Errorf("Cannot unmarshal value of type '%s' from '%s'", valueType.String(), reflect.TypeOf(raw).String())
 		}
 
 		err := unmarshalUnmerge(rawMap, value)
@@ -298,7 +298,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 		}
 
 		if len(rawMap) > 0 {
-			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s': some fields are unmarshaled", valueType.String(), reflect.TypeOf(raw).String()))
+			return fmt.Errorf("Cannot unmarshal value of type '%s' from '%s': some fields are unmarshaled", valueType.String(), reflect.TypeOf(raw).String())
 		}
 
 		return nil
@@ -306,7 +306,7 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 	case reflect.Slice:
 		rawSlice, ok := raw.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", valueType.String(), reflect.TypeOf(raw).String()))
+			return fmt.Errorf("Cannot unmarshal value of type '%s' from '%s'", valueType.String(), reflect.TypeOf(raw).String())
 		}
 
 		sliceLen := len(rawSlice)
@@ -324,13 +324,13 @@ func unmarshalValue(raw interface{}, value reflect.Value) error {
 		return nil
 	}
 
-	return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s'", valueType.String()))
+	return fmt.Errorf("Cannot unmarshal value of type '%s'", valueType.String())
 }
 
 func unmarshalTypedValue[T any](raw interface{}, value reflect.Value) error {
 	typedValue, ok := raw.(T)
 	if !ok {
-		return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", reflect.TypeOf(value.Interface()).String(), reflect.TypeOf(raw).String()))
+		return fmt.Errorf("Cannot unmarshal value of type '%s' from '%s'", reflect.TypeOf(value.Interface()).String(), reflect.TypeOf(raw).String())
 	}
 
 	value.Set(reflect.ValueOf(typedValue))
@@ -340,7 +340,7 @@ func unmarshalTypedValue[T any](raw interface{}, value reflect.Value) error {
 func unmarshalNumericValue[T constraints.Integer | constraints.Float](raw interface{}, value reflect.Value) error {
 	floatValue, ok := raw.(float64)
 	if !ok {
-		return errors.New(fmt.Sprintf("Cannot unmarshal value of type '%s' from '%s'", reflect.TypeOf(value.Interface()).String(), reflect.TypeOf(raw).String()))
+		return fmt.Errorf("Cannot unmarshal value of type '%s' from '%s'", reflect.TypeOf(value.Interface()).String(), reflect.TypeOf(raw).String())
 	}
 
 	value.Set(reflect.ValueOf(T(floatValue)))

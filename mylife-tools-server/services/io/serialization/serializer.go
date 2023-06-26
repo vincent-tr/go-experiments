@@ -105,7 +105,7 @@ func serializeValue(value interface{}) (interface{}, error) {
 		}
 	}
 
-	return nil, errors.New(fmt.Sprintf("Unsupported value found: '%+v' of type '%s'", value, valueType.String()))
+	return nil, fmt.Errorf("Unsupported value found: '%+v' of type '%s'", value, valueType.String())
 }
 
 func deserializeValue(value interface{}) (interface{}, error) {
@@ -127,7 +127,7 @@ func deserializeValue(value interface{}) (interface{}, error) {
 			if pluginType, ok := getPluginType(mapValue); ok {
 				plugin, ok := pluginsById[pluginType]
 				if !ok {
-					return nil, errors.New(fmt.Sprintf("Plugin '%s' not found", plugin))
+					return nil, fmt.Errorf("Plugin '%s' not found", plugin)
 				}
 
 				pluginValue, ok := mapValue["value"]

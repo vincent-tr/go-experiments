@@ -34,7 +34,7 @@ func (plugin *dateSerializerPlugin) Encode(value reflect.Value) (interface{}, er
 func (plugin *dateSerializerPlugin) Decode(raw interface{}) (reflect.Value, error) {
 	rawValue, ok := raw.(float64)
 	if !ok {
-		return reflect.Value{}, errors.New(fmt.Sprintf("Bad time value : %+v", raw))
+		return reflect.Value{}, fmt.Errorf("Bad time value : %+v", raw)
 	}
 
 	msec := int64(rawValue)
@@ -67,7 +67,7 @@ func (plugin *errorSerializerPlugin) Encode(value reflect.Value) (interface{}, e
 func (plugin *errorSerializerPlugin) Decode(raw interface{}) (reflect.Value, error) {
 	obj, ok := raw.(map[string]interface{})
 	if !ok {
-		return reflect.Value{}, errors.New(fmt.Sprintf("Bad error value : %+v", raw))
+		return reflect.Value{}, fmt.Errorf("Bad error value : %+v", raw)
 	}
 
 	message := obj["message"].(string)
@@ -97,7 +97,7 @@ func (plugin *bufferSerializerPlugin) Encode(value reflect.Value) (interface{}, 
 func (plugin *bufferSerializerPlugin) Decode(raw interface{}) (reflect.Value, error) {
 	str, ok := raw.(string)
 	if !ok {
-		return reflect.Value{}, errors.New(fmt.Sprintf("Bad buffer value : %+v", raw))
+		return reflect.Value{}, fmt.Errorf("Bad buffer value : %+v", raw)
 	}
 
 	buffer, err := base64.StdEncoding.DecodeString(str)

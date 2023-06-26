@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
@@ -49,13 +48,13 @@ func (service *apiService) Lookup(serviceName string, methodName string) (*Metho
 	svc, ok := service.services[serviceName]
 
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Service '%s' does not exist", serviceName))
+		return nil, fmt.Errorf("Service '%s' does not exist", serviceName)
 	}
 
 	method, ok := svc.methods[methodName]
 
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Method '%s' does not exist on service '%s'", methodName, serviceName))
+		return nil, fmt.Errorf("Method '%s' does not exist on service '%s'", methodName, serviceName)
 	}
 
 	return method, nil

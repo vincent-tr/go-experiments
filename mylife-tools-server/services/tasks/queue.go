@@ -1,7 +1,6 @@
 package tasks
 
 import (
-	"errors"
 	"fmt"
 	"mylife-tools-server/log"
 	"sync"
@@ -62,9 +61,9 @@ func (queue *taskQueue) submit(name string, taskImpl Task) error {
 	defer queue.mutex.Unlock()
 
 	if queue.status == Closing {
-		return errors.New(fmt.Sprintf("Cannot add tasks while closing on queue '%s'", queue.id))
+		return fmt.Errorf("Cannot add tasks while closing on queue '%s'", queue.id)
 	} else if queue.status == Closed {
-		return errors.New(fmt.Sprintf("Cannot add tasks on closed queue '%s'", queue.id))
+		return fmt.Errorf("Cannot add tasks on closed queue '%s'", queue.id)
 	}
 
 	queue.tasks <- newTask(name, taskImpl)

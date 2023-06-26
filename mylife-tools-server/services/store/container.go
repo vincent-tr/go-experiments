@@ -1,7 +1,6 @@
 package store
 
 import (
-	"errors"
 	"fmt"
 
 	"golang.org/x/exp/maps"
@@ -140,7 +139,7 @@ func (container *Container[TEntity]) Get(id string) (TEntity, error) {
 	if exists {
 		return obj, nil
 	} else {
-		return obj, errors.New(fmt.Sprintf("Object with id '%s' not found on collection '%s'", id, container.name))
+		return obj, fmt.Errorf("Object with id '%s' not found on collection '%s'", id, container.name)
 	}
 }
 
