@@ -54,6 +54,7 @@ func (service *collectorService) Init(arg interface{}) error {
 }
 
 func (service *collectorService) Terminate() error {
+	service.worker.Terminate()
 
 	return nil
 }
