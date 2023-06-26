@@ -17,6 +17,7 @@ func main() {
 	initSensors()
 	initMeasures()
 	initWC()
+	initTesla()
 
 	args["api"] = []api.ServiceDefinition{
 		api.MakeDefinition("common", notifySensors, notifyMeasures),
