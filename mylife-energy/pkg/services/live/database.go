@@ -4,6 +4,7 @@ import (
 	"context"
 	"mylife-energy/pkg/entities"
 	"mylife-tools-server/services/database"
+	"mylife-tools-server/utils"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,10 +25,16 @@ type mongoSensor struct {
 	AccuracyDecimals  uint   `bson:"accuracyDecimals"`
 }
 
-func fetchResults() ([]mongoMeasure, error) {
+func fetchResults(ctx context.Context) ([]mongoMeasure, error) {
 	col := database.GetCollection("measures")
 
-	cursor, err := col.Aggregate(context.TODO(), []bson.M{
+	logger.Trace("Query begin")
+	tmr := utils.NewTimer()
+	defer func() {
+		logger.WithField("elapsedMs", tmr.ElapsedMs()).Trace("Query end")
+	}()
+
+	cursor, err := col.Aggregate(ctx, []bson.M{
 		{"$sort": bson.M{"sensor.sensorId": 1, "timestamp": -1}},
 		{"$group": bson.M{"_id": "$sensor.sensorId", "timestamp": bson.M{"$first": "$timestamp"}, "value": bson.M{"$first": "$value"}, "sensor": bson.M{"$first": "$sensor"}}},
 	})
@@ -36,11 +43,11 @@ func fetchResults() ([]mongoMeasure, error) {
 		return nil, err
 	}
 
-	defer cursor.Close(context.TODO())
+	defer cursor.Close(ctx)
 
 	var results []mongoMeasure
 
-	if err = cursor.All(context.TODO(), &results); err != nil {
+	if err = cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
 

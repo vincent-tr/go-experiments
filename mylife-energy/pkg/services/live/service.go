@@ -1,6 +1,7 @@
 package live
 
 import (
+	"context"
 	"mylife-energy/pkg/entities"
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
@@ -15,6 +16,8 @@ var logger = log.CreateLogger("mylife:energy:live")
 
 type liveService struct {
 	worker      *utils.Worker
+	dbContext   context.Context
+	dbTerminate context.CancelFunc
 	measures    *store.Container[*entities.Measure]
 	sensors     *store.Container[*entities.Sensor]
 	pendingSync *sync.WaitGroup
@@ -24,6 +27,7 @@ func (service *liveService) Init(arg interface{}) error {
 	service.measures = store.NewContainer[*entities.Measure]("measures")
 	service.sensors = store.NewContainer[*entities.Sensor]("sensors")
 	service.pendingSync = &sync.WaitGroup{}
+	service.dbContext, service.dbTerminate = context.WithCancel(context.Background())
 
 	service.worker = utils.NewWorker(service.workerEntry)
 
@@ -31,8 +35,8 @@ func (service *liveService) Init(arg interface{}) error {
 }
 
 func (service *liveService) Terminate() error {
+	service.dbTerminate()
 	service.worker.Terminate()
-
 	service.pendingSync.Wait()
 
 	service.measures = nil
@@ -67,7 +71,7 @@ func (service *liveService) workerEntry(exit chan struct{}) {
 }
 
 func (service *liveService) sync() {
-	results, err := fetchResults()
+	results, err := fetchResults(service.dbContext)
 
 	if err != nil {
 		logger.WithError(err).Error("Error fetching results")
