@@ -74,12 +74,12 @@ func (ios *ioSession) send(payloadParts ...any) {
 
 	ios.socket.Emit("message", data)
 
-	logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "data": data}).Debug("Sent message")
+	logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "data": data}).Trace("Sent message")
 }
 
 func (ios *ioSession) dispatch(data map[string]interface{}) {
 
-	logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "data": data}).Debug("Got message")
+	logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "data": data}).Trace("Got message")
 
 	jsonObj, err := serialization.DeserializeJsonObjectIntermediate(data)
 	if err != nil {
@@ -95,7 +95,7 @@ func (ios *ioSession) dispatch(data map[string]interface{}) {
 	}
 
 	if engine.Engine != "call" {
-		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "engine": engine.Engine}).Debug("Got message with unexpected engine, ignored")
+		logger.WithFields(log.Fields{"sessionId": ios.session.Id(), "engine": engine.Engine}).Error("Got message with unexpected engine, ignored")
 		return
 	}
 
