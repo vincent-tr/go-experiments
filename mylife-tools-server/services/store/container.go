@@ -46,9 +46,8 @@ type IContainer[TEntity Entity] interface {
 type Container[TEntity Entity] struct {
 	EventEmitter[Event[TEntity]]
 
-	name    string
-	items   map[string]TEntity
-	emitter *EventEmitter[Event[TEntity]]
+	name  string
+	items map[string]TEntity
 }
 
 func NewContainer[TEntity Entity](name string) *Container[TEntity] {
@@ -56,7 +55,6 @@ func NewContainer[TEntity Entity](name string) *Container[TEntity] {
 		EventEmitter: *NewEventEmitter[Event[TEntity]](),
 		name:         name,
 		items:        make(map[string]TEntity),
-		emitter:      NewEventEmitter[Event[TEntity]](),
 	}
 }
 
@@ -64,14 +62,12 @@ func (container *Container[TEntity]) Name() string {
 	return container.name
 }
 
-// protected
 func (container *Container[TEntity]) Reset() {
 	for k := range container.items {
 		delete(container.items, k)
 	}
 }
 
-// protected
 func (container *Container[TEntity]) Set(obj TEntity) TEntity {
 	id := obj.Id()
 
@@ -89,12 +85,11 @@ func (container *Container[TEntity]) Set(obj TEntity) TEntity {
 		event.before = existing
 	}
 
-	container.emitter.Emit(event)
+	container.Emit(event)
 
 	return obj
 }
 
-// protected
 func (container *Container[TEntity]) Delete(id string) bool {
 	existing, exists := container.items[id]
 	if !exists {
@@ -103,12 +98,11 @@ func (container *Container[TEntity]) Delete(id string) bool {
 
 	delete(container.items, id)
 
-	container.emitter.Emit(&Event[TEntity]{typ: Remove, before: existing})
+	container.Emit(&Event[TEntity]{typ: Remove, before: existing})
 
 	return true
 }
 
-// protected
 func (container *Container[TEntity]) ReplaceAll(objs []TEntity) {
 	removeSet := make(map[string]struct{})
 
