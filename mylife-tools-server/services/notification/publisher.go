@@ -46,8 +46,7 @@ func newViewPublisher[TEntity store.Entity](session *sessions.Session, id uint64
 		var payload interface{}
 
 		switch event.Type() {
-		case store.Create:
-		case store.Update:
+		case store.Create, store.Update:
 			payload = &notifySetPayload{Type: "set", Object: event.After()}
 
 		case store.Remove:
