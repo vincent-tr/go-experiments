@@ -145,6 +145,10 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 
 	valueType := reflect.TypeOf(value.Interface())
 
+	if valueType == nil {
+		return nil, nil
+	}
+
 	if findPluginByConcreteType(valueType) != nil {
 		// There is a dedicated plugin for that, no need to handle this
 		return value.Interface(), nil
