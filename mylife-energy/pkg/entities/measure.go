@@ -1,4 +1,4 @@
-package live
+package entities
 
 import (
 	"mylife-tools-server/services/io/serialization"
@@ -39,16 +39,24 @@ func (measure *Measure) Marshal() (interface{}, error) {
 	return helper.Build()
 }
 
-func makeMeasureFromData(data *mongoMeasure) *Measure {
+type MeasureData struct {
+	Id        string
+	Sensor    string
+	Timestamp time.Time
+	Value     float64
+}
+
+func NewMeasure(data MeasureData) *Measure {
 	return &Measure{
 		id:        data.Id,
-		sensor:    data.Sensor.SensorId,
+		sensor:    data.Sensor,
 		timestamp: data.Timestamp,
 		value:     data.Value,
 	}
+
 }
 
-func measuresEqual(a *Measure, b *Measure) bool {
+func MeasuresEqual(a *Measure, b *Measure) bool {
 	return a.id == b.id &&
 		a.sensor == b.sensor &&
 		a.timestamp == b.timestamp &&

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"mylife-energy/pkg/entities"
 	"mylife-energy/pkg/services/live"
 	"mylife-energy/pkg/services/tesla"
 	"mylife-energy/pkg/services/tesla_wall_connector"
@@ -38,13 +39,13 @@ func main() {
 
 func notifyMeasures(session *sessions.Session, arg struct{}) (uint64, error) {
 	measures := live.GetMeasures()
-	viewId := notification.NotifyView[*live.Measure](session, measures)
+	viewId := notification.NotifyView[*entities.Measure](session, measures)
 	return viewId, nil
 }
 
 func notifySensors(session *sessions.Session, arg struct{}) (uint64, error) {
 	sensors := live.GetSensors()
-	viewId := notification.NotifyView[*live.Sensor](session, sensors)
+	viewId := notification.NotifyView[*entities.Sensor](session, sensors)
 	return viewId, nil
 }
 

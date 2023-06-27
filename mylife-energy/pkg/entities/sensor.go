@@ -1,4 +1,4 @@
-package live
+package entities
 
 import "mylife-tools-server/services/io/serialization"
 
@@ -42,9 +42,17 @@ func (sensor *Sensor) Marshal() (interface{}, error) {
 	return helper.Build()
 }
 
-func makeSensorFromData(data *mongoSensor) *Sensor {
+type SensorData struct {
+	Id                string
+	DeviceClass       string
+	StateClass        string
+	UnitOfMeasurement string
+	AccuracyDecimals  uint
+}
+
+func NewSensor(data SensorData) *Sensor {
 	return &Sensor{
-		id:                data.SensorId,
+		id:                data.Id,
 		deviceClass:       data.DeviceClass,
 		stateClass:        data.StateClass,
 		unitOfMeasurement: data.UnitOfMeasurement,
@@ -52,7 +60,7 @@ func makeSensorFromData(data *mongoSensor) *Sensor {
 	}
 }
 
-func sensorsEqual(a *Sensor, b *Sensor) bool {
+func SensorsEqual(a *Sensor, b *Sensor) bool {
 	return a.id == b.id &&
 		a.deviceClass == b.deviceClass &&
 		a.stateClass == b.stateClass &&

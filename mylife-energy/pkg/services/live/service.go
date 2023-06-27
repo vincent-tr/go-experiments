@@ -1,6 +1,7 @@
 package live
 
 import (
+	"mylife-energy/pkg/entities"
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
 	"mylife-tools-server/services/io"
@@ -14,14 +15,14 @@ var logger = log.CreateLogger("mylife:energy:live")
 
 type liveService struct {
 	worker      *utils.Worker
-	measures    *store.Container[*Measure]
-	sensors     *store.Container[*Sensor]
+	measures    *store.Container[*entities.Measure]
+	sensors     *store.Container[*entities.Sensor]
 	pendingSync *sync.WaitGroup
 }
 
 func (service *liveService) Init(arg interface{}) error {
-	service.measures = store.NewContainer[*Measure]("measures")
-	service.sensors = store.NewContainer[*Sensor]("sensors")
+	service.measures = store.NewContainer[*entities.Measure]("measures")
+	service.sensors = store.NewContainer[*entities.Sensor]("sensors")
 	service.pendingSync = &sync.WaitGroup{}
 
 	service.worker = utils.NewWorker(service.workerEntry)
@@ -73,8 +74,8 @@ func (service *liveService) sync() {
 		return
 	}
 
-	newMeasures := make([]*Measure, 0)
-	newSensors := make([]*Sensor, 0)
+	newMeasures := make([]*entities.Measure, 0)
+	newSensors := make([]*entities.Sensor, 0)
 
 	for _, result := range results {
 		newMeasure := makeMeasureFromData(&result)
@@ -87,8 +88,8 @@ func (service *liveService) sync() {
 	service.pendingSync.Add(1)
 
 	err = io.SubmitIoTask("live/sync", func() {
-		syncEntity[*Measure](service.measures, newMeasures, measuresEqual)
-		syncEntity[*Sensor](service.sensors, newSensors, sensorsEqual)
+		syncEntity[*entities.Measure](service.measures, newMeasures, entities.MeasuresEqual)
+		syncEntity[*entities.Sensor](service.sensors, newSensors, entities.SensorsEqual)
 		service.pendingSync.Done()
 	})
 
@@ -133,10 +134,10 @@ func getService() *liveService {
 
 // Public access
 
-func GetSensors() store.IContainer[*Sensor] {
+func GetSensors() store.IContainer[*entities.Sensor] {
 	return getService().sensors
 }
 
-func GetMeasures() store.IContainer[*Measure] {
+func GetMeasures() store.IContainer[*entities.Measure] {
 	return getService().measures
 }

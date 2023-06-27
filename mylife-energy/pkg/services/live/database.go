@@ -2,6 +2,7 @@ package live
 
 import (
 	"context"
+	"mylife-energy/pkg/entities"
 	"mylife-tools-server/services/database"
 	"time"
 
@@ -44,4 +45,23 @@ func fetchResults() ([]mongoMeasure, error) {
 	}
 
 	return results, nil
+}
+
+func makeMeasureFromData(data *mongoMeasure) *entities.Measure {
+	return entities.NewMeasure(entities.MeasureData{
+		Id:        data.Id,
+		Sensor:    data.Sensor.SensorId,
+		Timestamp: data.Timestamp,
+		Value:     data.Value,
+	})
+}
+
+func makeSensorFromData(data *mongoSensor) *entities.Sensor {
+	return entities.NewSensor(entities.SensorData{
+		Id:                data.SensorId,
+		DeviceClass:       data.DeviceClass,
+		StateClass:        data.StateClass,
+		UnitOfMeasurement: data.UnitOfMeasurement,
+		AccuracyDecimals:  data.AccuracyDecimals,
+	})
 }
