@@ -1,7 +1,8 @@
 package main
 
 import (
-	api "mylife-energy/pkg/api"
+	"mylife-energy/pkg/api"
+	"mylife-energy/pkg/entities"
 	"mylife-energy/pkg/services/tesla"
 	"mylife-energy/pkg/services/tesla_wall_connector"
 	"mylife-tools-server/log"
@@ -20,10 +21,11 @@ var logger = log.CreateLogger("mylife:energy:test")
 
 func main() {
 	args := map[string]interface{}{
-		"api": api.Definitions,
+		"api":   api.Definitions,
+		"store": entities.StoreDef,
 	}
 
-	services.RunServices([]string{"test", "web", "live"}, args)
+	services.RunServices([]string{"test", "web", "live", "store"}, args)
 }
 
 type testService struct {
