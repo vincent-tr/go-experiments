@@ -3,8 +3,8 @@ package tasks
 import (
 	"fmt"
 	"mylife-tools-server/log"
+	"mylife-tools-server/utils"
 	"sync"
-	"time"
 )
 
 type taskQueueStatus int
@@ -103,21 +103,9 @@ func newTask(name string, impl Task) *task {
 func (t *task) run(queue *taskQueue) {
 	logger.WithFields(log.Fields{"queueId": queue.id, "taskName": t.name}).Debug("Task begin")
 
-	tmr := newTimer()
+	tmr := utils.NewTimer()
 	t.impl()
-	elapsed := tmr.elapsed()
+	elapsed := tmr.ElapsedMs()
 
 	logger.WithFields(log.Fields{"queueId": queue.id, "taskName": t.name, "elapsedMs": elapsed}).Debug("Task end")
-}
-
-type timer struct {
-	begin time.Time
-}
-
-func newTimer() timer {
-	return timer{begin: time.Now()}
-}
-
-func (t *timer) elapsed() float64 {
-	return time.Since(t.begin).Seconds() * 1000
 }
