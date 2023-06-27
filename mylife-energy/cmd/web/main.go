@@ -1,9 +1,9 @@
 package main
 
 import (
-	"mylife-energy/pkg/live"
-	"mylife-energy/pkg/tesla"
-	"mylife-energy/pkg/tesla_wall_connector"
+	"mylife-energy/pkg/services/live"
+	"mylife-energy/pkg/services/tesla"
+	"mylife-energy/pkg/services/tesla_wall_connector"
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
 	"mylife-tools-server/services/api"

@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "mylife-energy/pkg/collector"
+	_ "mylife-energy/pkg/services/collector"
 
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
