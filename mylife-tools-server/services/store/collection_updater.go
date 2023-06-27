@@ -132,6 +132,34 @@ type changeEvent struct {
 }
 
 func (updater *collectionUpdater[TEntity]) dbWatcher(exit chan struct{}) {
+	// First load existings
+	initialData, err := updater.dataCol.Find(updater.dbContext, bson.D{})
+	if err != nil {
+		logger.WithError(err).WithField("collectionName", updater.col.Name()).Error("Could not fetch initial data")
+		return
+	}
+
+	initialObjs := make([]TEntity, 0)
+
+	for initialData.Next(updater.dbContext) {
+		obj, err := updater.decode(initialData.Current)
+		if err != nil {
+			logger.WithError(err).WithField("collectionName", updater.col.Name()).Error("Could not decode initial data")
+			continue
+		}
+
+		initialObjs = append(initialObjs, obj)
+	}
+
+	logger.WithField("collectionName", updater.col.Name()).Debugf("Fetched %d records", len(initialObjs))
+
+	io.SubmitIoTask(fmt.Sprintf("store-updater/%s-load", updater.col.Name()), func() {
+		updater.databaseUpdating = true
+		updater.col.container.ReplaceAll(initialObjs)
+		updater.databaseUpdating = false
+	})
+
+	// Then watch (not that load is not atomic so we may miss first events?)
 	changeStream, err := updater.dataCol.Watch(updater.dbContext, mongo.Pipeline{}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
 	if err != nil {
 		logger.WithError(err).WithField("collectionName", updater.col.Name()).Error("Could not watch change stream")
