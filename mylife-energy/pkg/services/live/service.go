@@ -3,6 +3,7 @@ package live
 import (
 	"context"
 	"mylife-energy/pkg/entities"
+	"mylife-energy/pkg/services/query"
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
 	"mylife-tools-server/services/io"
@@ -10,6 +11,8 @@ import (
 	"mylife-tools-server/utils"
 	"sync"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var logger = log.CreateLogger("mylife:energy:live")
@@ -51,7 +54,7 @@ func (service *liveService) ServiceName() string {
 
 func (service *liveService) Dependencies() []string {
 	// io because we use io queue
-	return []string{"database", "io", "tasks"}
+	return []string{"query", "io", "tasks"}
 }
 
 func init() {
@@ -71,29 +74,21 @@ func (service *liveService) workerEntry(exit chan struct{}) {
 }
 
 func (service *liveService) sync() {
-	results, err := fetchResults(service.dbContext)
+	results, err := query.Aggregate(service.dbContext, []bson.M{
+		{"$sort": bson.M{"sensor.sensorId": 1, "timestamp": -1}},
+		{"$group": bson.M{"_id": "$sensor.sensorId", "timestamp": bson.M{"$first": "$timestamp"}, "value": bson.M{"$first": "$value"}, "sensor": bson.M{"$first": "$sensor"}}},
+	})
 
 	if err != nil {
 		logger.WithError(err).Error("Error fetching results")
 		return
 	}
 
-	newMeasures := make([]*entities.Measure, 0)
-	newSensors := make([]*entities.Sensor, 0)
-
-	for _, result := range results {
-		newMeasure := makeMeasureFromData(&result)
-		newMeasures = append(newMeasures, newMeasure)
-
-		newSensor := makeSensorFromData(&result.Sensor)
-		newSensors = append(newSensors, newSensor)
-	}
-
 	service.pendingSync.Add(1)
 
 	err = io.SubmitIoTask("live/sync", func() {
-		syncEntity[*entities.Measure](service.measures, newMeasures, entities.MeasuresEqual)
-		syncEntity[*entities.Sensor](service.sensors, newSensors, entities.SensorsEqual)
+		syncEntity[*entities.Measure](service.measures, results, accessMeasure, entities.MeasuresEqual)
+		syncEntity[*entities.Sensor](service.sensors, results, accessSensor, entities.SensorsEqual)
 		service.pendingSync.Done()
 	})
 
@@ -105,7 +100,15 @@ func (service *liveService) sync() {
 	}
 }
 
-func syncEntity[TEntity store.Entity](container *store.Container[TEntity], list []TEntity, equals func(a TEntity, b TEntity) bool) {
+func accessMeasure(result *query.Result) *entities.Measure {
+	return result.Measure
+}
+
+func accessSensor(result *query.Result) *entities.Sensor {
+	return result.Sensor
+}
+
+func syncEntity[TEntity store.Entity](container *store.Container[TEntity], results []query.Result, access func(result *query.Result) TEntity, equals func(a TEntity, b TEntity) bool) {
 
 	removeSet := make(map[string]struct{})
 
@@ -113,7 +116,8 @@ func syncEntity[TEntity store.Entity](container *store.Container[TEntity], list 
 		removeSet[obj.Id()] = struct{}{}
 	}
 
-	for _, obj := range list {
+	for _, result := range results {
+		obj := access(&result)
 		delete(removeSet, obj.Id())
 	}
 
@@ -121,7 +125,8 @@ func syncEntity[TEntity store.Entity](container *store.Container[TEntity], list 
 		container.Delete(id)
 	}
 
-	for _, obj := range list {
+	for _, result := range results {
+		obj := access(&result)
 		existing, exists := container.Find(obj.Id())
 
 		if exists && equals(obj, existing) {

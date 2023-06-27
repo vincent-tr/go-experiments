@@ -1,4 +1,4 @@
-package live
+package query
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"mylife-tools-server/utils"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type mongoMeasure struct {
@@ -25,7 +25,7 @@ type mongoSensor struct {
 	AccuracyDecimals  uint   `bson:"accuracyDecimals"`
 }
 
-func fetchResults(ctx context.Context) ([]mongoMeasure, error) {
+func dbFetch(ctx context.Context, cursorBuilder func(ctx context.Context, col *mongo.Collection) (*mongo.Cursor, error)) ([]mongoMeasure, error) {
 	col := database.GetCollection("measures")
 
 	logger.Trace("Query begin")
@@ -34,10 +34,7 @@ func fetchResults(ctx context.Context) ([]mongoMeasure, error) {
 		logger.WithField("elapsedMs", tmr.ElapsedMs()).Trace("Query end")
 	}()
 
-	cursor, err := col.Aggregate(ctx, []bson.M{
-		{"$sort": bson.M{"sensor.sensorId": 1, "timestamp": -1}},
-		{"$group": bson.M{"_id": "$sensor.sensorId", "timestamp": bson.M{"$first": "$timestamp"}, "value": bson.M{"$first": "$value"}, "sensor": bson.M{"$first": "$sensor"}}},
-	})
+	cursor, err := cursorBuilder(ctx, col)
 
 	if err != nil {
 		return nil, err
