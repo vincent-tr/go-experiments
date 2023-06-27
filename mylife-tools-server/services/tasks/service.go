@@ -82,16 +82,16 @@ func getService() *taskService {
 
 // Public access
 
-func CreateQueue(id string) error {
-	return getService().createQueue(id)
+func CreateQueue(queueId string) error {
+	return getService().createQueue(queueId)
 }
 
-func CloseQueue(id string) error {
-	return getService().closeQueue(id)
+func CloseQueue(queueId string) error {
+	return getService().closeQueue(queueId)
 }
 
-func Submit(id string, taskName string, taskImpl Task) error {
-	queue, err := getService().getQueue(id)
+func Submit(queueId string, taskName string, taskImpl Task) error {
+	queue, err := getService().getQueue(queueId)
 	if err != nil {
 		return err
 	}

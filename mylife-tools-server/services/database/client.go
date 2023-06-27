@@ -8,6 +8,8 @@ import (
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongo "go.mongodb.org/mongo-driver/mongo"
 	options "go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -23,6 +25,7 @@ type Collection = mongo.Collection
 type databaseService struct {
 	client   *mongo.Client
 	database *mongo.Database
+	session  mongo.Session
 }
 
 func (service *databaseService) Init(arg interface{}) error {
@@ -42,13 +45,20 @@ func (service *databaseService) Init(arg interface{}) error {
 		return err
 	}
 
+	session, err := client.StartSession()
+	if err != nil {
+		return err
+	}
+
 	service.client = client
 	service.database = client.Database(dbName)
+	service.session = session
 
 	return nil
 }
 
 func (service *databaseService) Terminate() error {
+	service.session.EndSession(context.TODO())
 	return service.client.Disconnect(context.TODO())
 }
 
@@ -60,8 +70,18 @@ func (service *databaseService) Dependencies() []string {
 	return []string{}
 }
 
-func (service *databaseService) GetCollection(name string) *Collection {
+func (service *databaseService) getCollection(name string) *Collection {
 	return service.database.Collection(name)
+}
+
+func (service *databaseService) sessionId() bson.Raw {
+	return service.session.ID()
+}
+
+func (service *databaseService) withTransaction(callback func() (interface{}, error)) (interface{}, error) {
+	return service.session.WithTransaction(context.TODO(), func(ctx mongo.SessionContext) (interface{}, error) {
+		return callback()
+	})
 }
 
 func getService() *databaseService {
@@ -71,5 +91,25 @@ func getService() *databaseService {
 // Public access
 
 func GetCollection(name string) *Collection {
-	return getService().GetCollection(name)
+	return getService().getCollection(name)
+}
+
+func MakeId() string {
+	return primitive.NewObjectID().Hex()
+}
+
+func EncodeId(value string) (primitive.ObjectID, error) {
+	return primitive.ObjectIDFromHex(value)
+}
+
+func DecodeId(value primitive.ObjectID) string {
+	return value.Hex()
+}
+
+func SessionId() bson.Raw {
+	return getService().sessionId()
+}
+
+func WithTransaction(callback func() (interface{}, error)) (interface{}, error) {
+	return getService().withTransaction(callback)
 }
