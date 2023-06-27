@@ -6,20 +6,23 @@ import (
 	"mylife-tools-server/services/io"
 	"mylife-tools-server/services/store"
 	"mylife-tools-server/utils"
+	"sync"
 	"time"
 )
 
 var logger = log.CreateLogger("mylife:energy:live")
 
 type liveService struct {
-	worker   *utils.Worker
-	measures *store.Container[*Measure]
-	sensors  *store.Container[*Sensor]
+	worker      *utils.Worker
+	measures    *store.Container[*Measure]
+	sensors     *store.Container[*Sensor]
+	pendingSync *sync.WaitGroup
 }
 
 func (service *liveService) Init(arg interface{}) error {
 	service.measures = store.NewContainer[*Measure]("measures")
 	service.sensors = store.NewContainer[*Sensor]("sensors")
+	service.pendingSync = &sync.WaitGroup{}
 
 	service.worker = utils.NewWorker(service.workerEntry)
 
@@ -28,6 +31,8 @@ func (service *liveService) Init(arg interface{}) error {
 
 func (service *liveService) Terminate() error {
 	service.worker.Terminate()
+
+	service.pendingSync.Wait()
 
 	service.measures = nil
 	service.sensors = nil
@@ -79,10 +84,20 @@ func (service *liveService) sync() {
 		newSensors = append(newSensors, newSensor)
 	}
 
-	io.SubmitIoTask("live/sync", func() {
+	service.pendingSync.Add(1)
+
+	err = io.SubmitIoTask("live/sync", func() {
 		syncEntity[*Measure](service.measures, newMeasures, measuresEqual)
 		syncEntity[*Sensor](service.sensors, newSensors, sensorsEqual)
+		service.pendingSync.Done()
 	})
+
+	if err != nil {
+		service.pendingSync.Done()
+
+		logger.WithError(err).Error("Error submitting io task")
+		return
+	}
 }
 
 func syncEntity[TEntity store.Entity](container *store.Container[TEntity], list []TEntity, equals func(a TEntity, b TEntity) bool) {
