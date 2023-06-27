@@ -8,6 +8,8 @@ import (
 
 type Callee any
 
+type NoReturn *struct{}
+
 type ServiceDefinition struct {
 	Name    string
 	Methods map[string]Callee

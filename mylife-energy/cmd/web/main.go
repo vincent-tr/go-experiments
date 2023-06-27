@@ -1,15 +1,12 @@
 package main
 
 import (
-	"mylife-energy/pkg/entities"
-	"mylife-energy/pkg/services/live"
+	api "mylife-energy/pkg/api"
 	"mylife-energy/pkg/services/tesla"
 	"mylife-energy/pkg/services/tesla_wall_connector"
 	"mylife-tools-server/log"
 	"mylife-tools-server/services"
-	"mylife-tools-server/services/api"
-	"mylife-tools-server/services/notification"
-	"mylife-tools-server/services/sessions"
+	_ "mylife-tools-server/services/api"
 	_ "mylife-tools-server/services/web"
 )
 
@@ -22,30 +19,11 @@ next :
 var logger = log.CreateLogger("mylife:energy:test")
 
 func main() {
-	args := make(map[string]interface{})
-
-	args["api"] = []api.ServiceDefinition{
-		api.MakeDefinition("common", notifySensors, notifyMeasures),
+	args := map[string]interface{}{
+		"api": api.Definitions,
 	}
 
 	services.RunServices([]string{"test", "web", "live"}, args)
-}
-
-func notifyMeasures(session *sessions.Session, arg struct{}) (uint64, error) {
-	measures := live.GetMeasures()
-	viewId := notification.NotifyView[*entities.Measure](session, measures)
-	return viewId, nil
-}
-
-func notifySensors(session *sessions.Session, arg struct{}) (uint64, error) {
-	sensors := live.GetSensors()
-	viewId := notification.NotifyView[*entities.Sensor](session, sensors)
-	return viewId, nil
-}
-
-func unnotify(session *sessions.Session, arg struct{ viewId uint64 }) error {
-	notification.UnnotifyView(session, arg.viewId)
-	return nil
 }
 
 type testService struct {
