@@ -53,7 +53,6 @@ func NewMeasure(data MeasureData) *Measure {
 		timestamp: data.Timestamp,
 		value:     data.Value,
 	}
-
 }
 
 func MeasuresEqual(a *Measure, b *Measure) bool {
