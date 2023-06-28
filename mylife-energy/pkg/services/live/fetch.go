@@ -71,8 +71,17 @@ func (f *fetcher) sync() {
 	f.pendingSync.Add(1)
 
 	err = io.SubmitIoTask("live/fetch", func() {
-		syncEntity[*entities.Measure](f.measures, results, accessMeasure, entities.MeasuresEqual)
-		syncEntity[*entities.Sensor](f.sensors, results, accessSensor, entities.SensorsEqual)
+		newMeasures := make([]*entities.Measure, 0, len(results))
+		newSensors := make([]*entities.Sensor, 0, len(results))
+
+		for _, result := range results {
+			newMeasures = append(newMeasures, result.Measure)
+			newSensors = append(newSensors, result.Sensor)
+		}
+
+		f.measures.ReplaceAll(newMeasures, entities.MeasuresEqual)
+		f.sensors.ReplaceAll(newSensors, entities.SensorsEqual)
+
 		f.pendingSync.Done()
 	})
 
@@ -81,42 +90,5 @@ func (f *fetcher) sync() {
 
 		logger.WithError(err).Error("Error submitting io task")
 		return
-	}
-}
-
-func accessMeasure(result *query.Result) *entities.Measure {
-	return result.Measure
-}
-
-func accessSensor(result *query.Result) *entities.Sensor {
-	return result.Sensor
-}
-
-func syncEntity[TEntity store.Entity](container *store.Container[TEntity], results []query.Result, access func(result *query.Result) TEntity, equals func(a TEntity, b TEntity) bool) {
-
-	removeSet := make(map[string]struct{})
-
-	for _, obj := range container.List() {
-		removeSet[obj.Id()] = struct{}{}
-	}
-
-	for _, result := range results {
-		obj := access(&result)
-		delete(removeSet, obj.Id())
-	}
-
-	for id := range removeSet {
-		container.Delete(id)
-	}
-
-	for _, result := range results {
-		obj := access(&result)
-		existing, exists := container.Find(obj.Id())
-
-		if exists && equals(obj, existing) {
-			continue
-		}
-
-		container.Set(obj)
 	}
 }
