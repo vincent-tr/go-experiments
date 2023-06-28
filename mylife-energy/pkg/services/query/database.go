@@ -28,10 +28,10 @@ type mongoSensor struct {
 func dbFetch(ctx context.Context, cursorBuilder func(ctx context.Context, col *mongo.Collection) (*mongo.Cursor, error)) ([]mongoMeasure, error) {
 	col := database.GetCollection("measures")
 
-	logger.Trace("Query begin")
+	logger.Debug("Query begin")
 	tmr := utils.NewTimer()
 	defer func() {
-		logger.WithField("elapsedMs", tmr.ElapsedMs()).Trace("Query end")
+		logger.WithField("elapsedMs", tmr.ElapsedMs()).Debug("Query end")
 	}()
 
 	cursor, err := cursorBuilder(ctx, col)
