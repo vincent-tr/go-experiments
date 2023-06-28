@@ -40,6 +40,7 @@ type IContainer[TEntity Entity] interface {
 	Get(id string) (TEntity, error)
 	List() []TEntity
 	Size() int
+	Filter(predicate func(obj TEntity) bool) []TEntity
 	Exists(predicate func(obj TEntity) bool) bool
 }
 

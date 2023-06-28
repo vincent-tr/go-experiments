@@ -50,6 +50,10 @@ func (col *collection[TEntity]) Size() int {
 	return col.container.Size()
 }
 
+func (col *collection[TEntity]) Filter(predicate func(obj TEntity) bool) []TEntity {
+	return col.container.Filter(predicate)
+}
+
 func (col *collection[TEntity]) Exists(predicate func(obj TEntity) bool) bool {
 	return col.container.Exists(predicate)
 }
