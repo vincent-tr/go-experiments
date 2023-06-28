@@ -1,7 +1,6 @@
 package live
 
 import (
-	"fmt"
 	"mylife-energy/pkg/entities"
 	"mylife-tools-server/services/store"
 	"strings"
@@ -130,14 +129,7 @@ func (m *merger) computeDevices() {
 		list = append(list, entities.NewLiveDevice(deviceData))
 	}
 
-	logger.Tracef("Updating %d devices", len(list))
-
-	if len(list) >= 1 {
-		fmt.Printf("%+v\n", list[0])
-		fmt.Printf("len devices %d\n", len(m.devices.List()))
-		fmt.Printf("len sensors %d\n", len(m.sensors.List()))
-
-	}
+	logger.Debugf("Updating %d devices", len(list))
 
 	m.liveDevices.ReplaceAll(list, entities.LiveDevicesEqual)
 }
