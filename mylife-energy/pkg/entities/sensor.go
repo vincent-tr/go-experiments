@@ -50,7 +50,7 @@ type SensorData struct {
 	AccuracyDecimals  uint
 }
 
-func NewSensor(data SensorData) *Sensor {
+func NewSensor(data *SensorData) *Sensor {
 	return &Sensor{
 		id:                data.Id,
 		deviceClass:       data.DeviceClass,

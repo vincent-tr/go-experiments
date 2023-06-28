@@ -46,7 +46,7 @@ type MeasureData struct {
 	Value     float64
 }
 
-func NewMeasure(data MeasureData) *Measure {
+func NewMeasure(data *MeasureData) *Measure {
 	return &Measure{
 		id:        data.Id,
 		sensor:    data.Sensor,

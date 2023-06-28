@@ -52,7 +52,7 @@ func dbFetch(ctx context.Context, cursorBuilder func(ctx context.Context, col *m
 }
 
 func makeMeasureFromData(data *mongoMeasure) *entities.Measure {
-	return entities.NewMeasure(entities.MeasureData{
+	return entities.NewMeasure(&entities.MeasureData{
 		Id:        data.Id,
 		Sensor:    data.Sensor.SensorId,
 		Timestamp: data.Timestamp,
@@ -61,7 +61,7 @@ func makeMeasureFromData(data *mongoMeasure) *entities.Measure {
 }
 
 func makeSensorFromData(data *mongoSensor) *entities.Sensor {
-	return entities.NewSensor(entities.SensorData{
+	return entities.NewSensor(&entities.SensorData{
 		Id:                data.SensorId,
 		DeviceClass:       data.DeviceClass,
 		StateClass:        data.StateClass,

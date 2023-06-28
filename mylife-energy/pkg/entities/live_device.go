@@ -140,7 +140,7 @@ type LiveSensorData struct {
 	AccuracyDecimals  uint
 }
 
-func NewLiveDevice(data LiveDeviceData) *LiveDevice {
+func NewLiveDevice(data *LiveDeviceData) *LiveDevice {
 	panics.NotNil(data.Sensors)
 
 	sensors := make([]LiveSensor, 0, len(data.Sensors))
