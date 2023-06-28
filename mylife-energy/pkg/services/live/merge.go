@@ -92,11 +92,15 @@ func (m *merger) computeDevices() {
 	devices := make(map[string]*entities.LiveDeviceData)
 
 	for _, device := range m.devices.List() {
+		// Do not add groups, there are only for computation
+		if device.Type() == entities.Group {
+			continue
+		}
+
 		devices[device.DeviceId()] = &entities.LiveDeviceData{
 			Id:      device.DeviceId(),
 			Display: device.Display(),
 			Type:    device.Type(),
-			Parent:  device.Parent(),
 			Sensors: make([]entities.LiveSensorData, 0),
 		}
 	}

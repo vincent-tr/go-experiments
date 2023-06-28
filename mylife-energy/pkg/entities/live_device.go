@@ -11,7 +11,6 @@ type LiveDevice struct {
 	id      string
 	display string
 	typ     DeviceType
-	parent  string
 	sensors []LiveSensor
 }
 
@@ -27,10 +26,6 @@ func (device *LiveDevice) Type() DeviceType {
 	return device.typ
 }
 
-func (device *LiveDevice) Parent() string {
-	return device.parent
-}
-
 func (device *LiveDevice) Sensors() []LiveSensor {
 	return device.sensors
 }
@@ -41,7 +36,6 @@ func (device *LiveDevice) Marshal() (interface{}, error) {
 	helper.Add("_id", device.id)
 	helper.Add("display", device.display)
 	helper.Add("type", device.typ)
-	helper.Add("parent", device.parent)
 	helper.Add("sensors", device.sensors)
 
 	return helper.Build()
@@ -50,8 +44,7 @@ func (device *LiveDevice) Marshal() (interface{}, error) {
 func LiveDevicesEqual(a *LiveDevice, b *LiveDevice) bool {
 	if a.id != b.id ||
 		a.display != b.display ||
-		a.typ != b.typ ||
-		a.parent != b.parent {
+		a.typ != b.typ {
 		return false
 	}
 
@@ -127,7 +120,6 @@ type LiveDeviceData struct {
 	Id      string
 	Display string
 	Type    DeviceType
-	Parent  string
 	Sensors []LiveSensorData
 }
 
@@ -171,7 +163,6 @@ func NewLiveDevice(data *LiveDeviceData) *LiveDevice {
 		id:      data.Id,
 		display: data.Display,
 		typ:     data.Type,
-		parent:  data.Parent,
 		sensors: sensors,
 	}
 }
