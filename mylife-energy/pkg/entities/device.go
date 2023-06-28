@@ -14,6 +14,7 @@ const (
 	Group DeviceType = "group"
 	Main  DeviceType = "main"
 	Solar DeviceType = "solar"
+	Total DeviceType = "total"
 )
 
 type Device struct {

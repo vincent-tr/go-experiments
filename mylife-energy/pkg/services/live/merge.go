@@ -6,6 +6,7 @@ import (
 	"mylife-tools-server/services/io"
 	"mylife-tools-server/services/store"
 	"strings"
+	"time"
 
 	"github.com/gookit/goutil/errorx/panics"
 	"golang.org/x/exp/slices"
@@ -138,6 +139,10 @@ func (m *merger) computeDevices() {
 			// Add same sensors than main on solar computed device
 			reference = m.findFirstDeviceByType(entities.Main)
 
+		case entities.Total:
+			// Add same sensors than any group on total computed device
+			reference = m.findFirstDeviceByType(entities.Group)
+
 		default:
 			logger.WithField("type", device.Type()).Warn("Unexpected computed device type")
 			continue
@@ -153,7 +158,7 @@ func (m *merger) computeDevices() {
 	// Remove groups (could not before to use them as ref data)
 	// there are only for computation
 	for _, device := range m.devices.List() {
-		if device.Type() == entities.Group {
+		if device.Type() == entities.Group && !device.Computed() {
 			delete(devices, device.DeviceId())
 		}
 	}
@@ -232,6 +237,9 @@ func (m *merger) computeMeasures() {
 			case entities.Solar:
 				m.computeSolarMeasures(&newMeasures, liveDevice, device)
 
+			case entities.Total:
+				m.computeTotalMeasures(&newMeasures, liveDevice, device)
+
 			default:
 				logger.WithField("type", device.Type()).Warn("Unexpected computed device type")
 			}
@@ -284,19 +292,38 @@ func (m *merger) computeSolarMeasures(newMeasures *[]*entities.Measure, liveDevi
 	}
 }
 
-func (m *merger) computeMeasureFromParentSiblings(newMeasures *[]*entities.Measure, deviceId string, sensorKey string, parent *entities.Device, siblings []*entities.Device, producer bool) {
-	parentMeasure := m.findMeasureValue(parent.DeviceId(), sensorKey)
-	if parentMeasure == nil {
-		return
+func (m *merger) computeTotalMeasures(newMeasures *[]*entities.Measure, liveDevice *entities.LiveDevice, device *entities.Device) {
+	// sum all groups
+	groups := m.listDeviceByType(entities.Group)
+
+	for _, liveSensor := range liveDevice.Sensors() {
+		m.computeMeasureFromParentSiblings(newMeasures, liveDevice.Id(), liveSensor.Key(), nil, groups, true)
 	}
+}
 
+func (m *merger) computeMeasureFromParentSiblings(newMeasures *[]*entities.Measure, deviceId string, sensorKey string, parent *entities.Device, siblings []*entities.Device, producer bool) {
 	id := fmt.Sprintf("%s-%s", deviceId, sensorKey)
+	var data *entities.MeasureData
 
-	data := &entities.MeasureData{
-		Id:        id,
-		Sensor:    id,
-		Timestamp: parentMeasure.Timestamp(),
-		Value:     parentMeasure.Value(),
+	if parent == nil {
+		data = &entities.MeasureData{
+			Id:        id,
+			Sensor:    id,
+			Timestamp: time.Now(), // Hopefully siblings will be below
+			Value:     0,
+		}
+	} else {
+		parentMeasure := m.findMeasureValue(parent.DeviceId(), sensorKey)
+		if parentMeasure == nil {
+			return
+		}
+
+		data = &entities.MeasureData{
+			Id:        id,
+			Sensor:    id,
+			Timestamp: parentMeasure.Timestamp(),
+			Value:     parentMeasure.Value(),
+		}
 	}
 
 	for _, sibling := range siblings {
