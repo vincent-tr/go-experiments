@@ -155,7 +155,7 @@ func (updater *collectionUpdater[TEntity]) dbWatcher(exit chan struct{}) {
 
 	io.SubmitIoTask(fmt.Sprintf("store-updater/%s-load", updater.col.Name()), func() {
 		updater.databaseUpdating = true
-		updater.col.container.ReplaceAll(initialObjs)
+		updater.col.container.ReplaceAll(initialObjs, nil)
 		updater.databaseUpdating = false
 	})
 

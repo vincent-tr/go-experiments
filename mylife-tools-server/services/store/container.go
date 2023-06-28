@@ -103,7 +103,8 @@ func (container *Container[TEntity]) Delete(id string) bool {
 	return true
 }
 
-func (container *Container[TEntity]) ReplaceAll(objs []TEntity) {
+// provide nil equals to not check for equality
+func (container *Container[TEntity]) ReplaceAll(objs []TEntity, equals *func(a TEntity, b TEntity) bool) {
 	removeSet := make(map[string]struct{})
 
 	for id, _ := range container.items {
@@ -119,8 +120,23 @@ func (container *Container[TEntity]) ReplaceAll(objs []TEntity) {
 	}
 
 	for _, obj := range objs {
-		container.Set(obj)
+		if container.needSet(obj, equals) {
+			container.Set(obj)
+		}
 	}
+}
+
+func (container *Container[TEntity]) needSet(obj TEntity, equals *func(a TEntity, b TEntity) bool) bool {
+	if equals == nil {
+		return true
+	}
+
+	existing, exists := container.Find(obj.Id())
+	if !exists {
+		return true
+	}
+
+	return !(*equals)(existing, obj)
 }
 
 func (container *Container[TEntity]) Find(id string) (TEntity, bool) {
