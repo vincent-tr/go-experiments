@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gookit/goutil/errorx/panics"
+	"golang.org/x/exp/slices"
 )
 
 type merger struct {
@@ -92,11 +93,6 @@ func (m *merger) computeDevices() {
 	devices := make(map[string]*entities.LiveDeviceData)
 
 	for _, device := range m.devices.List() {
-		// Do not add groups, there are only for computation
-		if device.Type() == entities.Group {
-			continue
-		}
-
 		devices[device.DeviceId()] = &entities.LiveDeviceData{
 			Id:      device.DeviceId(),
 			Display: device.Display(),
@@ -121,6 +117,45 @@ func (m *merger) computeDevices() {
 			UnitOfMeasurement: sensor.UnitOfMeasurement(),
 			AccuracyDecimals:  sensor.AccuracyDecimals(),
 		})
+	}
+
+	for _, deviceData := range devices {
+		device := m.findDeviceById(deviceData.Id)
+		panics.NotNil(device)
+
+		if !device.Computed() {
+			continue
+		}
+
+		var reference *entities.Device
+
+		switch device.Type() {
+		case entities.Node:
+			// Add same sensors than parent on node computed device
+			reference = m.findDeviceById(device.Parent())
+
+		case entities.Solar:
+			// Add same sensors than main on solar computed device
+			reference = m.findFirstDeviceByType(entities.Main)
+
+		default:
+			logger.WithField("type", device.Type()).Warn("Unexpected computed device type")
+			continue
+		}
+
+		panics.NotNil(reference)
+		referenceData := devices[reference.DeviceId()]
+		panics.NotNil(referenceData)
+
+		deviceData.Sensors = referenceData.Sensors
+	}
+
+	// Remove groups (could not before to use them as ref data)
+	// there are only for computation
+	for _, device := range m.devices.List() {
+		if device.Type() == entities.Group {
+			delete(devices, device.DeviceId())
+		}
 	}
 
 	list := make([]*entities.LiveDevice, 0, len(devices))
@@ -183,32 +218,131 @@ func (m *merger) computeMeasures() {
 	newMeasures := make([]*entities.Measure, 0)
 
 	for _, liveDevice := range m.liveDevices.List() {
-		filteredDevices := m.devices.Filter(func(obj *entities.Device) bool { return obj.DeviceId() == liveDevice.Id() })
-		if len(filteredDevices) != 1 {
+		device := m.findDeviceById(liveDevice.Id())
+		if device == nil {
 			logger.WithField("id", liveDevice.Id()).Warn("Unmatched device")
 			continue
 		}
 
-		device := filteredDevices[0]
 		if device.Computed() {
-			// TODO: computed
+			switch device.Type() {
+			case entities.Node:
+				m.computeNodeMeasures(&newMeasures, liveDevice, device)
+
+			case entities.Solar:
+				m.computeSolarMeasures(&newMeasures, liveDevice, device)
+
+			default:
+				logger.WithField("type", device.Type()).Warn("Unexpected computed device type")
+			}
+
 			continue
 		}
 
 		for _, liveSensor := range liveDevice.Sensors() {
-			id := fmt.Sprintf("%s-%s", liveDevice.Id(), liveSensor.Key())
-
-			measure, exists := m.measures.Find(id)
-			if !exists {
-				logger.WithField("id", id).Warn("Missing measure")
-				continue
+			measure := m.findMeasureValue(liveDevice.Id(), liveSensor.Key())
+			if measure != nil {
+				newMeasures = append(newMeasures, measure)
 			}
-
-			newMeasures = append(newMeasures, measure)
 		}
 	}
 
-	// TODO: computed
-
 	m.liveMeasures.ReplaceAll(newMeasures, entities.MeasuresEqual)
+}
+
+func (m *merger) computeNodeMeasures(newMeasures *[]*entities.Measure, liveDevice *entities.LiveDevice, device *entities.Device) {
+	// diff between parent and siblings
+	parent := m.findDeviceById(device.Parent())
+	siblings := m.listDeviceByParent(device.Parent())
+	selfIndex := slices.IndexFunc(siblings, func(dev *entities.Device) bool { return dev == device })
+	siblings = slices.Delete(siblings, selfIndex, selfIndex+1)
+
+	for _, liveSensor := range liveDevice.Sensors() {
+		m.computeMeasureFromParentSiblings(newMeasures, liveDevice.Id(), liveSensor.Key(), parent, siblings, false)
+	}
+}
+
+func (m *merger) findMeasureValue(deviceId string, sensorKey string) *entities.Measure {
+	id := fmt.Sprintf("%s-%s", deviceId, sensorKey)
+
+	measure, exists := m.measures.Find(id)
+	if !exists {
+		logger.WithField("id", id).Warn("Missing measure")
+		return nil
+	}
+
+	return measure
+}
+
+func (m *merger) computeSolarMeasures(newMeasures *[]*entities.Measure, liveDevice *entities.LiveDevice, device *entities.Device) {
+	// diff between main and groups
+	parent := m.findFirstDeviceByType(entities.Main)
+	siblings := m.listDeviceByType(entities.Group)
+
+	for _, liveSensor := range liveDevice.Sensors() {
+		m.computeMeasureFromParentSiblings(newMeasures, liveDevice.Id(), liveSensor.Key(), parent, siblings, true)
+	}
+}
+
+func (m *merger) computeMeasureFromParentSiblings(newMeasures *[]*entities.Measure, deviceId string, sensorKey string, parent *entities.Device, siblings []*entities.Device, producer bool) {
+	parentMeasure := m.findMeasureValue(parent.DeviceId(), sensorKey)
+	if parentMeasure == nil {
+		return
+	}
+
+	id := fmt.Sprintf("%s-%s", deviceId, sensorKey)
+
+	data := &entities.MeasureData{
+		Id:        id,
+		Sensor:    id,
+		Timestamp: parentMeasure.Timestamp(),
+		Value:     parentMeasure.Value(),
+	}
+
+	for _, sibling := range siblings {
+		panics.IsFalse(sibling.Computed())
+
+		siblingMeasure := m.findMeasureValue(sibling.DeviceId(), sensorKey)
+		if siblingMeasure == nil {
+			return
+		}
+
+		if siblingMeasure.Timestamp().Before(data.Timestamp) {
+			data.Timestamp = siblingMeasure.Timestamp()
+		}
+
+		data.Value -= siblingMeasure.Value()
+	}
+
+	if producer {
+		data.Value = -data.Value
+	}
+
+	*newMeasures = append(*newMeasures, entities.NewMeasure(data))
+}
+
+func (m *merger) findDeviceById(deviceId string) *entities.Device {
+	filteredDevices := m.devices.Filter(func(obj *entities.Device) bool { return obj.DeviceId() == deviceId })
+	if len(filteredDevices) != 1 {
+		return nil
+	}
+
+	return filteredDevices[0]
+}
+
+func (m *merger) findFirstDeviceByType(deviceType entities.DeviceType) *entities.Device {
+	filteredDevices := m.listDeviceByType(deviceType)
+	if len(filteredDevices) < 1 {
+		return nil
+	}
+
+	return filteredDevices[0]
+}
+
+func (m *merger) listDeviceByParent(deviceId string) []*entities.Device {
+	return m.devices.Filter(func(obj *entities.Device) bool { return obj.Parent() == deviceId })
+}
+
+func (m *merger) listDeviceByType(deviceType entities.DeviceType) []*entities.Device {
+	return m.devices.Filter(func(obj *entities.Device) bool { return obj.Type() == deviceType })
 }
