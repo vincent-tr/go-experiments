@@ -1,7 +1,9 @@
 package live
 
 import (
+	"fmt"
 	"mylife-energy/pkg/entities"
+	"mylife-tools-server/services/io"
 	"mylife-tools-server/services/store"
 	"strings"
 
@@ -19,6 +21,8 @@ type merger struct {
 
 	liveDevices  *store.Container[*entities.LiveDevice]
 	liveMeasures *store.Container[*entities.Measure]
+
+	pendingDeviceUpdate bool
 }
 
 func makeMerger(measures store.IContainer[*entities.Measure], sensors store.IContainer[*entities.Sensor]) (*merger, error) {
@@ -28,11 +32,12 @@ func makeMerger(measures store.IContainer[*entities.Measure], sensors store.ICon
 	}
 
 	m := &merger{
-		measures:     measures,
-		sensors:      sensors,
-		devices:      devices,
-		liveDevices:  store.NewContainer[*entities.LiveDevice]("live-devices"),
-		liveMeasures: store.NewContainer[*entities.Measure]("live-measures"),
+		measures:            measures,
+		sensors:             sensors,
+		devices:             devices,
+		liveDevices:         store.NewContainer[*entities.LiveDevice]("live-devices"),
+		liveMeasures:        store.NewContainer[*entities.Measure]("live-measures"),
+		pendingDeviceUpdate: false,
 	}
 
 	m.measuresChangedCallback = func(event *store.Event[*entities.Measure]) {
@@ -40,11 +45,11 @@ func makeMerger(measures store.IContainer[*entities.Measure], sensors store.ICon
 	}
 
 	m.sensorsChangedCallback = func(event *store.Event[*entities.Sensor]) {
-		m.sensorsChanged(event)
+		m.deviceOrSensorChanged()
 	}
 
 	m.devicesChangedCallback = func(event *store.Event[*entities.Device]) {
-		m.devicesChanged(event)
+		m.deviceOrSensorChanged()
 	}
 
 	m.measures.AddListener(&m.measuresChangedCallback)
@@ -92,11 +97,23 @@ func (m *merger) devicesChanged(event *store.Event[*entities.Device]) {
 	m.computeDevices()
 }
 
+func (m *merger) deviceOrSensorChanged() {
+	if m.pendingDeviceUpdate {
+		return
+	}
+
+	m.pendingDeviceUpdate = true
+
+	io.SubmitIoTask("live/compute-devices", m.computeDevices)
+}
+
 func (m *merger) computeDevices() {
-	devices := make(map[string]entities.LiveDeviceData)
+	m.pendingDeviceUpdate = false
+
+	devices := make(map[string]*entities.LiveDeviceData)
 
 	for _, device := range m.devices.List() {
-		devices[device.DeviceId()] = entities.LiveDeviceData{
+		devices[device.DeviceId()] = &entities.LiveDeviceData{
 			Id:      device.DeviceId(),
 			Display: device.Display(),
 			Type:    device.Type(),
@@ -106,7 +123,7 @@ func (m *merger) computeDevices() {
 	}
 
 	for _, sensor := range m.sensors.List() {
-		deviceId, sensorKey := splitSensorId(sensor.Id())
+		deviceId, sensorKey, display := sensorData(sensor)
 		device, exists := devices[deviceId]
 
 		if !exists {
@@ -115,7 +132,7 @@ func (m *merger) computeDevices() {
 
 		device.Sensors = append(device.Sensors, entities.LiveSensorData{
 			Key:               sensorKey,
-			Display:           sensorDisplay(sensor),
+			Display:           display,
 			DeviceClass:       sensor.DeviceClass(),
 			StateClass:        sensor.StateClass(),
 			UnitOfMeasurement: sensor.UnitOfMeasurement(),
@@ -134,22 +151,32 @@ func (m *merger) computeDevices() {
 	m.liveDevices.ReplaceAll(list, entities.LiveDevicesEqual)
 }
 
-func splitSensorId(value string) (deviceId string, sensorKey string) {
-	// first part is device id, last part sensor key
-	index := strings.LastIndex(value, "-")
-	panics.IsTrue(index > -1)
-
-	deviceId = value[:index]
-	sensorKey = value[index+1:]
-	return
-}
-
-func sensorDisplay(sensor *entities.Sensor) string {
+func sensorData(sensor *entities.Sensor) (deviceId string, sensorKey string, display string) {
 	switch sensor.DeviceClass() {
+	case "apparent_power":
+		display = "Puissance apparente"
+		sensorKey = "apparent-power"
+
+	case "power":
+		display = "Puissance réelle"
+		sensorKey = "real-power"
+
 	case "current":
-		return "Courant"
-	// TODO: others
+		display = "Courant"
+		sensorKey = "current"
+
+	case "voltage":
+		display = "Tension"
+		sensorKey = "voltage"
+
 	default:
-		return sensor.DeviceClass()
+		panic(fmt.Sprintf("Unexpected device class '%s' on sensor '%s'", sensor.DeviceClass(), sensor.Id()))
 	}
+
+	panics.IsTrue(strings.HasSuffix(sensor.Id(), sensorKey))
+
+	deviceIdLen := len(sensor.Id()) - len(sensorKey) - 1
+	deviceId = sensor.Id()[:deviceIdLen]
+
+	return
 }
