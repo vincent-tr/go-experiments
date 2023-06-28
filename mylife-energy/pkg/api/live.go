@@ -8,7 +8,7 @@ import (
 	"mylife-tools-server/services/sessions"
 )
 
-var liveDef = api.MakeDefinition("live", notifyMeasures, notifySensors)
+var liveDef = api.MakeDefinition("live", notifyMeasures, notifyDevices)
 
 func notifyMeasures(session *sessions.Session, arg struct{}) (uint64, error) {
 	measures := live.GetMeasures()
@@ -16,8 +16,8 @@ func notifyMeasures(session *sessions.Session, arg struct{}) (uint64, error) {
 	return viewId, nil
 }
 
-func notifySensors(session *sessions.Session, arg struct{}) (uint64, error) {
-	sensors := live.GetSensors()
-	viewId := notification.NotifyView[*entities.Sensor](session, sensors)
+func notifyDevices(session *sessions.Session, arg struct{}) (uint64, error) {
+	devices := live.GetDevices()
+	viewId := notification.NotifyView[*entities.LiveDevice](session, devices)
 	return viewId, nil
 }

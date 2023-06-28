@@ -25,7 +25,7 @@ func main() {
 		"store": entities.StoreDef,
 	}
 
-	services.RunServices([]string{"test", "web", "live", "store"}, args)
+	services.RunServices([]string{ /*"test",*/ "web", "live", "store"}, args)
 }
 
 type testService struct {
