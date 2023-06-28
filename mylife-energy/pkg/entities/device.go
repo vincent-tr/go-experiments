@@ -63,12 +63,12 @@ func (device *Device) Marshal() (interface{}, error) {
 }
 
 type deviceData struct {
-	Id       primitive.ObjectID
-	DeviceId string
-	Display  string
-	Type     string
-	Computed bool
-	Parent   string
+	Id       primitive.ObjectID `bson:"_id"`
+	DeviceId string             `bson:"deviceId"`
+	Display  string             `bson:"display"`
+	Type     string             `bson:"type"`
+	Computed bool               `bson:"computed"`
+	Parent   string             `bson:"parent"`
 }
 
 func deviceEncode(device *Device) ([]byte, error) {
