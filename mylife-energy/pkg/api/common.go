@@ -8,7 +8,7 @@ import (
 
 var commonDef = api.MakeDefinition("common", unnotify)
 
-func unnotify(session *sessions.Session, arg struct{ viewId uint64 }) (api.NoReturn, error) {
-	notification.UnnotifyView(session, arg.viewId)
+func unnotify(session *sessions.Session, arg struct{ ViewId uint64 }) (api.NoReturn, error) {
+	notification.UnnotifyView(session, arg.ViewId)
 	return nil, nil
 }
