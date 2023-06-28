@@ -160,33 +160,33 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 
 	switch valueType.Kind() {
 	case reflect.String:
-		return value.Interface(), nil
+		return castValue[string](value), nil
 	case reflect.Bool:
-		return value.Interface(), nil
+		return castValue[bool](value), nil
 	case reflect.Float32:
-		return float64(value.Interface().(float32)), nil
+		return float64(castValue[float32](value)), nil
 	case reflect.Float64:
-		return value.Interface(), nil
+		return castValue[float64](value), nil
 	case reflect.Int:
-		return float64(value.Interface().(int)), nil
+		return float64(castValue[int](value)), nil
 	case reflect.Int8:
-		return float64(value.Interface().(int8)), nil
+		return float64(castValue[int8](value)), nil
 	case reflect.Int16:
-		return float64(value.Interface().(int16)), nil
+		return float64(castValue[int16](value)), nil
 	case reflect.Int32:
-		return float64(value.Interface().(int32)), nil
+		return float64(castValue[int32](value)), nil
 	case reflect.Int64:
-		return float64(value.Interface().(int64)), nil
+		return float64(castValue[int64](value)), nil
 	case reflect.Uint:
-		return float64(value.Interface().(uint)), nil
+		return float64(castValue[uint](value)), nil
 	case reflect.Uint8:
-		return float64(value.Interface().(uint8)), nil
+		return float64(castValue[uint8](value)), nil
 	case reflect.Uint16:
-		return float64(value.Interface().(uint16)), nil
+		return float64(castValue[uint16](value)), nil
 	case reflect.Uint32:
-		return float64(value.Interface().(uint32)), nil
+		return float64(castValue[uint32](value)), nil
 	case reflect.Uint64:
-		return float64(value.Interface().(uint64)), nil
+		return float64(castValue[uint64](value)), nil
 
 	case reflect.Pointer, reflect.Interface:
 		if value.IsNil() {
@@ -215,6 +215,12 @@ func marshalValue(value reflect.Value) (interface{}, error) {
 	}
 
 	return nil, fmt.Errorf("Cannot marshal type '%s'", valueType.String())
+}
+
+// Permits to go through "type MyType = int"
+func castValue[T any](value reflect.Value) T {
+	realValue := reflect.ValueOf(value.Interface())
+	return realValue.Convert(getType[T]()).Interface().(T)
 }
 
 func unmarshalValue(raw interface{}, value reflect.Value) error {
