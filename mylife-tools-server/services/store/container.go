@@ -107,7 +107,7 @@ func (container *Container[TEntity]) Delete(id string) bool {
 func (container *Container[TEntity]) ReplaceAll(objs []TEntity, equals func(a TEntity, b TEntity) bool) {
 	removeSet := make(map[string]struct{})
 
-	for id, _ := range container.items {
+	for id := range container.items {
 		removeSet[id] = struct{}{}
 	}
 
@@ -115,7 +115,7 @@ func (container *Container[TEntity]) ReplaceAll(objs []TEntity, equals func(a TE
 		delete(removeSet, obj.Id())
 	}
 
-	for id, _ := range removeSet {
+	for id := range removeSet {
 		container.Delete(id)
 	}
 
