@@ -22,7 +22,8 @@ type merger struct {
 	liveDevices  *store.Container[*entities.LiveDevice]
 	liveMeasures *store.Container[*entities.Measure]
 
-	pendingDeviceUpdate bool
+	pendingDeviceUpdate  bool
+	pendingMeasureUpdate bool
 }
 
 func makeMerger(measures store.IContainer[*entities.Measure], sensors store.IContainer[*entities.Sensor]) (*merger, error) {
@@ -32,16 +33,17 @@ func makeMerger(measures store.IContainer[*entities.Measure], sensors store.ICon
 	}
 
 	m := &merger{
-		measures:            measures,
-		sensors:             sensors,
-		devices:             devices,
-		liveDevices:         store.NewContainer[*entities.LiveDevice]("live-devices"),
-		liveMeasures:        store.NewContainer[*entities.Measure]("live-measures"),
-		pendingDeviceUpdate: false,
+		measures:             measures,
+		sensors:              sensors,
+		devices:              devices,
+		liveDevices:          store.NewContainer[*entities.LiveDevice]("live-devices"),
+		liveMeasures:         store.NewContainer[*entities.Measure]("live-measures"),
+		pendingDeviceUpdate:  false,
+		pendingMeasureUpdate: false,
 	}
 
 	m.measuresChangedCallback = func(event *store.Event[*entities.Measure]) {
-		m.measuresChanged(event)
+		m.measuresChanged()
 	}
 
 	m.sensorsChangedCallback = func(event *store.Event[*entities.Sensor]) {
@@ -57,11 +59,7 @@ func makeMerger(measures store.IContainer[*entities.Measure], sensors store.ICon
 	m.devices.AddListener(&m.devicesChangedCallback)
 
 	m.computeDevices()
-
-	for _, measure := range m.measures.List() {
-		// TODO: compute
-		m.liveMeasures.Set(measure)
-	}
+	m.computeMeasures()
 
 	return m, nil
 }
@@ -76,25 +74,6 @@ func (m *merger) terminate() {
 	m.devices = nil
 	m.liveDevices = nil
 	m.liveMeasures = nil
-}
-
-func (m *merger) measuresChanged(event *store.Event[*entities.Measure]) {
-	// TODO: compute
-
-	switch event.Type() {
-	case store.Create, store.Update:
-		m.liveMeasures.Set(event.After())
-	case store.Remove:
-		m.liveMeasures.Delete(event.Before().Id())
-	}
-}
-
-func (m *merger) sensorsChanged(event *store.Event[*entities.Sensor]) {
-	m.computeDevices()
-}
-
-func (m *merger) devicesChanged(event *store.Event[*entities.Device]) {
-	m.computeDevices()
 }
 
 func (m *merger) deviceOrSensorChanged() {
@@ -149,6 +128,9 @@ func (m *merger) computeDevices() {
 	logger.Debugf("Updating %d devices", len(list))
 
 	m.liveDevices.ReplaceAll(list, entities.LiveDevicesEqual)
+
+	// Recompute measures after device changes
+	m.measuresChanged()
 }
 
 func sensorData(sensor *entities.Sensor) (deviceId string, sensorKey string, display string) {
@@ -179,4 +161,50 @@ func sensorData(sensor *entities.Sensor) (deviceId string, sensorKey string, dis
 	deviceId = sensor.Id()[:deviceIdLen]
 
 	return
+}
+
+func (m *merger) measuresChanged() {
+	if m.pendingMeasureUpdate {
+		return
+	}
+
+	m.pendingMeasureUpdate = true
+
+	io.SubmitIoTask("live/compute-measures", m.computeMeasures)
+}
+
+func (m *merger) computeMeasures() {
+	m.pendingMeasureUpdate = false
+
+	newMeasures := make([]*entities.Measure, 0)
+
+	for _, liveDevice := range m.liveDevices.List() {
+		filteredDevices := m.devices.Filter(func(obj *entities.Device) bool { return obj.DeviceId() == liveDevice.Id() })
+		if len(filteredDevices) != 1 {
+			logger.WithField("id", liveDevice.Id()).Warn("Unmatched device")
+			continue
+		}
+
+		device := filteredDevices[0]
+		if device.Computed() {
+			// TODO: computed
+			continue
+		}
+
+		for _, liveSensor := range liveDevice.Sensors() {
+			id := fmt.Sprintf("%s-%s", liveDevice.Id(), liveSensor.Key())
+
+			measure, exists := m.measures.Find(id)
+			if !exists {
+				logger.WithField("id", id).Warn("Missing measure")
+				continue
+			}
+
+			newMeasures = append(newMeasures, measure)
+		}
+	}
+
+	// TODO: computed
+
+	m.liveMeasures.ReplaceAll(newMeasures, entities.MeasuresEqual)
 }
