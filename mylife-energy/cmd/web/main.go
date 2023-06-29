@@ -1,6 +1,7 @@
 package main
 
 import (
+	ui "mylife-energy-ui"
 	"mylife-energy/pkg/api"
 	"mylife-energy/pkg/entities"
 	"mylife-energy/pkg/services/tesla"
@@ -23,6 +24,7 @@ func main() {
 	args := map[string]interface{}{
 		"api":   api.Definitions,
 		"store": entities.StoreDef,
+		"web":   ui.FS,
 	}
 
 	services.RunServices([]string{ /*"test",*/ "web", "live", "store"}, args)
