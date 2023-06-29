@@ -3,3 +3,9 @@ bus:
   serverUrl: ${BUS_SERVER|tcp://rpi-dev-home-main}
 webServer:
   address: :${WEB_PORT|80}
+tesla:
+  vin: ${TESLA_VIN}
+  tokenPath: ${TESLA_TOKEN|/tesla.token}
+  homeLocation: ${TESLA_HOME}
+teslaWallConnector:
+  address: ${TWC_ADDRESS}
