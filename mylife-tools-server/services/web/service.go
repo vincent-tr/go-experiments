@@ -59,7 +59,7 @@ func (service *webService) Init(arg interface{}) error {
 		}
 
 		for _, name := range list {
-			logger.Tracef("Serving embeded file '%s'", name)
+			logger.Tracef("Serving embedded file '%s'", name)
 		}
 
 		service.mux.Handle("/", spaHandler(fs))
@@ -135,6 +135,8 @@ func spaHandler(fsys fs.FS) http.Handler {
 			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 			return
 		}
+
+		logger.WithField("path", upath).Tracef("Serving path")
 
 		http.ServeContent(w, r, stat.Name(), stat.ModTime(), content)
 	})
