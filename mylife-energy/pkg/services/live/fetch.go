@@ -9,8 +9,6 @@ import (
 	"mylife-tools-server/utils"
 	"sync"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type fetcher struct {
@@ -58,10 +56,19 @@ func (f *fetcher) workerEntry(exit chan struct{}) {
 }
 
 func (f *fetcher) sync() {
-	results, err := query.Aggregate(f.dbContext, []bson.M{
-		{"$sort": bson.M{"sensor.sensorId": 1, "timestamp": -1}},
-		{"$group": bson.M{"_id": "$sensor.sensorId", "timestamp": bson.M{"$first": "$timestamp"}, "value": bson.M{"$first": "$value"}, "sensor": bson.M{"$first": "$sensor"}}},
-	})
+	builder := query.NewPipelineBuilder().
+		Sort(
+			query.SortField{Name: "sensor.sensorId", Order: query.Asc},
+			query.SortField{Name: "timestamp", Order: query.Desc},
+		).
+		Group(
+			"$sensor.sensorId",
+			query.GroupField{Name: "timestamp", Accumulator: "$first", Expression: "$timestamp"},
+			query.GroupField{Name: "value", Accumulator: "$first", Expression: "$value"},
+			query.GroupField{Name: "sensor", Accumulator: "$first", Expression: "$sensor"},
+		)
+
+	results, err := query.Aggregate(f.dbContext, builder.Build())
 
 	if err != nil {
 		logger.WithError(err).Error("Error fetching results")
