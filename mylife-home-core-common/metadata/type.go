@@ -3,6 +3,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"regexp"
 	"strconv"
 	"strings"
@@ -113,13 +114,33 @@ func (this *rangeType) String() string {
 }
 
 func (this *rangeType) Encode(value any) (string, error) {
-	// TODO: check value
-	return strconv.FormatInt(value.(int64), 10), nil
+	ivalue := value.(int64)
+	if err := this.validate(ivalue); err != nil {
+		return "", err
+	}
+
+	return strconv.FormatInt(ivalue, 10), nil
 }
 
 func (this *rangeType) Decode(raw string) (any, error) {
-	// TODO: check value
-	return strconv.ParseInt(raw, 10, 64)
+	ivalue, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := this.validate(ivalue); err != nil {
+		return nil, err
+	}
+
+	return ivalue, nil
+}
+
+func (this *rangeType) validate(value int64) error {
+	if value < this.min || value > this.max {
+		return fmt.Errorf("Invalid value '%d' for '%s'", value, this.String())
+	}
+
+	return nil
 }
 
 type textType struct {
@@ -176,13 +197,29 @@ func (this *enumType) String() string {
 }
 
 func (this *enumType) Encode(value any) (string, error) {
-	// TODO: check value
-	return value.(string), nil
+	svalue := value.(string)
+	if err := this.validate(svalue); err != nil {
+		return "", err
+	}
+
+	return svalue, nil
 }
 
 func (this *enumType) Decode(raw string) (any, error) {
-	// TODO: check value
-	return raw, nil
+	svalue := raw
+	if err := this.validate(svalue); err != nil {
+		return nil, err
+	}
+
+	return svalue, nil
+}
+
+func (this *enumType) validate(value string) error {
+	if !slices.Contains(this.values, value) {
+		return fmt.Errorf("Invalid value '%s' for '%s'", value, this.String())
+	}
+
+	return nil
 }
 
 type complexType struct {
