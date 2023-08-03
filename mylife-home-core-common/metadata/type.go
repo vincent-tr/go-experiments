@@ -3,6 +3,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -13,8 +14,93 @@ type Type interface {
 	Decode(raw string) (any, error)
 }
 
+var parser = regexp.MustCompile(`([a-z]+)(.*)`)
+var rangeParser = regexp.MustCompile(`\[(-?\d+);(-?\d+)\]`)
+var enumParser = regexp.MustCompile(`{(.[\w_\-,]+)}`)
+
 func ParseType(value string) (Type, error) {
-	return nil, fmt.Errorf("TODO")
+	matchs := parser.FindStringSubmatch(value)
+	if matchs == nil {
+		return nil, fmt.Errorf("Invalid type '%s'", value)
+	}
+
+	var baseType, args string
+
+	switch len(matchs) {
+	case 2:
+		baseType = matchs[1]
+
+	case 3:
+		baseType = matchs[1]
+		args = matchs[2]
+
+	default:
+		return nil, fmt.Errorf("Invalid type '%s' (bad match len)", value)
+	}
+
+	switch baseType {
+	case "range":
+		matchs := rangeParser.FindStringSubmatch(args)
+		if matchs == nil || len(matchs) != 3 {
+			return nil, fmt.Errorf("Invalid type '%s' (bad args)", value)
+		}
+
+		min, err := strconv.ParseInt(matchs[1], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid type '%s' (%f)", value, err)
+		}
+
+		max, err := strconv.ParseInt(matchs[2], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid type '%s' (%f)", value, err)
+		}
+
+		if min >= max {
+			return nil, fmt.Errorf("Invalid type '%s' (min >= mX)", value)
+		}
+
+		return &rangeType{min: min, max: max}, nil
+
+	case "text":
+		if args != "" {
+			return nil, fmt.Errorf("Invalid type '%s' (unexpected args)", value)
+		}
+		return &textType{}, nil
+
+	case "float":
+		if args != "" {
+			return nil, fmt.Errorf("Invalid type '%s' (unexpected args)", value)
+		}
+		return &floatType{}, nil
+
+	case "bool":
+		if args != "" {
+			return nil, fmt.Errorf("Invalid type '%s' (unexpected args)", value)
+		}
+		return &boolType{}, nil
+
+	case "enum":
+		matchs := enumParser.FindStringSubmatch(args)
+		if matchs == nil || len(matchs) != 2 {
+			return nil, fmt.Errorf("Invalid type '%s' (bad args)", value)
+		}
+
+		values := strings.Split(matchs[1], ",")
+		if len(values) < 2 {
+			return nil, fmt.Errorf("Invalid type '%s' (bad args)", value)
+		}
+
+		return &enumType{values: values}, nil
+
+	case "complex":
+		if args != "" {
+			return nil, fmt.Errorf("Invalid type '%s' (unexpected args)", value)
+		}
+		return &complexType{}, nil
+
+	default:
+		return nil, fmt.Errorf("Invalid type '%s' (unknown type)", value)
+	}
 }
 
 type rangeType struct {
