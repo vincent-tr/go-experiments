@@ -1,6 +1,7 @@
+//go:generate cd ../../../mylife-home-core-generator && go run cmd/main.go -- $GOFILE
 package plugin
 
-// @Plugin(description='boolean value description' usage=logic)
+// @Plugin(description="binary value description" usage=logic)
 type ValueBinary struct {
 	// @State
 	Value State[bool]
