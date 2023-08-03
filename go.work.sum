@@ -1,3 +1,4 @@
 github.com/hashicorp/errwrap v1.0.0 h1:hLrqtEDnRye3+sgx6z4qVLNuviH3MR5aQ0ykNJa/UYA=
 github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+lD48awMYo=
+golang.org/x/exp v0.0.0-20221111204811-129d8d6c17ab h1:1S7USr8/C0Sgk4egxq4zZ07zYt2Xh1IiFp8hUMXH/us=
 golang.org/x/mod v0.7.0 h1:LapD9S96VoQRhi/GrNTqeBJFrUjs5UHCAtTlgwA5oZA=

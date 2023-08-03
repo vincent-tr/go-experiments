@@ -1,8 +1,10 @@
 package metadata
 
 import (
-	"strconv"
 	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
 )
 
 type Type interface {
@@ -11,13 +13,13 @@ type Type interface {
 	Decode(raw string) (any, error)
 }
 
-func ParseType(value string) Type {
-
+func ParseType(value string) (Type, error) {
+	return nil, fmt.Errorf("TODO")
 }
 
 type rangeType struct {
-	min: int64
-	max: int64
+	min int64
+	max int64
 }
 
 func (this *rangeType) String() string {
@@ -26,12 +28,12 @@ func (this *rangeType) String() string {
 
 func (this *rangeType) Encode(value any) (string, error) {
 	// TODO: check value
-	return strconv.FormatInt(value.(int64))
+	return strconv.FormatInt(value.(int64), 10), nil
 }
 
 func (this *rangeType) Decode(raw string) (any, error) {
 	// TODO: check value
-	return strconv.ParseInt(raw)
+	return strconv.ParseInt(raw, 10, 64)
 }
 
 type textType struct {
@@ -46,7 +48,7 @@ func (this *textType) Encode(value any) (string, error) {
 }
 
 func (this *textType) Decode(raw string) (any, error) {
-	return raw
+	return raw, nil
 }
 
 type floatType struct {
@@ -57,11 +59,11 @@ func (this *floatType) String() string {
 }
 
 func (this *floatType) Encode(value any) (string, error) {
-	return strconv.FormatFloat(value.(float64))
+	return strconv.FormatFloat(value.(float64), 'g', -1, 64), nil
 }
 
 func (this *floatType) Decode(raw string) (any, error) {
-	return strconv.ParseFloat(raw)
+	return strconv.ParseFloat(raw, 64)
 }
 
 type boolType struct {
@@ -72,7 +74,7 @@ func (this *boolType) String() string {
 }
 
 func (this *boolType) Encode(value any) (string, error) {
-	return strconv.FormatBool(value.(bool))
+	return strconv.FormatBool(value.(bool)), nil
 }
 
 func (this *boolType) Decode(raw string) (any, error) {
@@ -80,7 +82,7 @@ func (this *boolType) Decode(raw string) (any, error) {
 }
 
 type enumType struct {
-	values: []string
+	values []string
 }
 
 func (this *enumType) String() string {
@@ -94,7 +96,7 @@ func (this *enumType) Encode(value any) (string, error) {
 
 func (this *enumType) Decode(raw string) (any, error) {
 	// TODO: check value
-	return raw
+	return raw, nil
 }
 
 type complexType struct {
@@ -105,10 +107,16 @@ func (this *complexType) String() string {
 }
 
 func (this *complexType) Encode(value any) (string, error) {
-	return json
-	// TODO
+	b, err := json.Marshal(value)
+	if err != nil {
+		return "", err
+	}
+
+	return string(b), nil
 }
 
 func (this *complexType) Decode(raw string) (any, error) {
-	// TODO
+	var value any
+	err := json.Unmarshal([]byte(raw), &value)
+	return value, err
 }

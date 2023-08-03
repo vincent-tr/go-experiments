@@ -1,5 +1,9 @@
 package metadata
 
+import (
+	"golang.org/x/exp/maps"
+)
+
 type PluginUsage string
 
 const (
@@ -29,7 +33,7 @@ func (this *Component) Usage() PluginUsage {
 	return this.usage
 }
 
-func (this *Component) ConfigNames() string {
+func (this *Component) ConfigNames() []string {
 	return maps.Keys(this.config)
 }
 
@@ -37,7 +41,7 @@ func (this *Component) Config(name string) *ConfigItem {
 	return this.config[name]
 }
 
-func (this *Component) MemberNames() string {
+func (this *Component) MemberNames() []string {
 	return maps.Keys(this.members)
 }
 
