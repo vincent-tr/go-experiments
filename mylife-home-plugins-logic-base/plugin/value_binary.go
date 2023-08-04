@@ -1,4 +1,3 @@
-// go:generate cd ../../../mylife-home-core-generator && go run cmd/main.go -- $GOFILE
 package plugin
 
 import (
