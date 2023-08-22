@@ -16,3 +16,6 @@
 
 # Go workspace file
 go.work
+
+# Generated code
+*generated.go
