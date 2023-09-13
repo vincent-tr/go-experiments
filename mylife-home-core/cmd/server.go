@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	_ "mylife-home-core-plugins-logic-base"
 )
 
 func init() {

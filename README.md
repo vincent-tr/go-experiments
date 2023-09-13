@@ -13,6 +13,12 @@ type Config[T] interface // mylife:`type=titi`,
 
 Get
 
+## generate
+
+```shell
+go generate mylife-home-core-plugins-logic-base/main.go 
+```
+
 ## run
 
 ```shell
