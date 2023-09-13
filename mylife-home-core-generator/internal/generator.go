@@ -8,11 +8,12 @@ import (
 )
 
 type Generator struct {
-	outputPath string
+	outputPath  string
+	packageName string
 }
 
 func MakeGenerator(node annotation.Node, outputPath string) *Generator {
-	return &Generator{outputPath}
+	return &Generator{outputPath, node.Meta().PackageName()}
 }
 
 func (generator *Generator) EnsureOutputPath(node annotation.Node) {
@@ -46,5 +47,6 @@ func (generator *Generator) ProcessConfigAnnotations(node annotation.Node, annot
 }
 
 func (generator *Generator) Output() []byte {
-	return make([]byte, 0)
+
+	return []byte(fmt.Sprintf("package %s\n", generator.packageName))
 }
