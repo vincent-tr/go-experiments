@@ -8,9 +8,9 @@ type PluginUsage string
 
 const (
 	Sensor   PluginUsage = "sensor"
-	Actuator             = "actuator"
-	Logic                = "logic"
-	Ui                   = "ui"
+	Actuator PluginUsage = "actuator"
+	Logic    PluginUsage = "logic"
+	Ui       PluginUsage = "ui"
 )
 
 type Component struct {
@@ -21,30 +21,30 @@ type Component struct {
 	members     map[string]*Member
 }
 
-func (this *Component) Name() string {
-	return this.name
+func (component *Component) Name() string {
+	return component.name
 }
 
-func (this *Component) Description() string {
-	return this.description
+func (component *Component) Description() string {
+	return component.description
 }
 
-func (this *Component) Usage() PluginUsage {
-	return this.usage
+func (component *Component) Usage() PluginUsage {
+	return component.usage
 }
 
-func (this *Component) ConfigNames() []string {
-	return maps.Keys(this.config)
+func (component *Component) ConfigNames() []string {
+	return maps.Keys(component.config)
 }
 
-func (this *Component) Config(name string) *ConfigItem {
-	return this.config[name]
+func (component *Component) Config(name string) *ConfigItem {
+	return component.config[name]
 }
 
-func (this *Component) MemberNames() []string {
-	return maps.Keys(this.members)
+func (component *Component) MemberNames() []string {
+	return maps.Keys(component.members)
 }
 
-func (this *Component) Member(name string) *Member {
-	return this.members[name]
+func (component *Component) Member(name string) *Member {
+	return component.members[name]
 }

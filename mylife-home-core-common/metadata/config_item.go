@@ -15,14 +15,14 @@ type ConfigItem struct {
 	valueType   ConfigType
 }
 
-func (this *ConfigItem) Name() string {
-	return this.name
+func (config *ConfigItem) Name() string {
+	return config.name
 }
 
-func (this *ConfigItem) Description() string {
-	return this.description
+func (config *ConfigItem) Description() string {
+	return config.description
 }
 
-func (this *ConfigItem) ValueType() ConfigType {
-	return this.valueType
+func (config *ConfigItem) ValueType() ConfigType {
+	return config.valueType
 }

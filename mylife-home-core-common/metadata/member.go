@@ -4,7 +4,7 @@ type MemberType string
 
 const (
 	Action MemberType = "action"
-	State             = "state"
+	State  MemberType = "state"
 )
 
 type Member struct {
@@ -14,18 +14,18 @@ type Member struct {
 	valueType   Type
 }
 
-func (this *Member) Name() string {
-	return this.name
+func (member *Member) Name() string {
+	return member.name
 }
 
-func (this *Member) Description() string {
-	return this.description
+func (member *Member) Description() string {
+	return member.description
 }
 
-func (this *Member) MemberType() MemberType {
-	return this.memberType
+func (member *Member) MemberType() MemberType {
+	return member.memberType
 }
 
-func (this *Member) ValueType() Type {
-	return this.valueType
+func (member *Member) ValueType() Type {
+	return member.valueType
 }
