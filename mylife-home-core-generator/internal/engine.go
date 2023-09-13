@@ -47,7 +47,6 @@ func (engine *Engine) ProcessConfigAnnotations(node annotation.Node, annotations
 	engine.getGenerator(node).ProcessConfigAnnotations(node, annotations)
 }
 
-// Note: output once only
 func (engine *Engine) Output() map[string][]byte {
 	if engine.outputDone {
 		return make(map[string][]byte)
