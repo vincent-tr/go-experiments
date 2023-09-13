@@ -12,3 +12,9 @@ RegisterCallback
 type Config[T] interface // mylife:`type=titi`,
 
 Get
+
+## run
+
+```shell
+go run mylife-home-core/main.go server
+```
