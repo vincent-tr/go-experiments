@@ -4,6 +4,7 @@ import (
 	"path"
 
 	annotation "github.com/YReshetko/go-annotation/pkg"
+	"github.com/gookit/goutil/errorx/panics"
 )
 
 type Engine struct {
@@ -32,19 +33,27 @@ func (engine *Engine) getGenerator(node annotation.Node) *Generator {
 }
 
 func (engine *Engine) ProcessPluginAnnotations(node annotation.Node, annotations []Plugin) {
-	engine.getGenerator(node).ProcessPluginAnnotations(node, annotations)
+	panics.IsTrue(len(annotations) == 1)
+
+	engine.getGenerator(node).ProcessPluginAnnotation(node, &annotations[0])
 }
 
 func (engine *Engine) ProcessStateAnnotations(node annotation.Node, annotations []State) {
-	engine.getGenerator(node).ProcessStateAnnotations(node, annotations)
+	panics.IsTrue(len(annotations) == 1)
+
+	engine.getGenerator(node).ProcessStateAnnotation(node, &annotations[0])
 }
 
 func (engine *Engine) ProcessActionAnnotations(node annotation.Node, annotations []Action) {
-	engine.getGenerator(node).ProcessActionAnnotations(node, annotations)
+	panics.IsTrue(len(annotations) == 1)
+
+	engine.getGenerator(node).ProcessActionAnnotation(node, &annotations[0])
 }
 
 func (engine *Engine) ProcessConfigAnnotations(node annotation.Node, annotations []Config) {
-	engine.getGenerator(node).ProcessConfigAnnotations(node, annotations)
+	panics.IsTrue(len(annotations) == 1)
+
+	engine.getGenerator(node).ProcessConfigAnnotation(node, &annotations[0])
 }
 
 func (engine *Engine) Output() map[string][]byte {
