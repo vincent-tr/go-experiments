@@ -2,6 +2,8 @@ package internal
 
 import (
 	"path"
+	"path/filepath"
+	"strings"
 
 	annotation "github.com/YReshetko/go-annotation/pkg"
 	"github.com/gookit/goutil/errorx/panics"
@@ -22,11 +24,20 @@ func (engine *Engine) getOutputPath(node annotation.Node) string {
 	return path.Join(node.Meta().Dir(), filename)
 }
 
+func (engine *Engine) getModuleName(node annotation.Node) string {
+	const modulePathPrefix = "mylife-home-core-plugins-"
+
+	baseDir := filepath.Base(node.Meta().Root())
+	panics.IsTrue(strings.HasPrefix(baseDir, modulePathPrefix), "Module root directory expected: '%s__module_name__', got: '%s'", modulePathPrefix, baseDir)
+	return baseDir[len(modulePathPrefix):]
+}
+
 func (engine *Engine) getGenerator(node annotation.Node) *Generator {
 	outputPath := engine.getOutputPath(node)
 
 	if _, ok := engine.generators[outputPath]; !ok {
-		engine.generators[outputPath] = MakeGenerator(node, outputPath)
+		moduleName := engine.getModuleName(node)
+		engine.generators[outputPath] = MakeGenerator(node, outputPath, moduleName)
 	}
 
 	return engine.generators[outputPath]

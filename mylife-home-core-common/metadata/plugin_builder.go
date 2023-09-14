@@ -6,9 +6,10 @@ type PluginBuilder struct {
 	target *Plugin
 }
 
-func MakeBuilder(name string, description string, usage PluginUsage) *PluginBuilder {
+func MakeBuilder(module string, name string, description string, usage PluginUsage) *PluginBuilder {
 	return &PluginBuilder{
 		target: &Plugin{
+			module:      module,
 			name:        name,
 			description: description,
 			usage:       usage,

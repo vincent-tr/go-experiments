@@ -38,9 +38,9 @@ func (writer *Writer) appendLinef(format string, a ...any) {
 	writer.appendLine(fmt.Sprintf(format, a...))
 }
 
-func (writer *Writer) BeginPlugin(pluginType string, name string, description string, usage metadata.PluginUsage) {
+func (writer *Writer) BeginPlugin(pluginType string, module string, name string, description string, usage metadata.PluginUsage) {
 	writer.appendLine(`func init() {`)
-	writer.appendLinef(`	builder := registry.MakePluginTypeBuilder[%s]("%s", "%s", %s)`, pluginType, name, description, renderPluginUsage(usage))
+	writer.appendLinef(`	builder := registry.MakePluginTypeBuilder[%s]("%s", "%s", "%s", %s)`, pluginType, module, name, description, renderPluginUsage(usage))
 }
 
 func (writer *Writer) AddState(fieldName string, name string, description string, valueType metadata.Type) {

@@ -14,11 +14,16 @@ const (
 )
 
 type Plugin struct {
+	module      string
 	name        string
 	description string
 	usage       PluginUsage
 	config      map[string]*ConfigItem
 	members     map[string]*Member
+}
+
+func (plugin *Plugin) Module() string {
+	return plugin.module
 }
 
 func (plugin *Plugin) Name() string {

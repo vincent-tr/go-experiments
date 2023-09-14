@@ -13,6 +13,7 @@ import (
 
 type Generator struct {
 	outputPath  string
+	moduleName  string
 	packageName string
 
 	plugins []*PluginData
@@ -72,9 +73,10 @@ type ConfigData struct {
 	valueType   metadata.ConfigType
 }
 
-func MakeGenerator(node annotation.Node, outputPath string) *Generator {
+func MakeGenerator(node annotation.Node, outputPath string, moduleName string) *Generator {
 	return &Generator{
 		outputPath:  outputPath,
+		moduleName:  moduleName,
 		packageName: node.Meta().PackageName(),
 		plugins:     make([]*PluginData, 0),
 		states:      make([]*StateData, 0),
@@ -330,7 +332,7 @@ func (generator *Generator) write() []byte {
 	writer := MakeWrite(generator.packageName)
 
 	for _, plugin := range generator.plugins {
-		writer.BeginPlugin(plugin.typeName, plugin.name, plugin.description, plugin.usage)
+		writer.BeginPlugin(plugin.typeName, generator.moduleName, plugin.name, plugin.description, plugin.usage)
 
 		for _, state := range plugin.states {
 			writer.AddState(state.fieldName, state.name, state.description, state.valueType)

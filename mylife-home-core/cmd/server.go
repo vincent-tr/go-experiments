@@ -18,7 +18,7 @@ func init() {
 
 			for index := 0; index < registry.NumPlugins(); index += 1 {
 				plugin := registry.GetPlugin(index)
-				fmt.Printf("plugin: '%s'\n", plugin.Metadata().Name())
+				fmt.Printf("plugin: '%s.%s'\n", plugin.Metadata().Module(), plugin.Metadata().Name())
 			}
 		},
 	})
