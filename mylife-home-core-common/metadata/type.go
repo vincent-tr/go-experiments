@@ -1,18 +1,16 @@
 package metadata
 
 import (
-	"encoding/json"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 type Type interface {
 	String() string
-	Encode(value any) (string, error)
-	Decode(raw string) (any, error)
 }
 
 var parser = regexp.MustCompile(`([a-z]+)(.*)`)
@@ -60,25 +58,25 @@ func ParseType(value string) (Type, error) {
 			return nil, fmt.Errorf("Invalid type '%s' (min >= mX)", value)
 		}
 
-		return &rangeType{min: min, max: max}, nil
+		return &RangeType{min: min, max: max}, nil
 
 	case "text":
 		if args != "" {
 			return nil, fmt.Errorf("Invalid type '%s' (unexpected args)", value)
 		}
-		return &textType{}, nil
+		return &TextType{}, nil
 
 	case "float":
 		if args != "" {
 			return nil, fmt.Errorf("Invalid type '%s' (unexpected args)", value)
 		}
-		return &floatType{}, nil
+		return &FloatType{}, nil
 
 	case "bool":
 		if args != "" {
 			return nil, fmt.Errorf("Invalid type '%s' (unexpected args)", value)
 		}
-		return &boolType{}, nil
+		return &BoolType{}, nil
 
 	case "enum":
 		matchs := enumParser.FindStringSubmatch(args)
@@ -91,155 +89,92 @@ func ParseType(value string) (Type, error) {
 			return nil, fmt.Errorf("Invalid type '%s' (bad args)", value)
 		}
 
-		return &enumType{values: values}, nil
+		return &EnumType{values: values}, nil
 
 	case "complex":
 		if args != "" {
 			return nil, fmt.Errorf("Invalid type '%s' (unexpected args)", value)
 		}
-		return &complexType{}, nil
+		return &ComplexType{}, nil
 
 	default:
 		return nil, fmt.Errorf("Invalid type '%s' (unknown type)", value)
 	}
 }
 
-type rangeType struct {
+type RangeType struct {
 	min int64
 	max int64
 }
 
-func (this *rangeType) String() string {
-	return fmt.Sprintf("range[%d;%d]", this.min, this.max)
+func (typ *RangeType) String() string {
+	return fmt.Sprintf("range[%d;%d]", typ.min, typ.max)
 }
 
-func (this *rangeType) Encode(value any) (string, error) {
-	ivalue := value.(int64)
-	if err := this.validate(ivalue); err != nil {
-		return "", err
-	}
-
-	return strconv.FormatInt(ivalue, 10), nil
+func (typ *RangeType) Min() int64 {
+	return typ.min
 }
 
-func (this *rangeType) Decode(raw string) (any, error) {
-	ivalue, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := this.validate(ivalue); err != nil {
-		return nil, err
-	}
-
-	return ivalue, nil
+func (typ *RangeType) Max() int64 {
+	return typ.max
 }
 
-func (this *rangeType) validate(value int64) error {
-	if value < this.min || value > this.max {
-		return fmt.Errorf("Invalid value '%d' for '%s'", value, this.String())
+func (typ *RangeType) validate(value int64) error {
+	if value < typ.min || value > typ.max {
+		return fmt.Errorf("Invalid value '%d' for '%s'", value, typ.String())
 	}
 
 	return nil
 }
 
-type textType struct {
+type TextType struct {
 }
 
-func (this *textType) String() string {
+func (typ *TextType) String() string {
 	return "text"
 }
 
-func (this *textType) Encode(value any) (string, error) {
-	return value.(string), nil
+type FloatType struct {
 }
 
-func (this *textType) Decode(raw string) (any, error) {
-	return raw, nil
-}
-
-type floatType struct {
-}
-
-func (this *floatType) String() string {
+func (typ *FloatType) String() string {
 	return "float"
 }
 
-func (this *floatType) Encode(value any) (string, error) {
-	return strconv.FormatFloat(value.(float64), 'g', -1, 64), nil
+type BoolType struct {
 }
 
-func (this *floatType) Decode(raw string) (any, error) {
-	return strconv.ParseFloat(raw, 64)
-}
-
-type boolType struct {
-}
-
-func (this *boolType) String() string {
+func (typ *BoolType) String() string {
 	return "bool"
 }
 
-func (this *boolType) Encode(value any) (string, error) {
-	return strconv.FormatBool(value.(bool)), nil
-}
-
-func (this *boolType) Decode(raw string) (any, error) {
-	return strconv.ParseBool(raw)
-}
-
-type enumType struct {
+type EnumType struct {
 	values []string
 }
 
-func (this *enumType) String() string {
-	return fmt.Sprintf("enum{%s}", strings.Join(this.values, ","))
+func (typ *EnumType) String() string {
+	return fmt.Sprintf("enum{%s}", strings.Join(typ.values, ","))
 }
 
-func (this *enumType) Encode(value any) (string, error) {
-	svalue := value.(string)
-	if err := this.validate(svalue); err != nil {
-		return "", err
-	}
-
-	return svalue, nil
+func (typ *EnumType) NumValues() int {
+	return len(typ.values)
 }
 
-func (this *enumType) Decode(raw string) (any, error) {
-	svalue := raw
-	if err := this.validate(svalue); err != nil {
-		return nil, err
-	}
-
-	return svalue, nil
+func (typ *EnumType) Value(index int) string {
+	return typ.values[index]
 }
 
-func (this *enumType) validate(value string) error {
-	if !slices.Contains(this.values, value) {
-		return fmt.Errorf("Invalid value '%s' for '%s'", value, this.String())
+func (typ *EnumType) validate(value string) error {
+	if !slices.Contains(typ.values, value) {
+		return fmt.Errorf("Invalid value '%s' for '%s'", value, typ.String())
 	}
 
 	return nil
 }
 
-type complexType struct {
+type ComplexType struct {
 }
 
-func (this *complexType) String() string {
+func (typ *ComplexType) String() string {
 	return "complex"
-}
-
-func (this *complexType) Encode(value any) (string, error) {
-	b, err := json.Marshal(value)
-	if err != nil {
-		return "", err
-	}
-
-	return string(b), nil
-}
-
-func (this *complexType) Decode(raw string) (any, error) {
-	var value any
-	err := json.Unmarshal([]byte(raw), &value)
-	return value, err
 }
