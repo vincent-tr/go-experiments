@@ -3,10 +3,5 @@
 package plugin_entry
 
 import (
-	"fmt"
 	_ "mylife-home-core-plugins-logic-base/plugin"
 )
-
-func init() {
-	fmt.Println("mod load logic-base")
-}
