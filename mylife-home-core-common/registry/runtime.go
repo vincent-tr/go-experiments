@@ -55,11 +55,11 @@ func (state *StateType) Metadata() *metadata.Member {
 }
 
 type ActionType struct {
-	target reflect.Type
+	target *reflect.Method
 	meta   *metadata.Member
 }
 
-func (action *ActionType) Target() reflect.Type {
+func (action *ActionType) Target() *reflect.Method {
 	return action.target
 }
 

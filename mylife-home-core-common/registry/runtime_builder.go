@@ -60,14 +60,14 @@ func (builder *PluginTypeBuilder) AddState(fieldName string, name string, descri
 	return builder
 }
 
-func (builder *PluginTypeBuilder) AddAction(funcImpl any, name string, description string, valueType metadata.Type) *PluginTypeBuilder {
+func (builder *PluginTypeBuilder) AddAction(methName string, name string, description string, valueType metadata.Type) *PluginTypeBuilder {
 	builder.metaBuilder.AddAction(name, description, valueType)
 
-	funcType := reflect.TypeOf(funcImpl)
-	panics.IsTrue(funcType.Kind() == reflect.Func)
+	method, ok := builder.target.target.MethodByName(methName)
+	panics.IsTrue(ok)
 
 	action := &ActionType{
-		target: funcType,
+		target: &method,
 	}
 
 	builder.actions = append(builder.actions, NamedItem[*ActionType]{
