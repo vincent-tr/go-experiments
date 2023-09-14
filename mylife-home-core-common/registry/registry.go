@@ -1,15 +1,15 @@
 package registry
 
-type Registry interface {
-	AddPlugin(pluginType *PluginType)
+var plugins []*PluginType = make([]*PluginType, 0)
+
+func RegisterPlugin(plugin *PluginType) {
+	plugins = append(plugins, plugin)
 }
 
-var registry Registry
-
-func RegisterPlugin(pluginType *PluginType) {
-	registry.AddPlugin(pluginType)
+func NumPlugins() int {
+	return len(plugins)
 }
 
-func SetRegistry(value Registry) {
-	registry = value
+func GetPlugin(index int) *PluginType {
+	return plugins[index]
 }

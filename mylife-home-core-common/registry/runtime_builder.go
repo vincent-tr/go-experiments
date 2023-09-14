@@ -46,7 +46,7 @@ func (builder *PluginTypeBuilder) AddState(fieldName string, name string, descri
 	builder.metaBuilder.AddState(name, description, valueType)
 
 	field, ok := builder.target.target.FieldByName(fieldName)
-	panics.IsTrue(ok)
+	panics.IsTrue(ok, "Field '%s' not found on type '%s'", fieldName, builder.target.target)
 
 	stateItem := &StateType{
 		target: &field,
@@ -63,8 +63,8 @@ func (builder *PluginTypeBuilder) AddState(fieldName string, name string, descri
 func (builder *PluginTypeBuilder) AddAction(methName string, name string, description string, valueType metadata.Type) *PluginTypeBuilder {
 	builder.metaBuilder.AddAction(name, description, valueType)
 
-	method, ok := builder.target.target.MethodByName(methName)
-	panics.IsTrue(ok)
+	method, ok := reflect.PointerTo(builder.target.target).MethodByName(methName)
+	panics.IsTrue(ok, "Method '%s' not found on type '%s'", methName, builder.target.target)
 
 	action := &ActionType{
 		target: &method,
@@ -82,7 +82,7 @@ func (builder *PluginTypeBuilder) AddConfig(fieldName string, name string, descr
 	builder.metaBuilder.AddConfig(name, description, valueType)
 
 	field, ok := builder.target.target.FieldByName(fieldName)
-	panics.IsTrue(ok)
+	panics.IsTrue(ok, "Field '%s' not found on type '%s'", fieldName, builder.target.target)
 
 	configItem := &ConfigType{
 		target: &field,
@@ -99,6 +99,7 @@ func (builder *PluginTypeBuilder) AddConfig(fieldName string, name string, descr
 func (builder *PluginTypeBuilder) Build() *PluginType {
 	meta := builder.metaBuilder.Build()
 	plugin := builder.target
+	plugin.meta = meta
 
 	// Associate meta
 

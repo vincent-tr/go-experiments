@@ -17,6 +17,10 @@ func (plugin *PluginType) Target() reflect.Type {
 	return plugin.target
 }
 
+func (plugin *PluginType) Metadata() *metadata.Plugin {
+	return plugin.meta
+}
+
 func (plugin *PluginType) NumState() int {
 	return len(plugin.state)
 }
