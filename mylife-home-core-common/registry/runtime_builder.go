@@ -21,7 +21,10 @@ type NamedItem[T any] struct {
 	target T
 }
 
-func MakePluginTypeBuilder[TPlugin definitions.Plugin](name string, description string, usage metadata.PluginUsage) *PluginTypeBuilder {
+func MakePluginTypeBuilder[TPlugin any, PTPlugin interface {
+	definitions.Plugin
+	*TPlugin
+}](name string, description string, usage metadata.PluginUsage) *PluginTypeBuilder {
 	var ptr *TPlugin = nil
 	typ := reflect.TypeOf(ptr).Elem()
 	target := &PluginType{
