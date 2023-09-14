@@ -2,13 +2,13 @@ package metadata
 
 import "github.com/gookit/goutil/errorx/panics"
 
-type ComponentBuilder struct {
-	target *Component
+type PluginBuilder struct {
+	target *Plugin
 }
 
-func MakeBuilder(name string, description string, usage PluginUsage) *ComponentBuilder {
-	return &ComponentBuilder{
-		target: &Component{
+func MakeBuilder(name string, description string, usage PluginUsage) *PluginBuilder {
+	return &PluginBuilder{
+		target: &Plugin{
 			name:        name,
 			description: description,
 			usage:       usage,
@@ -18,7 +18,7 @@ func MakeBuilder(name string, description string, usage PluginUsage) *ComponentB
 	}
 }
 
-func (builder *ComponentBuilder) AddConfig(name string, description string, valueType ConfigType) *ComponentBuilder {
+func (builder *PluginBuilder) AddConfig(name string, description string, valueType ConfigType) *PluginBuilder {
 	_, exists := builder.target.config[name]
 	panics.IsFalse(exists)
 
@@ -27,7 +27,7 @@ func (builder *ComponentBuilder) AddConfig(name string, description string, valu
 	return builder
 }
 
-func (builder *ComponentBuilder) AddState(name string, description string, valueType Type) *ComponentBuilder {
+func (builder *PluginBuilder) AddState(name string, description string, valueType Type) *PluginBuilder {
 	_, exists := builder.target.members[name]
 	panics.IsFalse(exists)
 
@@ -36,7 +36,7 @@ func (builder *ComponentBuilder) AddState(name string, description string, value
 	return builder
 }
 
-func (builder *ComponentBuilder) AddAction(name string, description string, valueType Type) *ComponentBuilder {
+func (builder *PluginBuilder) AddAction(name string, description string, valueType Type) *PluginBuilder {
 	_, exists := builder.target.members[name]
 	panics.IsFalse(exists)
 
