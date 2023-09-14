@@ -14,14 +14,15 @@ type ValueBinary struct {
 }
 
 // @Action(description="set current value")
-func (this *ValueBinary) SetValue(arg bool) {
-	this.Value.Set(arg)
+func (component *ValueBinary) SetValue(arg bool) {
+	component.Value.Set(arg)
 }
 
-func (this *ValueBinary) Init() error {
-	this.Value.Set(this.InitialValue)
+func (component *ValueBinary) Init() error {
+	component.Value.Set(component.InitialValue)
+	return nil
 }
 
-func (this *ValueBinary) Terminate() {
+func (component *ValueBinary) Terminate() {
 	// Noop
 }

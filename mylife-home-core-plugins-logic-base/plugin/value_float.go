@@ -14,14 +14,15 @@ type ValueFloat struct {
 }
 
 // @Action(description="set current value")
-func (this *ValueFloat) SetValue(arg float64) {
-	this.Value.Set(arg)
+func (component *ValueFloat) SetValue(arg float64) {
+	component.Value.Set(arg)
 }
 
-func (this *ValueFloat) Init() error {
-	this.Value.Set(this.InitialValue)
+func (component *ValueFloat) Init() error {
+	component.Value.Set(component.InitialValue)
+	return nil
 }
 
-func (this *ValueFloat) Terminate() {
+func (component *ValueFloat) Terminate() {
 	// Noop
 }
