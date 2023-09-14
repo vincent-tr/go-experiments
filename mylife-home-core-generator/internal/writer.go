@@ -40,7 +40,7 @@ func (writer *Writer) appendLinef(format string, a ...any) {
 
 func (writer *Writer) BeginPlugin(pluginType string, name string, description string, usage metadata.PluginUsage) {
 	writer.appendLine(`func init() {`)
-	writer.appendLinef(`	builder := registry.MakePluginTypeBuilder[%s]("%s", "%s", metadata.%s)`, pluginType, name, description, string(usage))
+	writer.appendLinef(`	builder := registry.MakePluginTypeBuilder[%s]("%s", "%s", %s)`, pluginType, name, description, renderPluginUsage(usage))
 }
 
 func (writer *Writer) AddState(fieldName string, name string, description string, valueType metadata.Type) {
@@ -53,7 +53,7 @@ func (writer *Writer) AddAction(methodName string, name string, description stri
 }
 
 func (writer *Writer) AddConfig(fieldName string, name string, description string, valueType metadata.ConfigType) {
-	writer.appendLinef(`	builder.AddConfig("%s", "%s", "%s", %s)`, fieldName, name, description, string(valueType))
+	writer.appendLinef(`	builder.AddConfig("%s", "%s", "%s", %s)`, fieldName, name, description, renderConfigType(valueType))
 }
 
 func (writer *Writer) EndPlugin() {
@@ -66,24 +66,39 @@ func (writer *Writer) Content() []byte {
 	return []byte(writer.builder.String())
 }
 
+func renderPluginUsage(usage metadata.PluginUsage) string {
+	switch usage {
+	case metadata.Sensor:
+		return "metadata.Sensor"
+	case metadata.Actuator:
+		return "metadata.Actuator"
+	case metadata.Logic:
+		return "metadata.Logic"
+	case metadata.Ui:
+		return "metadata.Ui"
+	default:
+		return "???"
+	}
+}
+
 func renderType(typ metadata.Type) string {
 	switch typed := typ.(type) {
 
 	case *metadata.RangeType:
-		return fmt.Sprintf(`MakeTypeRange(%d, %d)`, typed.Min(), typed.Max())
+		return fmt.Sprintf(`metadata.MakeTypeRange(%d, %d)`, typed.Min(), typed.Max())
 
 	case *metadata.TextType:
-		return `MakeTypeText()`
+		return `metadata.MakeTypeText()`
 
 	case *metadata.FloatType:
-		return `MakeTypeFloat()`
+		return `metadata.MakeTypeFloat()`
 
 	case *metadata.BoolType:
-		return `MakeTypeBool()`
+		return `metadata.MakeTypeBool()`
 
 	case *metadata.EnumType:
 		builder := strings.Builder{}
-		builder.WriteString(`MakeTypeEnum(`)
+		builder.WriteString(`metadata.MakeTypeEnum(`)
 		for index := 0; index < typed.NumValues(); index += 1 {
 			if index > 0 {
 				builder.WriteString(`, `)
@@ -95,8 +110,23 @@ func renderType(typ metadata.Type) string {
 		return builder.String()
 
 	case *metadata.ComplexType:
-		return `MakeTypeComplex()`
+		return `metadata.MakeTypeComplex()`
 
+	default:
+		return "???"
+	}
+}
+
+func renderConfigType(configType metadata.ConfigType) string {
+	switch configType {
+	case metadata.String:
+		return "metadata.String"
+	case metadata.Bool:
+		return "metadata.Bool"
+	case metadata.Integer:
+		return "metadata.Integer"
+	case metadata.Float:
+		return "metadata.Float"
 	default:
 		return "???"
 	}

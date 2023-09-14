@@ -7,5 +7,6 @@ replace mylife-home-core-common => ../mylife-home-core-common
 require (
 	github.com/YReshetko/go-annotation v0.1.4 // indirect
 	github.com/gookit/goutil v0.6.12 // indirect
+	github.com/iancoleman/strcase v0.3.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
 )
