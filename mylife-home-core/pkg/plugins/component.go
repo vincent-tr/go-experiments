@@ -1,6 +1,6 @@
 package plugins
 
-import "mylife-home-core-common/definitions"
+import "mylife-home-core-library/definitions"
 
 type Component struct {
 	plugin  *Plugin

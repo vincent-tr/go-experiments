@@ -1,7 +1,7 @@
 package plugin
 
 import (
-	"mylife-home-core-common/definitions"
+	"mylife-home-core-library/definitions"
 )
 
 // @Plugin(description="binary value description" usage="logic" version="1.0.0")

@@ -1,4 +1,4 @@
-module mylife-home-core-common
+module mylife-home-core-library
 
 go 1.20
 

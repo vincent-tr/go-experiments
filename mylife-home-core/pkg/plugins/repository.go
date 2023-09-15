@@ -1,7 +1,7 @@
 package plugins
 
 import (
-	"mylife-home-core-common/registry"
+	"mylife-home-core-library/registry"
 
 	"golang.org/x/exp/maps"
 )

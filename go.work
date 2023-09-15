@@ -2,7 +2,7 @@ go 1.20
 
 use (
 	./mylife-home-core
-	./mylife-home-core-common
+	./mylife-home-core-library
   ./mylife-home-core-generator
   ./mylife-home-core-plugins-logic-base
 )

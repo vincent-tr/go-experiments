@@ -2,9 +2,9 @@ package plugins
 
 import (
 	"fmt"
-	"mylife-home-core-common/definitions"
-	"mylife-home-core-common/metadata"
-	"mylife-home-core-common/registry"
+	"mylife-home-core-library/definitions"
+	"mylife-home-core-library/metadata"
+	"mylife-home-core-library/registry"
 	"reflect"
 )
 

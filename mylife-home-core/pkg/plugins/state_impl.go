@@ -2,7 +2,7 @@ package plugins
 
 import (
 	"fmt"
-	"mylife-home-core-common/metadata"
+	"mylife-home-core-library/metadata"
 	"sync"
 )
 
