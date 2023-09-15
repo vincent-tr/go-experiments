@@ -22,7 +22,7 @@ func init() {
 
 			plugin := plugins.GetPlugin("logic-base.value-binary")
 
-			fmt.Printf("Metadata = '%v'\n", plugin.Metadata())
+			fmt.Printf("Metadata = '%s'\n", plugin.Metadata())
 
 			comp, err := plugin.Instantiate(map[string]any{"initialValue": true})
 			if err != nil {
