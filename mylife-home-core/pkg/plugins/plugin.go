@@ -97,6 +97,7 @@ func (plugin *Plugin) Instantiate(id string, config map[string]any) (*Component,
 	}
 
 	logger.WithField("component", comp.id).Info("Component created")
+	logger.WithFields(log.Fields{"component": comp.id, "config": config}).Debug("Configuration applied")
 
 	return comp, nil
 }
