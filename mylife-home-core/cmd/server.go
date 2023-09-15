@@ -38,6 +38,9 @@ func init() {
 			fmt.Printf("Execute\n")
 			comp.Execute("setValue", true)
 
+			fmt.Printf("Execute no change\n")
+			comp.Execute("setValue", true)
+
 			fmt.Printf("Terminate\n")
 			comp.Termainte()
 		},
