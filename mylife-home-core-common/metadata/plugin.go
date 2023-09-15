@@ -18,6 +18,7 @@ type Plugin struct {
 	name        string
 	description string
 	usage       PluginUsage
+	version     string
 	config      map[string]*ConfigItem
 	members     map[string]*Member
 }
@@ -40,6 +41,10 @@ func (plugin *Plugin) Description() string {
 
 func (plugin *Plugin) Usage() PluginUsage {
 	return plugin.usage
+}
+
+func (plugin *Plugin) Version() string {
+	return plugin.version
 }
 
 func (plugin *Plugin) ConfigNames() []string {

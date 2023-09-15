@@ -4,7 +4,7 @@ import (
 	"mylife-home-core-common/definitions"
 )
 
-// @Plugin(description="binary value description" usage="logic")
+// @Plugin(description="binary value description" usage="logic" version="1.0.0")
 type ValueFloat struct {
 	// @Config(description="initial value")
 	InitialValue float64

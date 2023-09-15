@@ -4,6 +4,7 @@ type Plugin struct {
 	Name        string `annotation:"name=name"`
 	Description string `annotation:"name=description"`
 	Usage       string `annotation:"name=usage,required,oneOf=sensor;actuator;logic;ui"`
+	Version     string `annotation:"name=version"`
 }
 
 type State struct {

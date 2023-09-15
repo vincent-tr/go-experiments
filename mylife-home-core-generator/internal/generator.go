@@ -35,6 +35,7 @@ type PluginData struct {
 	name        string
 	description string
 	usage       metadata.PluginUsage
+	version     string
 }
 
 type StateData struct {
@@ -196,6 +197,9 @@ func (generator *Generator) enrich() {
 
 		plugin.usage = parsePluginUsage(plugin.ann.Usage)
 
+		panics.IsTrue(plugin.ann.Version != "")
+		plugin.version = plugin.ann.Version
+
 		for _, state := range plugin.states {
 			state.name = state.ann.Name
 			if state.name == "" {
@@ -332,7 +336,7 @@ func (generator *Generator) write() []byte {
 	writer := MakeWrite(generator.packageName)
 
 	for _, plugin := range generator.plugins {
-		writer.BeginPlugin(plugin.typeName, generator.moduleName, plugin.name, plugin.description, plugin.usage)
+		writer.BeginPlugin(plugin.typeName, generator.moduleName, plugin.name, plugin.description, plugin.usage, plugin.version)
 
 		for _, state := range plugin.states {
 			writer.AddState(state.fieldName, state.name, state.description, state.valueType)

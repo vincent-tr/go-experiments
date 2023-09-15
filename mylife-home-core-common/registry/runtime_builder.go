@@ -24,14 +24,14 @@ type NamedItem[T any] struct {
 func MakePluginTypeBuilder[TPlugin any, PTPlugin interface {
 	definitions.Plugin
 	*TPlugin
-}](module string, name string, description string, usage metadata.PluginUsage) *PluginTypeBuilder {
+}](module string, name string, description string, usage metadata.PluginUsage, version string) *PluginTypeBuilder {
 	var ptr *TPlugin = nil
 	typ := reflect.TypeOf(ptr).Elem()
 	target := &PluginType{
 		target: typ,
 	}
 
-	metaBuilder := metadata.MakeBuilder(module, name, description, usage)
+	metaBuilder := metadata.MakeBuilder(module, name, description, usage, version)
 
 	return &PluginTypeBuilder{
 		target:      target,
