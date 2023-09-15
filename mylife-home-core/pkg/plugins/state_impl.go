@@ -46,26 +46,36 @@ func (state *stateImpl[T]) UntypedGet() any {
 }
 
 func (state *stateImpl[T]) SetOnChange(value func(any)) {
+	if value == nil {
+		value = func(value any) {}
+	}
+
 	state.onChange = value
 }
 
 // ---
 
 func makeStateImpl(typ metadata.Type) untypedState {
+	var state untypedState
 	switch typ.(type) {
 	case *metadata.RangeType:
-		return &stateImpl[int64]{}
+		state = &stateImpl[int64]{}
 	case *metadata.TextType:
-		return &stateImpl[string]{}
+		state = &stateImpl[string]{}
 	case *metadata.FloatType:
-		return &stateImpl[float64]{}
+		state = &stateImpl[float64]{}
 	case *metadata.BoolType:
-		return &stateImpl[bool]{}
+		state = &stateImpl[bool]{}
 	case *metadata.EnumType:
-		return &stateImpl[string]{}
+		state = &stateImpl[string]{}
 	case *metadata.ComplexType:
-		return &stateImpl[any]{}
+		state = &stateImpl[any]{}
 	default:
 		panic(fmt.Sprintf("Unexpected type '%s'", typ.String()))
 	}
+
+	// setup noop
+	state.SetOnChange(nil)
+
+	return state
 }
