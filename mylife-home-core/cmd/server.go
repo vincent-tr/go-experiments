@@ -19,6 +19,27 @@ func init() {
 			for _, id := range plugins.Ids() {
 				fmt.Printf("plugin: '%s'\n", id)
 			}
+
+			plugin := plugins.GetPlugin("logic-base.value-binary")
+
+			fmt.Printf("Metadata = '%v'\n", plugin.Metadata())
+
+			comp, err := plugin.Instantiate(map[string]any{"initialValue": false})
+			if err != nil {
+				panic(err)
+			}
+
+			comp.SetOnStateChange(func(name string, value any) {
+				fmt.Printf("State '%s' changed to '%v'\n", name, value)
+			})
+
+			fmt.Printf("State = '%v'\n", comp.GetState())
+
+			fmt.Printf("Execute\n")
+			comp.Execute("setValue", true)
+
+			fmt.Printf("Terminate\n")
+			comp.Termainte()
 		},
 	})
 }

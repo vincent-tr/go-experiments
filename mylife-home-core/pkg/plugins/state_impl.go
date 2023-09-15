@@ -11,7 +11,7 @@ type untypedState interface {
 	SetOnChange(value func(any))
 }
 
-type stateImpl[T any] struct {
+type stateImpl[T comparable] struct {
 	mutex    sync.Mutex
 	value    T
 	onChange func(any)
@@ -30,8 +30,10 @@ func (state *stateImpl[T]) Set(value T) {
 	state.mutex.Lock()
 	defer state.mutex.Unlock()
 
-	state.value = value
-	state.onChange(value)
+	if state.value != value {
+		state.value = value
+		state.onChange(value)
+	}
 }
 
 // untypedState impl
