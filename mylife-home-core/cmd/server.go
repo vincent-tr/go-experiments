@@ -24,7 +24,7 @@ func init() {
 
 			fmt.Printf("Metadata = '%v'\n", plugin.Metadata())
 
-			comp, err := plugin.Instantiate(map[string]any{"initialValue": false})
+			comp, err := plugin.Instantiate(map[string]any{"initialValue": true})
 			if err != nil {
 				panic(err)
 			}
@@ -36,10 +36,10 @@ func init() {
 			fmt.Printf("State = '%v'\n", comp.GetState())
 
 			fmt.Printf("Execute\n")
-			comp.Execute("setValue", true)
+			comp.Execute("setValue", false)
 
 			fmt.Printf("Execute no change\n")
-			comp.Execute("setValue", true)
+			comp.Execute("setValue", false)
 
 			fmt.Printf("Terminate\n")
 			comp.Termainte()
