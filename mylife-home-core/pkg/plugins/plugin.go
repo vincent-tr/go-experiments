@@ -105,7 +105,7 @@ func (plugin *Plugin) validateConfig(config map[string]any) error {
 	for name, item := range plugin.config {
 		value, ok := config[name]
 		if !ok {
-			return fmt.Errorf("Missing value for configuration '%s'", name)
+			return fmt.Errorf("missing value for configuration '%s'", name)
 		}
 
 		if err := item.validate(value); err != nil {
@@ -176,7 +176,7 @@ func (c *pluginConfigItem) configure(compPtr reflect.Value, value any) {
 
 func (c *pluginConfigItem) validate(value any) error {
 	if !c.meta.ValueType().Validate(value) {
-		return fmt.Errorf("Invalid value '%v' for configuration '%s'", value, c.meta.Name())
+		return fmt.Errorf("invalid value '%v' for configuration '%s'", value, c.meta.Name())
 	}
 
 	return nil
