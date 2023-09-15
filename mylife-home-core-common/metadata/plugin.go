@@ -30,6 +30,10 @@ func (plugin *Plugin) Name() string {
 	return plugin.name
 }
 
+func (plugin *Plugin) Id() string {
+	return plugin.module + "." + plugin.name
+}
+
 func (plugin *Plugin) Description() string {
 	return plugin.description
 }

@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"mylife-home-core-common/registry"
+	"mylife-home-core/pkg/plugins"
 
 	"github.com/spf13/cobra"
 
@@ -14,11 +14,10 @@ func init() {
 		Use:   "server",
 		Short: "Starts the server",
 		Run: func(_ *cobra.Command, _ []string) {
-			fmt.Printf("Hello\n")
+			plugins.Build()
 
-			for index := 0; index < registry.NumPlugins(); index += 1 {
-				plugin := registry.GetPlugin(index)
-				fmt.Printf("plugin: '%s.%s'\n", plugin.Metadata().Module(), plugin.Metadata().Name())
+			for _, id := range plugins.Ids() {
+				fmt.Printf("plugin: '%s'\n", id)
 			}
 		},
 	})
