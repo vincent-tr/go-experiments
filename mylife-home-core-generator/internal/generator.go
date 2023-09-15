@@ -325,7 +325,7 @@ func makePluginName(name string) string {
 }
 
 func makeMemberName(name string) string {
-	return strcase.ToCamel(name)
+	return strcase.ToLowerCamel(name)
 }
 
 func (generator *Generator) write() []byte {
