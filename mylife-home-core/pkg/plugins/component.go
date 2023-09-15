@@ -3,10 +3,19 @@ package plugins
 import "mylife-home-core-library/definitions"
 
 type Component struct {
+	id      string
 	plugin  *Plugin
 	target  definitions.Plugin
 	state   map[string]untypedState
 	actions map[string]func(any)
+}
+
+func (comp *Component) Id() string {
+	return comp.id
+}
+
+func (comp *Component) Plugin() *Plugin {
+	return comp.plugin
 }
 
 func (comp *Component) SetOnStateChange(callback func(name string, value any)) {

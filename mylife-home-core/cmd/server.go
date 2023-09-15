@@ -24,7 +24,7 @@ func init() {
 
 			fmt.Printf("Metadata = '%s'\n", plugin.Metadata())
 
-			comp, err := plugin.Instantiate(map[string]any{"initialValue": true})
+			comp, err := plugin.Instantiate("test", map[string]any{"initialValue": true})
 			if err != nil {
 				panic(err)
 			}

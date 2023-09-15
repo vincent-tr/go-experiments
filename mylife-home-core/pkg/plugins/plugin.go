@@ -2,11 +2,14 @@ package plugins
 
 import (
 	"fmt"
+	"mylife-home-common/log"
 	"mylife-home-core-library/definitions"
 	"mylife-home-core-library/metadata"
 	"mylife-home-core-library/registry"
 	"reflect"
 )
+
+var logger = log.CreateLogger("mylife:home:core:plugins")
 
 type Plugin struct {
 	target  reflect.Type
@@ -43,6 +46,8 @@ func buildPlugin(pluginType *registry.PluginType) *Plugin {
 		plugin.config[name] = makeConfigItem(configType)
 	}
 
+	logger.WithField("plugin", plugin.meta.Id()).Info("Plugin loaded")
+
 	return plugin
 }
 
@@ -50,7 +55,7 @@ func (plugin *Plugin) Metadata() *metadata.Plugin {
 	return plugin.meta
 }
 
-func (plugin *Plugin) Instantiate(config map[string]any) (*Component, error) {
+func (plugin *Plugin) Instantiate(id string, config map[string]any) (*Component, error) {
 	if err := plugin.validateConfig(config); err != nil {
 		return nil, err
 	}
@@ -84,11 +89,14 @@ func (plugin *Plugin) Instantiate(config map[string]any) (*Component, error) {
 	}
 
 	comp := &Component{
+		id:      id,
 		plugin:  plugin,
 		target:  target,
 		state:   state,
 		actions: actions,
 	}
+
+	logger.WithField("component", comp.id).Info("Component created")
 
 	return comp, nil
 }
