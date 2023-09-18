@@ -11,6 +11,7 @@ import (
 
 	"mylife-home-common/bus" // tmp
 	"mylife-home-common/config"
+	"mylife-home-common/defines"
 	"mylife-home-common/log"
 )
 
@@ -23,6 +24,7 @@ var rootCmd = &cobra.Command{
 	Use:   "mylife-home-core",
 	Short: "mylife-home-core - Mylife Home Core",
 	Run: func(_ *cobra.Command, _ []string) {
+		defines.Init("core")
 		log.Init(logConsole)
 		config.Init(configFile)
 		plugins.Build()
@@ -48,7 +50,7 @@ func Execute() {
 }
 
 func testBus() {
-	bus.NewClient("instance-name")
+	bus.NewTransport()
 }
 
 func testComponent() {

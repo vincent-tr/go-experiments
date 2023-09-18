@@ -11,17 +11,17 @@ type busConfig struct {
 	ServerUrl string `mapstructure:"serverUrl"`
 }
 
-type Client struct {
+type client struct {
 	instanceName string
 	mqtt         mqtt.Client
 }
 
-func NewClient(instanceName string) *Client {
+func newClient(instanceName string) *client {
 	conf := busConfig{}
 	config.BindStructure("bus", &conf)
 
 	// Need it for topics
-	client := &Client{
+	client := &client{
 		instanceName: instanceName,
 	}
 
@@ -156,16 +156,16 @@ function sleepWithReset(delay: number) {
 
 */
 
-func (client *Client) buildTopic(domain string, args ...string) string {
+func (client *client) buildTopic(domain string, args ...string) string {
 	finalArgs := append([]string{client.instanceName, domain}, args...)
 	return strings.Join(finalArgs, "/")
 }
 
-func (client *Client) buildRemoteTopic(targetInstance string, domain string, args ...string) string {
+func (client *client) buildRemoteTopic(targetInstance string, domain string, args ...string) string {
 	finalArgs := append([]string{targetInstance, domain}, args...)
 	return strings.Join(finalArgs, "/")
 }
 
-func (client *Client) clearRetain(topic string) mqtt.Token {
+func (client *client) clearRetain(topic string) mqtt.Token {
 	return client.mqtt.Publish(topic, 0, true, []byte{})
 }
