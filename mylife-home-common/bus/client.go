@@ -16,7 +16,7 @@ type busConfig struct {
 	ServerUrl string `mapstructure:"serverUrl"`
 }
 
-type onlineChangedHandler func(bool)
+type OnlineChangedHandler func(bool)
 type messageHandler func(string, []byte)
 
 type client struct {
@@ -24,7 +24,7 @@ type client struct {
 	mqtt              mqtt.Client
 	online            bool
 	onlineSync        sync.RWMutex
-	onlineCallbacks   map[*onlineChangedHandler]struct{}
+	onlineCallbacks   map[*OnlineChangedHandler]struct{}
 	messageCallbacks  map[*messageHandler]struct{}
 	subscriptions     map[string]struct{}
 	subscriptionsSync sync.RWMutex
@@ -37,7 +37,7 @@ func newClient(instanceName string) *client {
 	// Need it in advance
 	client := &client{
 		instanceName:     instanceName,
-		onlineCallbacks:  make(map[*onlineChangedHandler]struct{}),
+		onlineCallbacks:  make(map[*OnlineChangedHandler]struct{}),
 		messageCallbacks: make(map[*messageHandler]struct{}),
 		subscriptions:    make(map[string]struct{}),
 	}
@@ -155,11 +155,11 @@ func (client *client) onMessage(m mqtt.Message) {
 	}
 }
 
-func (client *client) RegisterOnOnlineChanged(callback *onlineChangedHandler) {
+func (client *client) RegisterOnOnlineChanged(callback *OnlineChangedHandler) {
 	client.onlineCallbacks[callback] = struct{}{}
 }
 
-func (client *client) UnregisterOnOnlineChanged(callback *onlineChangedHandler) {
+func (client *client) UnregisterOnOnlineChanged(callback *OnlineChangedHandler) {
 	delete(client.onlineCallbacks, callback)
 }
 
