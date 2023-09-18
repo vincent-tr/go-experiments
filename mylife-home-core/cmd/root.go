@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"mylife-home-common/bus" // tmp
-	_ "mylife-home-common/bus"
 	"mylife-home-common/config"
 	"mylife-home-common/log"
 )
