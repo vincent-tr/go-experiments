@@ -9,25 +9,36 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	_ "mylife-home-common/bus"    // tmp
-	_ "mylife-home-common/config" // tmp
+	"mylife-home-common/bus" // tmp
+	_ "mylife-home-common/bus"
+	"mylife-home-common/config"
 	"mylife-home-common/log"
-	_ "mylife-home-core-plugins-logic-base"
 )
 
 var logger = log.CreateLogger("mylife:home:core:main")
+
+var configFile string
+var logConsole bool
 
 var rootCmd = &cobra.Command{
 	Use:   "mylife-home-core",
 	Short: "mylife-home-core - Mylife Home Core",
 	Run: func(_ *cobra.Command, _ []string) {
-		log.Configure()
+		log.Init(logConsole)
+		config.Init(configFile)
+		plugins.Build()
+
 		logger.WithError(errors.Errorf("failed")).Error("bam")
 
 		testComponent()
 		testBus()
-
+		testExit()
 	},
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $(PWD)/config.yaml)")
+	rootCmd.PersistentFlags().BoolVar(&logConsole, "log-console", false, "Log to console")
 }
 
 func Execute() {
@@ -38,11 +49,10 @@ func Execute() {
 }
 
 func testBus() {
-
+	bus.NewClient("instance-name")
 }
 
 func testComponent() {
-	plugins.Build()
 
 	plugin := plugins.GetPlugin("logic-base.value-binary")
 
@@ -65,6 +75,12 @@ func testComponent() {
 	logger.Infof("Execute no change")
 	comp.Execute("setValue", false)
 
+	logger.Infof("Terminate")
+	comp.Termainte()
+}
+
+func testExit() {
+
 	exit := make(chan os.Signal, 1)
 
 	signal.Notify(exit, syscall.SIGINT, syscall.SIGTERM)
@@ -72,6 +88,4 @@ func testComponent() {
 	s := <-exit
 	logger.Infof("Got signal %s", s)
 
-	logger.Infof("Terminate")
-	comp.Termainte()
 }

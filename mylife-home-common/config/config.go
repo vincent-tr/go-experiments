@@ -10,13 +10,17 @@ import (
 var logger = log.CreateLogger("mylife:home:config")
 var conf *config.Config
 
-func init() {
+func Init(configFile string) {
 	conf = config.NewWithOptions("mylife-home-config", config.ParseEnv, config.Readonly)
 
 	// add driver for support yaml content
 	conf.AddDriver(yaml.Driver)
 
-	err := conf.LoadFiles("config.yaml")
+	if configFile == "" {
+		configFile = "config.yaml"
+	}
+
+	err := conf.LoadFiles(configFile)
 	if err != nil {
 		panic(err)
 	}

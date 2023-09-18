@@ -16,12 +16,10 @@ var rootLogger = &log.Logger{
 	Level:   log.DebugLevel,
 }
 
-func Configure() {
-	var configConfig = true // TODO: config
-
+func Init(consoleOutput bool) {
 	handlers := make([]log.Handler, 0)
 
-	if configConfig {
+	if consoleOutput {
 		handlers = append(handlers, console.New(os.Stdout))
 	}
 
