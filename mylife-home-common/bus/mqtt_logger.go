@@ -12,8 +12,11 @@ func init() {
 
 	mqtt.ERROR = &mqttErrorLogger{logger}
 	mqtt.CRITICAL = &mqttErrorLogger{logger}
-	mqtt.WARN = &mqttWarnLogger{logger}
-	mqtt.DEBUG = &mqttDebugLogger{logger}
+	if false {
+		// Too verbose
+		mqtt.WARN = &mqttWarnLogger{logger}
+		mqtt.DEBUG = &mqttDebugLogger{logger}
+	}
 }
 
 type mqttDebugLogger struct {
