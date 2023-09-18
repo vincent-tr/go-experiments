@@ -1,30 +1,44 @@
 package log
 
 import (
+	stdlog "log"
+	"mylife-home-common/log/console"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/apex/log"
+	"github.com/apex/log/handlers/memory"
+	"github.com/apex/log/handlers/multi"
 )
 
-type Logger = *log.Entry
-type Fields = log.Fields
+// Before configuration create an in-memory logger
+var rootLogger = &log.Logger{
+	Handler: memory.New(),
+	Level:   log.DebugLevel,
+}
 
-func init() {
-	log.SetFormatter(&log.TextFormatter{
-		TimestampFormat: "2006-01-02 15:04:05",
-		FullTimestamp:   true,
-	})
+func Configure() {
+	var configConfig = true // TODO: config
 
-	logLevel, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
-	if err != nil {
-		logLevel = log.InfoLevel
+	handlers := make([]log.Handler, 0)
+
+	if configConfig {
+		handlers = append(handlers, console.New(os.Stdout))
 	}
 
-	log.SetLevel(logLevel)
+	handler := multi.New(handlers...)
+
+	// Dump memory logs
+	// Note: this is not thread-safe, but we are at init-time
+	entries := rootLogger.Handler.(*memory.Handler).Entries
+	for _, entry := range entries {
+		if err := handler.HandleLog(entry); err != nil {
+			stdlog.Printf("error logging: %s", err)
+		}
+	}
+
+	rootLogger.Handler = handler
 }
 
 func CreateLogger(name string) Logger {
-	return log.WithFields(log.Fields{
-		"logger-name": name,
-	})
+	return newLoggerImpl(rootLogger.WithField("logger-name", name))
 }

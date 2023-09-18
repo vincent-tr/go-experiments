@@ -21,7 +21,7 @@ func init() {
 		panic(err)
 	}
 
-	logger.WithField("data", conf.Data()).Info("Config loaded")
+	logger.Infof("Config loaded: %+v", conf.Data())
 }
 
 func BindStructure(key string, value any) {
@@ -30,12 +30,12 @@ func BindStructure(key string, value any) {
 		panic(err)
 	}
 
-	logger.WithFields(log.Fields{"key": key, "value": value}).Debug("Config fetched")
+	logger.Debugf("Config '%s' fetched: %+v", key, value)
 }
 
 func GetString(key string) string {
 	value := conf.MustString(key)
 
-	logger.WithFields(log.Fields{"key": key, "value": value}).Debug("Config fetched")
+	logger.Debugf("Config '%s' fetched: %s", key, value)
 	return value
 }

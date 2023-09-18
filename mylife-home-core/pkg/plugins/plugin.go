@@ -46,7 +46,7 @@ func buildPlugin(pluginType *registry.PluginType) *Plugin {
 		plugin.config[name] = makeConfigItem(configType)
 	}
 
-	logger.WithField("plugin", plugin.meta.Id()).Info("Plugin loaded")
+	logger.Infof("Plugin loaded '%s'", plugin.meta.Id())
 
 	return plugin
 }
@@ -96,8 +96,8 @@ func (plugin *Plugin) Instantiate(id string, config map[string]any) (*Component,
 		actions: actions,
 	}
 
-	logger.WithField("component", comp.id).Info("Component created")
-	logger.WithFields(log.Fields{"component": comp.id, "config": config}).Debug("Configuration applied")
+	logger.Infof("Component created: '%s'", comp.id)
+	logger.Debugf("Configuration applied (component='%s'): %+v", comp.id, config)
 
 	return comp, nil
 }
