@@ -172,7 +172,7 @@ func (client *client) onlineChanged(value bool) {
 	}
 
 	client.online = value
-	logger.Infof("online: %b", value)
+	logger.Infof("online: %t", value)
 
 	for callback := range client.onlineCallbacks {
 		(*callback)(value)
