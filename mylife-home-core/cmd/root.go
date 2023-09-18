@@ -36,7 +36,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "config file (default is $(PWD)/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&configFile, "config", "config.yaml", "config file (default is $(PWD)/config.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&logConsole, "log-console", false, "Log to console")
 }
 

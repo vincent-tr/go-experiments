@@ -16,10 +16,6 @@ func Init(configFile string) {
 	// add driver for support yaml content
 	conf.AddDriver(yaml.Driver)
 
-	if configFile == "" {
-		configFile = "config.yaml"
-	}
-
 	err := conf.LoadFiles(configFile)
 	if err != nil {
 		panic(err)
