@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"fmt"
 	"mylife-home-core/pkg/plugins"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -21,11 +22,11 @@ var rootCmd = &cobra.Command{
 	Short: "mylife-home-core - Mylife Home Core",
 	Run: func(_ *cobra.Command, _ []string) {
 		log.Configure()
+		logger.WithError(errors.Errorf("failed")).Error("bam")
 
 		testComponent()
 		testBus()
 
-		logger.WithError(errors.Errorf("failed")).Error("bam")
 	},
 }
 
@@ -43,13 +44,9 @@ func testBus() {
 func testComponent() {
 	plugins.Build()
 
-	for _, id := range plugins.Ids() {
-		fmt.Printf("plugin: '%s'\n", id)
-	}
-
 	plugin := plugins.GetPlugin("logic-base.value-binary")
 
-	fmt.Printf("Metadata = '%s'\n", plugin.Metadata())
+	logger.Infof("Metadata = '%s'", plugin.Metadata())
 
 	comp, err := plugin.Instantiate("test", map[string]any{"initialValue": true})
 	if err != nil {
@@ -57,17 +54,24 @@ func testComponent() {
 	}
 
 	comp.SetOnStateChange(func(name string, value any) {
-		fmt.Printf("State '%s' changed to '%v'\n", name, value)
+		logger.Infof("State '%s' changed to '%v'", name, value)
 	})
 
-	fmt.Printf("State = '%v'\n", comp.GetState())
+	logger.Infof("State = '%v'", comp.GetState())
 
-	fmt.Printf("Execute\n")
+	logger.Infof("Execute")
 	comp.Execute("setValue", false)
 
-	fmt.Printf("Execute no change\n")
+	logger.Infof("Execute no change")
 	comp.Execute("setValue", false)
 
-	fmt.Printf("Terminate\n")
+	exit := make(chan os.Signal, 1)
+
+	signal.Notify(exit, syscall.SIGINT, syscall.SIGTERM)
+
+	s := <-exit
+	logger.Infof("Got signal %s", s)
+
+	logger.Infof("Terminate")
 	comp.Termainte()
 }
