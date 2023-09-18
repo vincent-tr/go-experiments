@@ -1,2 +1,2 @@
 bus:
-  serverUrl: tcp://localhost
+  serverUrl: tcp://localhost:1883

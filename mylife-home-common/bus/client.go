@@ -47,6 +47,10 @@ func newClient(instanceName string) *client {
 	options.SetClientID(instanceName)
 	options.SetCleanSession(true)
 	options.SetResumeSubs(false)
+	options.SetConnectRetry(true)
+	options.SetMaxReconnectInterval(time.Second * 5)
+	options.SetConnectRetryInterval(time.Second * 5)
+
 	options.SetBinaryWill(client.BuildTopic("online"), []byte{}, 0, true)
 
 	options.SetConnectionLostHandler(func(_ mqtt.Client, err error) {
