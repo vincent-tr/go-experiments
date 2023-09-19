@@ -2,7 +2,6 @@ package bus
 
 import (
 	"mylife-home-common/config"
-	"mylife-home-common/log"
 	"mylife-home-common/tools"
 	"strings"
 	"sync"
@@ -10,8 +9,6 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
-
-var logger = log.CreateLogger("mylife:home:bus")
 
 type busConfig struct {
 	ServerUrl string `mapstructure:"serverUrl"`

@@ -3,16 +3,22 @@ package bus
 import (
 	"mylife-home-common/defines"
 	"mylife-home-common/instance_info"
+	"mylife-home-common/log"
 	"mylife-home-common/tools"
 )
 
+var logger = log.CreateLogger("mylife:home:bus")
+
 type Transport struct {
-	client *client
+	client   *client
+	metadata *Metadata
 }
 
 func NewTransport() *Transport {
+	client := newClient(defines.InstanceName())
 	transport := &Transport{
-		client: newClient(defines.InstanceName()),
+		client:   client,
+		metadata: newMetadata(client),
 	}
 
 	transport.client.OnOnlineChanged().Register(func(online bool) {
@@ -30,6 +36,10 @@ func NewTransport() *Transport {
 	return transport
 }
 
+func (transport *Transport) Metadata() *Metadata {
+	return transport.metadata
+}
+
 func (transport *Transport) OnOnlineChanged(callback *OnlineChangedHandler) tools.CallbackRegistration[bool] {
 	return transport.client.OnOnlineChanged()
 }
@@ -40,8 +50,5 @@ func (transport *Transport) Online() bool {
 
 func (transport *Transport) publishInstanceInfo() {
 	data := instance_info.Get()
-	// TODO: metadata
-	fireAndForget(func() error {
-		return transport.client.Publish(transport.client.BuildTopic("metadata", "instance-info"), encoding.WriteJson(data), true)
-	})
+	transport.metadata.Set("instance-info", data)
 }
