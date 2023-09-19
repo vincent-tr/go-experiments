@@ -9,16 +9,33 @@ import (
 
 var logger = log.CreateLogger("mylife:home:bus")
 
+type Options struct {
+	presenceTracking bool
+}
+
+func (options *Options) SetPresenceTracking(value bool) *Options {
+	options.presenceTracking = value
+	return options
+}
+
+func NewOptions() *Options {
+	return &Options{
+		presenceTracking: false,
+	}
+}
+
 type Transport struct {
 	client   *client
 	metadata *Metadata
+	presence *Presence
 }
 
-func NewTransport() *Transport {
+func NewTransport(options *Options) *Transport {
 	client := newClient(defines.InstanceName())
 	transport := &Transport{
 		client:   client,
 		metadata: newMetadata(client),
+		presence: newPresence(client, options.presenceTracking),
 	}
 
 	transport.client.OnOnlineChanged().Register(func(online bool) {
@@ -38,6 +55,10 @@ func NewTransport() *Transport {
 
 func (transport *Transport) Metadata() *Metadata {
 	return transport.metadata
+}
+
+func (transport *Transport) Presence() *Presence {
+	return transport.presence
 }
 
 func (transport *Transport) OnOnlineChanged(callback *OnlineChangedHandler) tools.CallbackRegistration[bool] {

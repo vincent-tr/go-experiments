@@ -2,9 +2,6 @@ package bus
 
 import (
 	"mylife-home-common/tools"
-	"strings"
-
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 type ValueChangeType = int
@@ -75,9 +72,7 @@ func (meta *Metadata) CreateView(remoteInstanceName string) (RemoteMetadataView,
 		registry:     make(map[string]any),
 	}
 
-	view.msgToken = view.client.OnMessage().Register(func(m mqtt.Message) {
-		view.onMessage(m)
-	})
+	view.msgToken = view.client.OnMessage().Register(view.onMessage)
 
 	if err := view.client.Subscribe(view.listenTopic()); err != nil {
 		view.client.OnMessage().Unregister(view.msgToken)
@@ -104,28 +99,20 @@ type remoteMetadataView struct {
 	registry     map[string]any
 }
 
-func (view *remoteMetadataView) onMessage(m mqtt.Message) {
-	parts := strings.SplitN(m.Topic(), "/", 3)
-	if len(parts) != 3 {
-		return
-	}
+func (view *remoteMetadataView) onMessage(m *message) {
 
-	instanceName := parts[0]
-	domain := parts[1]
-	path := parts[2]
-
-	if instanceName != view.instanceName || domain != metadataDomain {
+	if m.InstanceName() != view.instanceName || m.Domain() != metadataDomain {
 		return
 	}
 
 	// Note: onMessage is called from one goroutine, no need for map sync
 	if len(m.Payload()) == 0 {
-		delete(view.registry, path)
-		view.onChange.Execute(&ValueChange{ValueClear, path, nil})
+		delete(view.registry, m.Path())
+		view.onChange.Execute(&ValueChange{ValueClear, m.Path(), nil})
 	} else {
 		value := encoding.ReadJson(m.Payload())
-		view.registry[path] = value
-		view.onChange.Execute(&ValueChange{ValueSet, path, value})
+		view.registry[m.Path()] = value
+		view.onChange.Execute(&ValueChange{ValueSet, m.Path(), value})
 	}
 }
 

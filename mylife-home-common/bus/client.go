@@ -15,7 +15,35 @@ type busConfig struct {
 }
 
 type OnlineChangedHandler func(bool)
-type messageHandler func(mqtt.Message)
+type messageHandler func(*message)
+
+type message struct {
+	instanceName string
+	domain       string
+	path         string
+	payload      []byte
+	retained     bool
+}
+
+func (m *message) InstanceName() string {
+	return m.instanceName
+}
+
+func (m *message) Domain() string {
+	return m.domain
+}
+
+func (m *message) Path() string {
+	return m.path
+}
+
+func (m *message) Payload() []byte {
+	return m.payload
+}
+
+func (m *message) Retained() bool {
+	return m.retained
+}
 
 type client struct {
 	instanceName      string
@@ -23,7 +51,7 @@ type client struct {
 	online            bool
 	onlineSync        sync.RWMutex
 	onOnlineChanged   *tools.CallbackManager[bool]
-	onMessage         *tools.CallbackManager[mqtt.Message]
+	onMessage         *tools.CallbackManager[*message]
 	subscriptions     map[string]struct{}
 	subscriptionsSync sync.RWMutex
 }
@@ -36,7 +64,7 @@ func newClient(instanceName string) *client {
 	client := &client{
 		instanceName:    instanceName,
 		onOnlineChanged: tools.NewCallbackManager[bool](),
-		onMessage:       tools.NewCallbackManager[mqtt.Message](),
+		onMessage:       tools.NewCallbackManager[*message](),
 		subscriptions:   make(map[string]struct{}),
 	}
 
@@ -49,7 +77,7 @@ func newClient(instanceName string) *client {
 	options.SetMaxReconnectInterval(time.Second * 5)
 	options.SetConnectRetryInterval(time.Second * 5)
 
-	options.SetBinaryWill(client.BuildTopic("online"), []byte{}, 0, true)
+	options.SetBinaryWill(client.BuildTopic(presenceDomain), []byte{}, 0, true)
 
 	options.SetConnectionLostHandler(func(_ mqtt.Client, err error) {
 		client.onConnectionLost(err)
@@ -60,7 +88,27 @@ func newClient(instanceName string) *client {
 	})
 
 	options.SetDefaultPublishHandler(func(_ mqtt.Client, m mqtt.Message) {
-		client.onMessage.Execute(m)
+		var instanceName, domain, path string
+		parts := strings.SplitN(m.Topic(), "/", 3)
+		count := len(parts)
+
+		if count > 0 {
+			instanceName = parts[0]
+		}
+		if count > 1 {
+			domain = parts[1]
+		}
+		if count > 2 {
+			path = parts[2]
+		}
+
+		client.onMessage.Execute(&message{
+			instanceName: instanceName,
+			domain:       domain,
+			path:         path,
+			payload:      m.Payload(),
+			retained:     m.Retained(),
+		})
 	})
 
 	client.mqtt = mqtt.NewClient(options)
@@ -75,7 +123,7 @@ func newClient(instanceName string) *client {
 
 func (client *client) Terminate() {
 	if client.mqtt.IsConnected() {
-		if err := client.ClearRetain(client.BuildTopic("online")); err != nil {
+		if err := client.ClearRetain(client.BuildTopic(presenceDomain)); err != nil {
 			logger.WithError(err).Error("Send offline error")
 		}
 
@@ -85,6 +133,10 @@ func (client *client) Terminate() {
 	}
 
 	client.mqtt.Disconnect(100)
+}
+
+func (client *client) InstanceName() string {
+	return client.instanceName
 }
 
 func (client *client) onConnectionLost(err error) {
@@ -101,7 +153,7 @@ func (client *client) onConnectionLost(err error) {
 func (client *client) onConnect() {
 	fireAndForget(func() error {
 		// given the spec, it is unclear if LWT should be executed in case of client takeover, so we run it to be sure
-		if err := client.ClearRetain(client.BuildTopic("online")); err != nil {
+		if err := client.ClearRetain(client.BuildTopic(presenceDomain)); err != nil {
 			return err
 		}
 
@@ -109,7 +161,7 @@ func (client *client) onConnect() {
 			return err
 		}
 
-		if err := client.Publish(client.BuildTopic("online"), encoding.WriteBool(true), true); err != nil {
+		if err := client.Publish(client.BuildTopic(presenceDomain), encoding.WriteBool(true), true); err != nil {
 			return err
 		}
 
@@ -139,7 +191,7 @@ func (client *client) prepareResubscribe() map[string]byte {
 	return m
 }
 
-func (client *client) OnMessage() tools.CallbackRegistration[mqtt.Message] {
+func (client *client) OnMessage() tools.CallbackRegistration[*message] {
 	return client.onMessage
 }
 

@@ -52,7 +52,12 @@ func Execute() {
 }
 
 func testBus() {
-	bus.NewTransport()
+	options := bus.NewOptions().SetPresenceTracking(true)
+	transport := bus.NewTransport(options)
+
+	transport.Presence().OnInstanceChange().Register(func(ipc *bus.InstancePresenceChange) {
+		logger.Infof("%s online=%t", ipc.InstanceName(), ipc.Online())
+	})
 }
 
 func testComponent() {
