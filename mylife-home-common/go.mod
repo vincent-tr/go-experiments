@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/antichris/go-pirev v0.5.0 // indirect
 	github.com/apex/log v1.9.0 // indirect
 	github.com/fatih/color v1.14.1 // indirect
 	github.com/goccy/go-yaml v1.11.0 // indirect
@@ -16,6 +17,7 @@ require (
 	github.com/gookit/goutil v0.6.12 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
+	github.com/mackerelio/go-osstat v0.2.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

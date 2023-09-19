@@ -12,6 +12,7 @@ import (
 	"mylife-home-common/bus" // tmp
 	"mylife-home-common/config"
 	"mylife-home-common/defines"
+	"mylife-home-common/instance_info"
 	"mylife-home-common/log"
 )
 
@@ -28,6 +29,7 @@ var rootCmd = &cobra.Command{
 		log.Init(logConsole)
 		config.Init(configFile)
 		plugins.Build()
+		instance_info.Init()
 
 		logger.WithError(errors.Errorf("failed")).Error("bam")
 

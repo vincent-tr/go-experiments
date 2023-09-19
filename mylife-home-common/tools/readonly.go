@@ -4,6 +4,7 @@ type ReadonlyMap[K comparable, V any] interface {
 	Iterate() ReadonlyMapIterator[K, V]
 	Len() int
 	Get(key K) (V, bool)
+	Clone() map[K]V
 }
 
 type ReadonlyMapIterator[K any, V any] interface {
@@ -15,6 +16,7 @@ type ReadonlySlice[T any] interface {
 	Iterate() ReadonlySliceIterator[T]
 	Len() int
 	Get(index int) T
+	Clone() []T
 }
 
 type ReadonlySliceIterator[T any] interface {
@@ -53,6 +55,16 @@ func (romap *readonlyMap[K, V]) Get(key K) (V, bool) {
 	return v, ok
 }
 
+func (romap *readonlyMap[K, V]) Clone() map[K]V {
+	m := make(map[K]V)
+
+	for k, v := range romap.target {
+		m[k] = v
+	}
+
+	return m
+}
+
 type readonlySlice[T any] struct {
 	target []T
 }
@@ -67,6 +79,16 @@ func (roslice *readonlySlice[T]) Len() int {
 
 func (roslice *readonlySlice[T]) Get(index int) T {
 	return roslice.target[index]
+}
+
+func (roslice *readonlySlice[T]) Clone() []T {
+	s := make([]T, len(roslice.target))
+
+	for i, v := range roslice.target {
+		s[i] = v
+	}
+
+	return s
 }
 
 type keyValuePair[K any, V any] struct {
