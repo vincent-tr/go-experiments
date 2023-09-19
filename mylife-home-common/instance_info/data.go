@@ -1,6 +1,9 @@
 package instance_info
 
-import "mylife-home-common/tools"
+import (
+	"encoding/json"
+	"mylife-home-common/tools"
+)
 
 type InstanceInfo struct {
 	typ            string
@@ -118,4 +121,34 @@ func extractData(info *InstanceInfo) *instanceInfoData {
 		Capabilities:   info.Capabilities().Clone(),
 		Wifi:           wifiData,
 	}
+}
+
+func (info *InstanceInfo) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type           string            `json:"type"`
+		Hardware       map[string]string `json:"hardware"`
+		Versions       map[string]string `json:"versions"`
+		SystemUptime   int64             `json:"systemUptime"`
+		InstanceUptime int64             `json:"instanceUptime"`
+		Hostname       string            `json:"hostname"`
+		Capabilities   []string          `json:"capabilities"`
+		Wifi           *WifiInfo         `json:"wifi"`
+	}{
+		Type:           info.Type(),
+		Hardware:       info.hardware, // Note: avoid clone
+		Versions:       info.versions, // Note: avoid clone
+		SystemUptime:   info.SystemUptime(),
+		InstanceUptime: info.InstanceUptime(),
+		Hostname:       info.Hostname(),
+		Capabilities:   info.capabilities, // Note: avoid clone
+		Wifi:           info.Wifi(),
+	})
+}
+
+func (info *WifiInfo) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		RSSI int `json:"rssi"`
+	}{
+		RSSI: info.RSSI(),
+	})
 }

@@ -3,6 +3,7 @@ package bus
 import (
 	"mylife-home-common/config"
 	"mylife-home-common/log"
+	"mylife-home-common/tools"
 	"strings"
 	"sync"
 	"time"
@@ -17,15 +18,15 @@ type busConfig struct {
 }
 
 type OnlineChangedHandler func(bool)
-type messageHandler func(string, []byte)
+type messageHandler func(mqtt.Message)
 
 type client struct {
 	instanceName      string
 	mqtt              mqtt.Client
 	online            bool
 	onlineSync        sync.RWMutex
-	onlineCallbacks   map[*OnlineChangedHandler]struct{}
-	messageCallbacks  map[*messageHandler]struct{}
+	onOnlineChanged   *tools.CallbackManager[bool]
+	onMessage         *tools.CallbackManager[mqtt.Message]
 	subscriptions     map[string]struct{}
 	subscriptionsSync sync.RWMutex
 }
@@ -36,10 +37,10 @@ func newClient(instanceName string) *client {
 
 	// Need it in advance
 	client := &client{
-		instanceName:     instanceName,
-		onlineCallbacks:  make(map[*OnlineChangedHandler]struct{}),
-		messageCallbacks: make(map[*messageHandler]struct{}),
-		subscriptions:    make(map[string]struct{}),
+		instanceName:    instanceName,
+		onOnlineChanged: tools.NewCallbackManager[bool](),
+		onMessage:       tools.NewCallbackManager[mqtt.Message](),
+		subscriptions:   make(map[string]struct{}),
 	}
 
 	options := mqtt.NewClientOptions()
@@ -62,7 +63,7 @@ func newClient(instanceName string) *client {
 	})
 
 	options.SetDefaultPublishHandler(func(_ mqtt.Client, m mqtt.Message) {
-		client.onMessage(m)
+		client.onMessage.Execute(m)
 	})
 
 	client.mqtt = mqtt.NewClient(options)
@@ -141,26 +142,12 @@ func (client *client) prepareResubscribe() map[string]byte {
 	return m
 }
 
-func (client *client) RegisterOnMessage(callback *messageHandler) {
-	client.messageCallbacks[callback] = struct{}{}
+func (client *client) OnMessage() tools.CallbackRegistration[mqtt.Message] {
+	return client.onMessage
 }
 
-func (client *client) UnregisterOnMessage(callback *messageHandler) {
-	delete(client.messageCallbacks, callback)
-}
-
-func (client *client) onMessage(m mqtt.Message) {
-	for callback := range client.messageCallbacks {
-		(*callback)(m.Topic(), m.Payload())
-	}
-}
-
-func (client *client) RegisterOnOnlineChanged(callback *OnlineChangedHandler) {
-	client.onlineCallbacks[callback] = struct{}{}
-}
-
-func (client *client) UnregisterOnOnlineChanged(callback *OnlineChangedHandler) {
-	delete(client.onlineCallbacks, callback)
+func (client *client) OnOnlineChanged() tools.CallbackRegistration[bool] {
+	return client.onOnlineChanged
 }
 
 func (client *client) onlineChanged(value bool) {
@@ -174,9 +161,7 @@ func (client *client) onlineChanged(value bool) {
 	client.online = value
 	logger.Infof("online: %t", value)
 
-	for callback := range client.onlineCallbacks {
-		(*callback)(value)
-	}
+	client.onOnlineChanged.Execute(value)
 }
 
 func (client *client) Online() bool {

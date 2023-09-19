@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/antichris/go-pirev"
@@ -18,11 +17,8 @@ import (
 
 var logger = log.CreateLogger("mylife:home:instance-info")
 
-type ListenerCallback = func(newInfo *InstanceInfo)
-
 var instanceInfo *InstanceInfo
-var listeners map[*ListenerCallback]struct{} = make(map[*ListenerCallback]struct{})
-var listenersSync sync.RWMutex
+var listeners = tools.NewCallbackManager[*InstanceInfo]()
 
 func Init() {
 	instanceInfo = create()
@@ -39,18 +35,8 @@ func Get() *InstanceInfo {
 	return instanceInfo
 }
 
-func RegisterUpdateListener(onUpdate *ListenerCallback) {
-	listenersSync.Lock()
-	defer listenersSync.Unlock()
-
-	listeners[onUpdate] = struct{}{}
-}
-
-func UnregisterUpdateListener(onUpdate *ListenerCallback) {
-	listenersSync.Lock()
-	defer listenersSync.Unlock()
-
-	delete(listeners, onUpdate)
+func OnUpdate() tools.CallbackRegistration[*InstanceInfo] {
+	return listeners
 }
 
 func update(newData *instanceInfoData) {
@@ -59,9 +45,7 @@ func update(newData *instanceInfoData) {
 
 	instanceInfo = newInstanceInfo(newData)
 
-	for listener := range listeners {
-		(*listener)(instanceInfo)
-	}
+	listeners.Execute(instanceInfo)
 }
 
 func AddComponent(componentName string, version string) {
