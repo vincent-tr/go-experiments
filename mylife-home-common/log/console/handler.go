@@ -4,10 +4,10 @@ package console
 import (
 	"fmt"
 	"io"
+	"mylife-home-common/tools"
 	"sync"
 
 	"github.com/apex/log"
-	"github.com/pkg/errors"
 )
 
 // colors.
@@ -64,19 +64,11 @@ func (h *Handler) HandleLog(e *log.Entry) error {
 
 	err := e.Fields.Get("error")
 	if err != nil {
-
-		fmt.Fprintf(h.Writer, ": Error: %s", err.(error).Error())
-
-		if st, ok := err.(stackTracer); ok {
-			fmt.Fprintf(h.Writer, "%+v", st.StackTrace())
-		}
+		stacktrace := tools.GetStackTraceStr(err.(error))
+		fmt.Fprintf(h.Writer, ": Error: %s%s", err.(error).Error(), stacktrace)
 	}
 
 	fmt.Fprintln(h.Writer)
 
 	return nil
-}
-
-type stackTracer interface {
-	StackTrace() errors.StackTrace
 }

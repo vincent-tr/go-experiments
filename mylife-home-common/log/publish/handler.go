@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/pkg/errors"
 )
 
 var onEntry = tools.NewCallbackManager[*LogEntry]()
@@ -108,18 +107,10 @@ func convertError(err interface{}) *LogError {
 		return nil
 	}
 
-	message := err.(error).Error()
-	stacktrace := ""
-	if st, ok := err.(stackTracer); ok {
-		stacktrace = fmt.Sprintf("%+v", st.StackTrace())
-	}
+	terr := err.(error)
 
 	return &LogError{
-		message,
-		stacktrace,
+		message:    terr.Error(),
+		stacktrace: tools.GetStackTraceStr(terr),
 	}
-}
-
-type stackTracer interface {
-	StackTrace() errors.StackTrace
 }
