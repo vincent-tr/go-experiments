@@ -52,7 +52,7 @@ func (meta *Metadata) Set(path string, value any) {
 	topic := meta.client.BuildTopic(metadataDomain, path)
 
 	fireAndForget(func() error {
-		return meta.client.Publish(topic, encoding.WriteJson(value), true)
+		return meta.client.Publish(topic, Encoding.WriteJson(value), true)
 	})
 }
 
@@ -110,7 +110,7 @@ func (view *remoteMetadataView) onMessage(m *message) {
 		delete(view.registry, m.Path())
 		view.onChange.Execute(&ValueChange{ValueClear, m.Path(), nil})
 	} else {
-		value := encoding.ReadJson(m.Payload())
+		value := Encoding.ReadJson(m.Payload())
 		view.registry[m.Path()] = value
 		view.onChange.Execute(&ValueChange{ValueSet, m.Path(), value})
 	}

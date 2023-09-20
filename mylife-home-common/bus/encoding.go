@@ -8,7 +8,7 @@ import (
 
 type encodingImpl struct{}
 
-var encoding = encodingImpl{}
+var Encoding = encodingImpl{}
 
 func (e *encodingImpl) ReadString(buffer []byte) string {
 	return string(buffer)

@@ -89,7 +89,7 @@ func (presence *Presence) onMessage(m *message) {
 	}
 
 	// if payload is empty, then this is a retain message deletion indicating that instance is offline
-	online := len(m.Payload()) > 0 && encoding.ReadBool(m.Payload())
+	online := len(m.Payload()) > 0 && Encoding.ReadBool(m.Payload())
 
 	if m.InstanceName() == presence.client.InstanceName() {
 		return

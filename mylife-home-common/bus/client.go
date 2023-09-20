@@ -161,7 +161,7 @@ func (client *client) onConnect() {
 			return err
 		}
 
-		if err := client.Publish(client.BuildTopic(presenceDomain), encoding.WriteBool(true), true); err != nil {
+		if err := client.Publish(client.BuildTopic(presenceDomain), Encoding.WriteBool(true), true); err != nil {
 			return err
 		}
 

@@ -62,6 +62,10 @@ func (transport *Transport) Presence() *Presence {
 	return transport.presence
 }
 
+func (transport *Transport) Components() *Components {
+	return transport.components
+}
+
 func (transport *Transport) Metadata() *Metadata {
 	return transport.metadata
 }
@@ -70,7 +74,7 @@ func (transport *Transport) Logger() *Logger {
 	return transport.logger
 }
 
-func (transport *Transport) OnOnlineChanged(callback *OnlineChangedHandler) tools.CallbackRegistration[bool] {
+func (transport *Transport) OnOnlineChanged() tools.CallbackRegistration[bool] {
 	return transport.client.OnOnlineChanged()
 }
 

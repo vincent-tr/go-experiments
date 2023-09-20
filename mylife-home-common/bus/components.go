@@ -32,7 +32,7 @@ func newComponents(client *client) *Components {
 	}
 }
 
-func (comps *Components) addLocalComponent(id string) (LocalComponent, error) {
+func (comps *Components) AddLocalComponent(id string) (LocalComponent, error) {
 	_, exists := comps.localComponents[id]
 	if exists {
 		return nil, fmt.Errorf("component with id '%s' does already exist", id)
@@ -43,24 +43,24 @@ func (comps *Components) addLocalComponent(id string) (LocalComponent, error) {
 	return component, nil
 }
 
-func (comps *Components) getLocalComponent(id string) LocalComponent {
+func (comps *Components) GetLocalComponent(id string) LocalComponent {
 	return comps.localComponents[id]
 }
 
-func (comps *Components) removeLocalComponent(id string) {
+func (comps *Components) RemoveLocalComponent(id string) {
 	component := comps.localComponents[id]
 
 	component.Terminate()
 	delete(comps.localComponents, id)
 }
 
-func (comps *Components) trackRemoteComponent(remoteInstanceName string, id string) RemoteComponent {
+func (comps *Components) TrackRemoteComponent(remoteInstanceName string, id string) RemoteComponent {
 	component := newRemoteComponent(comps.client, remoteInstanceName, id)
 	comps.remoteComponents[component] = struct{}{}
 	return component
 }
 
-func (comps *Components) untrackRemoteComponent(remoteComponent RemoteComponent) {
+func (comps *Components) UntrackRemoteComponent(remoteComponent RemoteComponent) {
 	component := remoteComponent.(*remoteComponentImpl)
 	component.Terminate()
 	delete(comps.remoteComponents, component)
