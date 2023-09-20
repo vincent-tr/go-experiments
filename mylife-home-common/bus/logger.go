@@ -78,7 +78,6 @@ type jsonError struct {
 }
 
 func (logger *Logger) send(e *publish.LogEntry) {
-	fmt.Printf("send %+v\n", e)
 	data := jsonLog{
 		Name:         e.LoggerName(),
 		InstanceName: logger.client.InstanceName(),
