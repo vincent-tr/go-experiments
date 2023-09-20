@@ -27,19 +27,20 @@ func NewOptions() *Options {
 type Transport struct {
 	client *client
 	//rpc *Rpc
-	presence *Presence
-	//components *Components
-	metadata *Metadata
-	logger   *Logger
+	presence   *Presence
+	components *Components
+	metadata   *Metadata
+	logger     *Logger
 }
 
 func NewTransport(options *Options) *Transport {
 	client := newClient(defines.InstanceName())
 	transport := &Transport{
-		client:   client,
-		presence: newPresence(client, options.presenceTracking),
-		metadata: newMetadata(client),
-		logger:   newLogger(client),
+		client:     client,
+		presence:   newPresence(client, options.presenceTracking),
+		components: newComponents(client),
+		metadata:   newMetadata(client),
+		logger:     newLogger(client),
 	}
 
 	transport.client.OnOnlineChanged().Register(func(online bool) {
