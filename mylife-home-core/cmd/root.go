@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"mylife-home-core/pkg/plugins"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -14,6 +16,7 @@ import (
 	"mylife-home-common/defines"
 	"mylife-home-common/instance_info"
 	"mylife-home-common/log"
+	"mylife-home-common/tools"
 )
 
 var logger = log.CreateLogger("mylife:home:core:main")
@@ -51,15 +54,6 @@ func Execute() {
 	}
 }
 
-func testBus() {
-	options := bus.NewOptions().SetPresenceTracking(true)
-	transport := bus.NewTransport(options)
-
-	transport.Presence().OnInstanceChange().Register(func(ipc *bus.InstancePresenceChange) {
-		logger.Infof("%s online=%t", ipc.InstanceName(), ipc.Online())
-	})
-}
-
 func testComponent() {
 
 	plugin := plugins.GetPlugin("logic-base.value-binary")
@@ -85,6 +79,103 @@ func testComponent() {
 
 	logger.Infof("Terminate")
 	comp.Termainte()
+}
+
+const pluginMeta = `
+{
+  "name": "value-binary",
+  "module": "logic-base",
+  "usage": "logic",
+  "version": "42.42.42",
+  "config": {},
+  "members": {
+    "value": { "memberType": "state", "valueType": "bool" },
+    "setValue": { "memberType": "action", "valueType": "bool" }
+  }
+}
+`
+
+const compMeta = `
+{"id":"test2","plugin":"logic-base.value-binary"}
+`
+
+func testBus() {
+	options := bus.NewOptions().SetPresenceTracking(true)
+	transport := bus.NewTransport(options)
+
+	transport.Presence().OnInstanceChange().Register(func(ipc *bus.InstancePresenceChange) {
+		logger.Infof("%s online=%t", ipc.InstanceName(), ipc.Online())
+	})
+
+	waitOnline(transport)
+	testLocalComp(transport)
+	testRemoteComp(transport)
+}
+
+func waitOnline(transport *bus.Transport) {
+	onlinec := make(chan struct{}, 1)
+
+	token := transport.OnOnlineChanged().Register(func(online bool) {
+		if online {
+			onlinec <- struct{}{}
+		}
+	})
+
+	<-onlinec
+
+	transport.OnOnlineChanged().Unregister(token)
+}
+
+func testLocalComp(transport *bus.Transport) {
+	plugin := plugins.GetPlugin("logic-base.value-binary")
+
+	comp, err := plugin.Instantiate("test2", map[string]any{"initialValue": false})
+	if err != nil {
+		panic(err)
+	}
+
+	transport.Metadata().Set("plugins/logic-base.value-binary", json.RawMessage(pluginMeta))
+	transport.Metadata().Set("components/test2", json.RawMessage(compMeta))
+
+	bcomp, err := transport.Components().AddLocalComponent("test2")
+	if err != nil {
+		panic(err)
+	}
+
+	bcomp.RegisterAction("setValue", func(value []byte) {
+		comp.Execute("setValue", bus.Encoding.ReadBool(value))
+	})
+
+	comp.SetOnStateChange(func(name string, value any) {
+		err := bcomp.SetState(name, bus.Encoding.WriteBool(value.(bool)))
+		if err != nil {
+			panic(err)
+		}
+	})
+
+	state := comp.GetStateItem("value")
+	err = bcomp.SetState("value", bus.Encoding.WriteBool(state.(bool)))
+	if err != nil {
+		panic(err)
+	}
+
+}
+
+func testRemoteComp(transport *bus.Transport) {
+	comp := transport.Components().TrackRemoteComponent(tools.Hostname()+"-core", "test2")
+	comp.RegisterStateChange("value", func(value []byte) {
+		logger.Infof("value set to %t", bus.Encoding.ReadBool(value))
+	})
+
+	val := false
+	for i := 0; i < 4; i += 1 {
+		time.Sleep(time.Second)
+
+		logger.Infof("Set value to %t", val)
+		comp.EmitAction("setValue", bus.Encoding.WriteBool(val))
+
+		val = !val
+	}
 }
 
 func testExit() {
