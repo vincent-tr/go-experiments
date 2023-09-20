@@ -1,8 +1,8 @@
 package registry
 
 import (
+	"mylife-home-common/components/metadata"
 	"mylife-home-core-library/definitions"
-	"mylife-home-core-library/metadata"
 	"reflect"
 
 	"github.com/gookit/goutil/errorx/panics"

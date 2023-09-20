@@ -3,7 +3,7 @@ package internal
 import (
 	"fmt"
 	"go/ast"
-	"mylife-home-core-library/metadata"
+	"mylife-home-common/components/metadata"
 	"strings"
 
 	annotation "github.com/YReshetko/go-annotation/pkg"

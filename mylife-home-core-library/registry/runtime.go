@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"mylife-home-core-library/metadata"
+	"mylife-home-common/components/metadata"
 	"reflect"
 )
 

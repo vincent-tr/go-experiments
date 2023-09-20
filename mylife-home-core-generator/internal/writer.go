@@ -2,7 +2,7 @@ package internal
 
 import (
 	"fmt"
-	"mylife-home-core-library/metadata"
+	"mylife-home-common/components/metadata"
 	"strings"
 )
 
@@ -18,7 +18,7 @@ func MakeWrite(packageName string) *Writer {
 	writer.appendLinef(`package %s`, packageName)
 	writer.appendLine(``)
 	writer.appendLine(`import (`)
-	writer.appendLine(`	"mylife-home-core-library/metadata"`)
+	writer.appendLine(`	"mylife-home-common/components/metadata"`)
 	writer.appendLine(`	"mylife-home-core-library/registry"`)
 	writer.appendLine(`)`)
 	writer.appendLine(``)
@@ -137,7 +137,7 @@ func renderConfigType(configType metadata.ConfigType) string {
 package plugin
 
 import (
-	"mylife-home-core-library/metadata"
+	"mylife-home-common/components/metadata"
 	"mylife-home-core-library/registry"
 )
 
