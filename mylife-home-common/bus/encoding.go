@@ -86,11 +86,15 @@ func (e *encodingImpl) WriteFloat(value float64) []byte {
 func (e *encodingImpl) ReadJson(buffer []byte) any {
 	var value any
 
+	e.ReadTypedJson(buffer, &value)
+
+	return value
+}
+
+func (e *encodingImpl) ReadTypedJson(buffer []byte, value any) {
 	if err := json.Unmarshal(buffer, value); err != nil {
 		panic(err)
 	}
-
-	return value
 }
 
 func (e *encodingImpl) WriteJson(value any) []byte {

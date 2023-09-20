@@ -25,8 +25,8 @@ func NewOptions() *Options {
 }
 
 type Transport struct {
-	client *client
-	//rpc *Rpc
+	client     *client
+	rpc        *Rpc
 	presence   *Presence
 	components *Components
 	metadata   *Metadata
@@ -37,6 +37,7 @@ func NewTransport(options *Options) *Transport {
 	client := newClient(defines.InstanceName())
 	transport := &Transport{
 		client:     client,
+		rpc:        newRpc(client),
 		presence:   newPresence(client, options.presenceTracking),
 		components: newComponents(client),
 		metadata:   newMetadata(client),
@@ -56,6 +57,10 @@ func NewTransport(options *Options) *Transport {
 	})
 
 	return transport
+}
+
+func (transport *Transport) Rpc() *Rpc {
+	return transport.rpc
 }
 
 func (transport *Transport) Presence() *Presence {
