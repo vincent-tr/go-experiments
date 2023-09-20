@@ -11,7 +11,7 @@ const rpcDomain = "rpc"
 const rpcServices = "services"
 const rpcReplies = "replies"
 
-const RpcTimeout = 2000
+const RpcTimeout = time.Second * 2
 
 type Rpc struct {
 	client   *client
@@ -56,7 +56,7 @@ func (rpc *Rpc) Unserve(address string) error {
 }
 
 // Cannot use member function because of generic
-func RpcCall[TInput any, TOutput any](rpc *Rpc, targetInstance string, address string, data TInput, timeout int) (TOutput, error) {
+func RpcCall[TInput any, TOutput any](rpc *Rpc, targetInstance string, address string, data TInput, timeout time.Duration) (TOutput, error) {
 	replyId := randomTopicPart()
 	replyTopic := rpc.client.BuildTopic(rpcDomain, rpcReplies, replyId)
 	remoteTopic := rpc.client.BuildRemoteTopic(targetInstance, rpcDomain, rpcServices, address)
@@ -69,11 +69,11 @@ func RpcCall[TInput any, TOutput any](rpc *Rpc, targetInstance string, address s
 
 	replyChan := make(chan []byte, 1)
 	msgToken := rpc.client.OnMessage().Register(func(m *message) {
-		if m.InstanceName() == rpc.client.InstanceName() &&
-			m.Domain() == rpcDomain &&
-			m.Path() == rpcReplies+"/"+replyId {
-			replyChan <- m.Payload()
+		if m.InstanceName() != rpc.client.InstanceName() || m.Domain() != rpcDomain || m.Path() != rpcReplies+"/"+replyId {
+			return
 		}
+
+		replyChan <- m.Payload()
 	})
 
 	defer rpc.client.OnMessage().Unregister(msgToken)
@@ -91,8 +91,8 @@ func RpcCall[TInput any, TOutput any](rpc *Rpc, targetInstance string, address s
 	select {
 	case reply = <-replyChan:
 		// Go ahead
-	case <-time.After(time.Millisecond * time.Duration(timeout)):
-		return nilOutput, fmt.Errorf("timeout occured while waiting for message on topic '%s' (call address: '%s', timeout: %d)", replyTopic, address, timeout)
+	case <-time.After(timeout):
+		return nilOutput, fmt.Errorf("timeout occured while waiting for message on topic '%s' (call address: '%s', timeout: %s)", replyTopic, address, timeout)
 	}
 
 	var resp response[TOutput]
@@ -136,7 +136,7 @@ func (svc *rpcServiceImpl[TInput, TOutput]) terminate() error {
 }
 
 func (svc *rpcServiceImpl[TInput, TOutput]) onMessage(m *message) {
-	if m.InstanceName() != svc.client.InstanceName() || m.Domain() != rpcServices || m.Path() != svc.address {
+	if m.InstanceName() != svc.client.InstanceName() || m.Domain() != rpcDomain || m.Path() != rpcServices+"/"+svc.address {
 		return
 	}
 

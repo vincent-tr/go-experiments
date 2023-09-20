@@ -110,6 +110,7 @@ func testBus() {
 	waitOnline(transport)
 	testLocalComp(transport)
 	testRemoteComp(transport)
+	testRpc(transport)
 }
 
 func waitOnline(transport *bus.Transport) {
@@ -175,6 +176,35 @@ func testRemoteComp(transport *bus.Transport) {
 		comp.EmitAction("setValue", bus.Encoding.WriteBool(val))
 
 		val = !val
+	}
+}
+
+func testRpc(transport *bus.Transport) {
+
+	type input struct {
+		Message string `json:"message"`
+	}
+
+	type output string
+
+	svc := bus.NewRpcService[input, output](func(i input) (output, error) {
+		logger.Infof("serve input: %+v", i)
+		return output(i.Message), nil
+	})
+
+	if err := transport.Rpc().Serve("test-service", svc); err != nil {
+		panic(err)
+	}
+
+	out, err := bus.RpcCall[input, output](transport.Rpc(), tools.Hostname()+"-core", "test-service", input{Message: "toto"}, bus.RpcTimeout)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Infof("call result: %s", out)
+
+	if err := transport.Rpc().Unserve("test-service"); err != nil {
+		panic(err)
 	}
 }
 
