@@ -2,7 +2,9 @@ package bus
 
 import (
 	"fmt"
+	"math/rand"
 	"mylife-home-common/tools"
+	"time"
 )
 
 const rpcDomain = "rpc"
@@ -10,14 +12,6 @@ const rpcServices = "services"
 const rpcReplies = "replies"
 
 const RpcTimeout = 2000
-
-/*
-class RpcError extends Error {
-  constructor(public readonly remoteMessage: string, public readonly remoteStacktrace: string) {
-    super(`A remote error occured: ${remoteMessage}`);
-  }
-}
-*/
 
 type Rpc struct {
 	client   *client
@@ -61,31 +55,58 @@ func (rpc *Rpc) Unserve(address string) error {
 	return err
 }
 
-/*
-func (rpc *Rpc) Call(targetInstance string, address string, data any, timeout int) (any, error) {
-	const id = randomTopicPart();
-	const replyTopic = this.client.buildTopic(DOMAIN, REPLIES, id);
-	const request: Request = { input: data, replyTopic };
-	let buffer: Buffer;
+// Cannot use member function because of generic
+func RpcCall[TInput any, TOutput any](rpc *Rpc, targetInstance string, address string, data TInput, timeout int) (TOutput, error) {
+	replyId := randomTopicPart()
+	replyTopic := rpc.client.BuildTopic(rpcDomain, rpcReplies, replyId)
+	remoteTopic := rpc.client.BuildRemoteTopic(targetInstance, rpcDomain, rpcServices, address)
+	var nilOutput TOutput
 
-	const messageWaiter = new MessageWaiter(this.client, address, replyTopic);
-	await messageWaiter.init();
-	try {
-		await this.client.publish(this.client.buildRemoteTopic(targetInstance, DOMAIN, SERVICES, address), encoding.writeJson(request));
-		buffer = await messageWaiter.waitForMessage(timeout);
-	} finally {
-		await messageWaiter.terminate();
+	request := request[TInput]{
+		Input:      data,
+		ReplyTopic: replyTopic,
 	}
 
-	const response = encoding.readJson(buffer) as Response;
-	const { error, output } = response;
-	if (error) {
-		throw new RpcError(error.message, error.stacktrace);
+	replyChan := make(chan []byte, 1)
+	msgToken := rpc.client.OnMessage().Register(func(m *message) {
+		if m.InstanceName() == rpc.client.InstanceName() &&
+			m.Domain() == rpcDomain &&
+			m.Path() == rpcReplies+"/"+replyId {
+			replyChan <- m.Payload()
+		}
+	})
+
+	defer rpc.client.OnMessage().Unregister(msgToken)
+
+	if err := rpc.client.Subscribe(replyTopic); err != nil {
+		return nilOutput, err
 	}
 
-	return output;
+	if err := rpc.client.Publish(remoteTopic, Encoding.WriteJson(&request), false); err != nil {
+		return nilOutput, err
+	}
+
+	var reply []byte
+
+	select {
+	case reply = <-replyChan:
+		// Go ahead
+	case <-time.After(time.Millisecond * time.Duration(timeout)):
+		return nilOutput, fmt.Errorf("timeout occured while waiting for message on topic '%s' (call address: '%s', timeout: %d)", replyTopic, address, timeout)
+	}
+
+	var resp response[TOutput]
+	Encoding.ReadTypedJson(reply, &resp)
+
+	if respErr := resp.Error; respErr != nil {
+		// Log the stacktrace here but do not forward it
+		logger.Errorf("Remote error: %s, stacktrace: %s", respErr.Message, respErr.Stacktrace)
+
+		return nilOutput, fmt.Errorf("remote error: %s", respErr.Message)
+	}
+
+	return *resp.Output, nil
 }
-*/
 
 type rpcServiceImpl[TInput any, TOutput any] struct {
 	client         *client
@@ -149,58 +170,18 @@ func (svc *rpcServiceImpl[TInput, TOutput]) buildTopic() string {
 	return svc.client.BuildTopic(rpcDomain, rpcServices, svc.address)
 }
 
-/*
-class MessageWaiter {
-  constructor(private readonly client: Client, private readonly callAddress: string, private readonly topic: string) {
-  }
+func randomTopicPart() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz0123456789"
+	const charsetLen = len(charset)
+	const len = 16
 
-  async init() {
-    await this.client.subscribe(this.topic);
-  }
+	array := make([]byte, len)
+	for index := range array {
+		array[index] = charset[rand.Intn(charsetLen)]
+	}
 
-  async waitForMessage(timeout: number) {
-    return await new Promise<Buffer>((resolve, reject) => {
-
-      const onEnd = () => {
-        clearTimeout(timer);
-        this.client.off('message', messageCb);
-      };
-
-      const messageCb = (mtopic: string, payload: Buffer) => {
-        if (this.topic !== mtopic) {
-          return;
-        }
-
-        onEnd();
-        resolve(payload);
-      };
-
-      const timer = setTimeout(() => {
-        onEnd();
-        reject(new Error(`Timeout occured while waiting for message on topic '${this.topic}' (call address: '${this.callAddress}', timeout: ${timeout})`));
-      }, timeout);
-
-      this.client.on('message', messageCb);
-    });
-  }
-
-  async terminate() {
-    await this.client.unsubscribe(this.topic);
-  }
+	return string(array)
 }
-
-const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-const CHARSET_LEN = CHARSET.length;
-const LEN = 16;
-
-function randomTopicPart() {
-  const array = new Array(LEN);
-  for (let i = 0; i < LEN; ++i) {
-    array[i] = CHARSET.charAt(Math.floor(Math.random() * CHARSET_LEN));
-  }
-  return array.join('');
-}
-*/
 
 type request[TInput any] struct {
 	Input      TInput `json:"input"`
