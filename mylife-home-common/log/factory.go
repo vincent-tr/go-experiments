@@ -3,6 +3,7 @@ package log
 import (
 	stdlog "log"
 	"mylife-home-common/log/console"
+	"mylife-home-common/log/publish"
 	"os"
 
 	"github.com/apex/log"
@@ -17,7 +18,9 @@ var rootLogger = &log.Logger{
 }
 
 func Init(consoleOutput bool) {
-	handlers := make([]log.Handler, 0)
+	handlers := []log.Handler{
+		publish.New(),
+	}
 
 	if consoleOutput {
 		handlers = append(handlers, console.New(os.Stdout))

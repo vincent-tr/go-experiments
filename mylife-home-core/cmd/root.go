@@ -94,6 +94,7 @@ func testExit() {
 	signal.Notify(exit, syscall.SIGINT, syscall.SIGTERM)
 
 	s := <-exit
+	signal.Reset(syscall.SIGINT, syscall.SIGTERM)
 	logger.Infof("Got signal %s", s)
 
 }
