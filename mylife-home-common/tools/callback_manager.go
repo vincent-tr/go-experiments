@@ -1,6 +1,10 @@
 package tools
 
-import "sync"
+import (
+	"sync"
+
+	"golang.org/x/exp/maps"
+)
 
 type RegistrationToken int
 
@@ -23,12 +27,17 @@ func NewCallbackManager[TArg any]() *CallbackManager[TArg] {
 }
 
 func (m *CallbackManager[TArg]) Execute(arg TArg) {
+	for _, callback := range m.cloneCallbacks() {
+		callback(arg)
+	}
+}
+
+// If callbacks are registered/unregistered inside executing, deadlock may appear without clone
+func (m *CallbackManager[TArg]) cloneCallbacks() []func(TArg) {
 	m.callbacksSync.RLock()
 	defer m.callbacksSync.RUnlock()
 
-	for _, callback := range m.callbacks {
-		callback(arg)
-	}
+	return maps.Values(m.callbacks)
 }
 
 func (m *CallbackManager[TArg]) Register(callback func(TArg)) RegistrationToken {
