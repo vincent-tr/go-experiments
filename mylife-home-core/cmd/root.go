@@ -217,7 +217,6 @@ func testRegistry(transport *bus.Transport) {
 	options.PublishRemoteComponents(transport)
 	reg := components.NewRegistry(options)
 
-	// TODO
 	time.Sleep(time.Second * 5)
 
 	reg.Terminate()
