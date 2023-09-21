@@ -252,8 +252,10 @@ func newBusComponent(transport *bus.Transport, instanceName string, registry *Re
 
 	fireAndForget(func() error {
 		for name := range comp.state {
+			// Else it seems that the name inside the closure in incorrect
+			closedName := name
 			err := comp.remoteComponent.RegisterStateChange(name, func(data []byte) {
-				comp.stateChange(name, data)
+				comp.stateChange(closedName, data)
 			})
 
 			if err != nil {
