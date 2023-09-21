@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"mylife-home-common/bus" // tmp
+	"mylife-home-common/components"
 	"mylife-home-common/config"
 	"mylife-home-common/defines"
 	"mylife-home-common/instance_info"
@@ -37,7 +38,8 @@ var rootCmd = &cobra.Command{
 		logger.WithError(errors.Errorf("failed")).Error("bam")
 
 		testComponent()
-		testBus()
+		transport := testBus()
+		testRegistry(transport)
 		testExit()
 	},
 }
@@ -99,7 +101,7 @@ const compMeta = `
 {"id":"test2","plugin":"logic-base.value-binary"}
 `
 
-func testBus() {
+func testBus() *bus.Transport {
 	options := bus.NewOptions().SetPresenceTracking(true)
 	transport := bus.NewTransport(options)
 
@@ -111,6 +113,8 @@ func testBus() {
 	testLocalComp(transport)
 	testRemoteComp(transport)
 	testRpc(transport)
+
+	return transport
 }
 
 func waitOnline(transport *bus.Transport) {
@@ -206,6 +210,16 @@ func testRpc(transport *bus.Transport) {
 	if err := transport.Rpc().Unserve("test-service"); err != nil {
 		panic(err)
 	}
+}
+
+func testRegistry(transport *bus.Transport) {
+	options := components.NewRegistryOptions()
+	options.PublishRemoteComponents(transport)
+	reg := components.NewRegistry(options)
+
+	// TODO
+
+	reg.Terminate()
 }
 
 func testExit() {
