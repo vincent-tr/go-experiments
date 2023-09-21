@@ -110,7 +110,7 @@ func (e *encodingImpl) WriteJson(value any) []byte {
 
 func (e *encodingImpl) read(buffer []byte, data any) {
 	if err := binary.Read(bytes.NewReader(buffer), binary.LittleEndian, data); err != nil {
-		panic(err)
+		panic(fmt.Errorf("could not read buffer %+v: %f", buffer, err))
 	}
 }
 
