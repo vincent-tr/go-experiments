@@ -247,9 +247,13 @@ func newBusComponent(transport *bus.Transport, instanceName string, registry *Re
 		member := comp.plugin.Member(name)
 		if member.MemberType() == metadata.State {
 			comp.state[name] = nil
+
+			// Name is updated at each iteration, seems not captured in the closure below
+			closureName := name
+
 			fireAndForget(func() error {
-				return comp.remoteComponent.RegisterStateChange(name, func(data []byte) {
-					comp.stateChange(name, data)
+				return comp.remoteComponent.RegisterStateChange(closureName, func(data []byte) {
+					comp.stateChange(closureName, data)
 				})
 			})
 		}
