@@ -107,7 +107,7 @@ func NewRegistry(options *RegistryOptions) *Registry {
 	}
 
 	if options.publishRemoteComponents {
-		registry.publisher = newBusPublisher(options.transport)
+		registry.publisher = newBusPublisher(options.transport, registry)
 	}
 
 	return registry

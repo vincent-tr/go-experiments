@@ -32,23 +32,39 @@ func newBusPublisher(transport *bus.Transport, registry *Registry) *busPublisher
 
 	publisher.changeToken = publisher.transport.Presence().OnInstanceChange().Register(publisher.onInstanceChange)
 
+	for _, instanceName := range transport.Presence().GetOnlines() {
+		publisher.setInstance(instanceName)
+	}
+
 	return publisher
 }
 
 func (publisher *busPublisher) Terminate() {
 	publisher.transport.Presence().OnInstanceChange().Unregister(publisher.changeToken)
+
+	// clone for stability
+	for _, instanceName := range maps.Keys(publisher.instances) {
+		publisher.clearInstance(instanceName)
+	}
 }
 
 func (publisher *busPublisher) onInstanceChange(change *bus.InstancePresenceChange) {
-	instanceName := change.InstanceName()
 	if change.Online() {
-		instance := newBusInstance(publisher.transport, publisher.registry, instanceName)
-		publisher.instances[instanceName] = instance
+		publisher.setInstance(change.InstanceName())
 	} else {
-		instance := publisher.instances[instanceName]
-		instance.Terminate()
-		delete(publisher.instances, instanceName)
+		publisher.clearInstance(change.InstanceName())
 	}
+}
+
+func (publisher *busPublisher) setInstance(instanceName string) {
+	instance := newBusInstance(publisher.transport, publisher.registry, instanceName)
+	publisher.instances[instanceName] = instance
+}
+
+func (publisher *busPublisher) clearInstance(instanceName string) {
+	instance := publisher.instances[instanceName]
+	instance.Terminate()
+	delete(publisher.instances, instanceName)
 }
 
 type busInstance struct {
