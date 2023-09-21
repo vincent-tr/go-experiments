@@ -76,13 +76,15 @@ func (e *encodingImpl) WriteInt32(value int32) []byte {
 }
 
 func (e *encodingImpl) ReadFloat(buffer []byte) float64 {
-	var data float64
+	// Protocol uses float32
+	var data float32
 	e.read(buffer, &data)
-	return data
+	return float64(data)
 }
 
 func (e *encodingImpl) WriteFloat(value float64) []byte {
-	return e.write(value)
+	// Protocol uses float32
+	return e.write(float32(value))
 }
 
 func (e *encodingImpl) ReadJson(buffer []byte) any {
@@ -110,7 +112,7 @@ func (e *encodingImpl) WriteJson(value any) []byte {
 
 func (e *encodingImpl) read(buffer []byte, data any) {
 	if err := binary.Read(bytes.NewReader(buffer), binary.LittleEndian, data); err != nil {
-		panic(fmt.Errorf("could not read buffer %+v: %f", buffer, err))
+		panic(fmt.Errorf("could not read buffer %+v: %w", buffer, err))
 	}
 }
 
@@ -145,7 +147,7 @@ func (e *encodingImpl) WriteValue(typ metadata.Type, value any) []byte {
 		return e.WriteJson(value)
 	}
 
-	panic(fmt.Errorf("Unsupported type %s", typ.String()))
+	panic(fmt.Errorf("unsupported type %s", typ.String()))
 }
 
 func (e *encodingImpl) ReadValue(typ metadata.Type, raw []byte) any {
@@ -169,7 +171,7 @@ func (e *encodingImpl) ReadValue(typ metadata.Type, raw []byte) any {
 		return e.ReadJson(raw)
 	}
 
-	panic(fmt.Errorf("Unsupported type %s", typ.String()))
+	panic(fmt.Errorf("unsupported type %s", typ.String()))
 }
 
 const int8Min int64 = -128
