@@ -88,6 +88,10 @@ func newClient(instanceName string) *client {
 	})
 
 	options.SetDefaultPublishHandler(func(_ mqtt.Client, m mqtt.Message) {
+		// Investigate deadlocks (disabled because very verbose)
+		// logger.Debugf("On message begin %s", m.Topic())
+		// defer logger.Debugf("On message end %s", m.Topic())
+
 		var instanceName, domain, path string
 		parts := strings.SplitN(m.Topic(), "/", 3)
 		count := len(parts)
