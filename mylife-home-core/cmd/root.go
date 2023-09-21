@@ -218,6 +218,7 @@ func testRegistry(transport *bus.Transport) {
 	reg := components.NewRegistry(options)
 
 	// TODO
+	time.Sleep(time.Second * 5)
 
 	reg.Terminate()
 }
