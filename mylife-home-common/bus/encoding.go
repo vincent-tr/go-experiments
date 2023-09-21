@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"mylife-home-common/components/metadata"
+	"reflect"
 )
 
 type encodingImpl struct{}
@@ -112,7 +113,7 @@ func (e *encodingImpl) WriteJson(value any) []byte {
 
 func (e *encodingImpl) read(buffer []byte, data any) {
 	if err := binary.Read(bytes.NewReader(buffer), binary.LittleEndian, data); err != nil {
-		panic(fmt.Errorf("could not read buffer %+v: %w", buffer, err))
+		panic(fmt.Errorf("could not read buffer %+v (%d) into type %s: %w", buffer, len(buffer), reflect.TypeOf(data), err))
 	}
 }
 
