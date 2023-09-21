@@ -31,7 +31,7 @@ func MakePluginTypeBuilder[TPlugin any, PTPlugin interface {
 		target: typ,
 	}
 
-	metaBuilder := metadata.MakeBuilder(module, name, description, usage, version)
+	metaBuilder := metadata.MakePluginBuilder(module, name, description, usage, version)
 
 	return &PluginTypeBuilder{
 		target:      target,
