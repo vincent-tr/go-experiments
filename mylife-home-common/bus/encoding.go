@@ -37,7 +37,7 @@ func (e *encodingImpl) WriteBool(value bool) []byte {
 
 func (e *encodingImpl) ReadUInt8(buffer []byte) uint8 {
 	var data uint8
-	e.read(buffer, data)
+	e.read(buffer, &data)
 	return data
 }
 
@@ -47,7 +47,7 @@ func (e *encodingImpl) WriteUInt8(value uint8) []byte {
 
 func (e *encodingImpl) ReadInt8(buffer []byte) int8 {
 	var data int8
-	e.read(buffer, data)
+	e.read(buffer, &data)
 	return data
 }
 
@@ -57,7 +57,7 @@ func (e *encodingImpl) WriteInt8(value int8) []byte {
 
 func (e *encodingImpl) ReadUInt32(buffer []byte) uint32 {
 	var data uint32
-	e.read(buffer, data)
+	e.read(buffer, &data)
 	return data
 }
 
@@ -67,7 +67,7 @@ func (e *encodingImpl) WriteUInt32(value uint32) []byte {
 
 func (e *encodingImpl) ReadInt32(buffer []byte) int32 {
 	var data int32
-	e.read(buffer, data)
+	e.read(buffer, &data)
 	return data
 }
 
@@ -77,7 +77,7 @@ func (e *encodingImpl) WriteInt32(value int32) []byte {
 
 func (e *encodingImpl) ReadFloat(buffer []byte) float64 {
 	var data float64
-	e.read(buffer, data)
+	e.read(buffer, &data)
 	return data
 }
 
@@ -109,7 +109,7 @@ func (e *encodingImpl) WriteJson(value any) []byte {
 }
 
 func (e *encodingImpl) read(buffer []byte, data any) {
-	if err := binary.Read(bytes.NewReader(buffer), binary.LittleEndian, &data); err != nil {
+	if err := binary.Read(bytes.NewReader(buffer), binary.LittleEndian, data); err != nil {
 		panic(err)
 	}
 }
