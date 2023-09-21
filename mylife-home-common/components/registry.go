@@ -188,7 +188,7 @@ func (reg *Registry) buildPluginId(instanceName string, plugin *metadata.Plugin)
 func (reg *Registry) updateInstance(instanceName string, callback func(*instanceData)) {
 	data := reg.instances[instanceName]
 	if data == nil {
-		data := &instanceData{
+		data = &instanceData{
 			plugins:    make(map[*metadata.Plugin]struct{}),
 			components: make(map[Component]struct{}),
 		}
