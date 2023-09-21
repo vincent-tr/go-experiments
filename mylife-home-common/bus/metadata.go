@@ -4,7 +4,7 @@ import (
 	"mylife-home-common/tools"
 )
 
-type ValueChangeType = int
+type ValueChangeType int
 
 const (
 	ValueSet ValueChangeType = iota
