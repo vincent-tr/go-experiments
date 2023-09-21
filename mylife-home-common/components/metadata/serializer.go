@@ -3,6 +3,8 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/gookit/goutil/errorx/panics"
 )
 
 type serializerImpl struct{}
@@ -31,8 +33,8 @@ type netMember struct {
 }
 
 type netComponent struct {
-	Id     string
-	Plugin string `json:"id"`
+	Id     string `json:"id"`
+	Plugin string `json:"plugin"`
 }
 
 func (e *serializerImpl) SerializeComponent(component *Component) any {
@@ -45,6 +47,10 @@ func (e *serializerImpl) SerializeComponent(component *Component) any {
 func (e *serializerImpl) DeserializeComponent(data any) *Component {
 	var net netComponent
 	safeDeserialize(data, &net)
+
+	panics.NotEmpty(net.Id)
+	panics.NotEmpty(net.Plugin)
+
 	return MakeComponent(net.Id, net.Plugin)
 }
 
@@ -81,15 +87,27 @@ func (e *serializerImpl) SerializePlugin(plugin *Plugin) any {
 
 func (e *serializerImpl) DeserializePlugin(data any) *Plugin {
 	var net netPlugin
-	safeDeserialize(data, net)
+	safeDeserialize(data, &net)
+
+	panics.NotEmpty(net.Module)
+	panics.NotEmpty(net.Name)
+	panics.NotEmpty(net.Usage)
+	panics.NotEmpty(net.Version)
 
 	builder := MakePluginBuilder(net.Module, net.Name, net.Description, net.Usage, net.Version)
 
 	for name, configItem := range net.Config {
+		panics.NotEmpty(name)
+		panics.NotEmpty(configItem.ValueType)
+
 		builder.AddConfig(name, configItem.Description, configItem.ValueType)
 	}
 
 	for name, member := range net.Members {
+		panics.NotEmpty(name)
+		panics.NotEmpty(member.MemberType)
+		panics.NotEmpty(member.ValueType)
+
 		valueType, err := ParseType(member.ValueType)
 		if err != nil {
 			panic(err)
@@ -129,7 +147,7 @@ func safeDeserialize(data any, net any) {
 		panic(err)
 	}
 
-	if err := json.Unmarshal(raw, &net); err != nil {
+	if err := json.Unmarshal(raw, net); err != nil {
 		panic(err)
 	}
 }
