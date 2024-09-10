@@ -1,23 +1,34 @@
 package main
 
 import (
-	"os"
-	"time"
+	"fmt"
+	"log"
+	"path/filepath"
 )
 
-// https://ha101-1.overkiz.com/enduser-mobile-web
-// const bvouest = "io://0220-6975-2311/14430852"
-//  deviceRefreshInterval = 30 * MINUTE, eventPollInterval = 2 * SECOND, stateRefreshInterval = 1 * MINUTE
-
 func main() {
-	client, err := MakeClient(os.Getenv("KIZ_USERNAME"), os.Getenv("KIZ_PASSWORD"))
+	root, err := filepath.Abs("../lan-scripts")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	for {
-		time.Sleep(time.Hour)
+	fmt.Printf("root = %s\n", root)
+
+	servers, err := readFiles(root)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	client.Terminate()
+	for _, server := range servers {
+		fmt.Printf("%s\n", server.Name)
+
+		for _, service := range server.Services {
+			fmt.Printf("  %s\n", service.Name)
+
+			for _, container := range service.Containers {
+				fmt.Printf("    %s => %s\n", container.Name, container.CurrentImage)
+
+			}
+		}
+	}
 }
