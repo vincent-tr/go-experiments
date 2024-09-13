@@ -1,13 +1,18 @@
 package main
 
 import (
-	"context"
+	"bytes"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path"
 
+	"github.com/go-git/go-billy/v5"
+
 	"github.com/compose-spec/compose-go/v2/cli"
+	"github.com/compose-spec/compose-go/v2/loader"
+	"github.com/compose-spec/compose-go/v2/types"
 )
 
 type Server struct {
@@ -22,13 +27,14 @@ type Service struct {
 
 type Container struct {
 	Name         string
-	CurrentImage string
-	LatestImage  string
+	CurrentImage *Image
+	LatestImage  *Image
 }
 
-func readFiles(root string) ([]*Server, error) {
+func readFiles(root string, fs billy.Filesystem) ([]*Server, error) {
 	reader := &reader{
 		root:    root,
+		fs:      fs,
 		servers: make([]*Server, 0),
 	}
 
@@ -41,11 +47,12 @@ func readFiles(root string) ([]*Server, error) {
 
 type reader struct {
 	root    string
+	fs      billy.Filesystem
 	servers []*Server
 }
 
 func (r *reader) processRoot() error {
-	entries, err := os.ReadDir(r.root)
+	entries, err := r.fs.ReadDir(r.root)
 	if err != nil {
 		return err
 	}
@@ -68,7 +75,7 @@ func (r *reader) processRoot() error {
 
 func (r *reader) processServer(serverName string) error {
 
-	entries, err := os.ReadDir(path.Join(r.root, serverName))
+	entries, err := r.fs.ReadDir(path.Join(r.root, serverName))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -89,41 +96,71 @@ func (r *reader) processServer(serverName string) error {
 }
 
 func (r *reader) processService(serverName string, serviceName string) error {
-	for _, candidate := range []string{"docker-compose.yaml", "docker-compose.yml"} {
+	projectName := ""
+
+	for _, candidate := range cli.DefaultFileNames {
 		projectFile := path.Join(r.root, serverName, serviceName, candidate)
-		exists, err := fileExists(projectFile)
+		exists, err := r.fileExists(projectFile)
 		if err != nil {
 			return err
 		}
 
 		if exists {
-			if err := r.processFile(serverName, serviceName, projectFile); err != nil {
-				return err
-			}
+			projectName = candidate
+			break
+		}
+	}
+
+	if projectName != "" {
+		if err := r.processComposeDir(serverName, serviceName, projectName); err != nil {
+			return fmt.Errorf("error processing dir '%s': %w", path.Join(r.root, serverName, serviceName), err)
 		}
 	}
 
 	return nil
 }
 
-func (r *reader) processFile(serverName string, serviceName string, projectFile string) error {
-	ctx := context.Background()
+func (r *reader) processComposeDir(serverName string, serviceName string, projectName string) error {
 
-	options, err := cli.NewProjectOptions(
-		[]string{projectFile},
-	)
+	projectPath := path.Join(r.root, serverName, serviceName, projectName)
+
+	file, err := r.fs.Open(projectPath)
 	if err != nil {
 		return err
 	}
 
-	project, err := cli.ProjectFromOptions(ctx, options)
+	buffer := &bytes.Buffer{}
+	_, err = buffer.ReadFrom(file)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("read %s\n", projectPath)
+
+	details := types.ConfigDetails{
+		ConfigFiles: []types.ConfigFile{
+			{
+				Filename: projectPath,
+				Content:  buffer.Bytes(),
+			},
+		},
+	}
+
+	nameOption := func(opt *loader.Options) {
+		opt.SetProjectName(projectName, false)
+		opt.SkipResolveEnvironment = true
+	}
+
+	project, err := loader.Load(details, nameOption)
 	if err != nil {
 		return err
 	}
 
 	for name, containerInfo := range project.Services {
 		container := r.makeContainer(serverName, serviceName, name)
-		container.CurrentImage = containerInfo.Image
+		container.CurrentImage = &Image{
+			FullName: containerInfo.Image,
+		}
 	}
 
 	return nil
@@ -177,8 +214,8 @@ func (r *reader) getService(server *Server, serviceName string) *Service {
 	return service
 }
 
-func fileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
+func (r *reader) fileExists(path string) (bool, error) {
+	_, err := r.fs.Stat(path)
 	if err == nil {
 		return true, nil
 	}
