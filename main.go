@@ -2,104 +2,96 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"strings"
-	"sync"
+	"time"
 
-	"github.com/go-git/go-billy/v5/memfs"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/emersion/go-imap/v2"
+	"github.com/emersion/go-imap/v2/imapclient"
 )
 
-// github.com/containers/image => pacman -S btrfs-progs
+type Config struct {
+	IMAPServer string
+	IMAPUser   string
+	IMAPPass   string
+	Mailbox    string
+	From       string // optional
+	Subject    string // optional
+	SinceDays  int
+}
 
 func main() {
-	token := os.Getenv("GITHUB_TOKEN")
-	repository := os.Getenv("GITHUB_REPOSITORY")
 
-	repo, err := git.Clone(memory.NewStorage(), memfs.New(), &git.CloneOptions{
-		URL: repository,
-		Auth: &http.BasicAuth{
-			Username: "abc123", // yes, this can be anything except an empty string
-			Password: token,
-		},
-	})
+	config := &Config{
+		IMAPServer: "imap.gmail.com:993",
+		IMAPUser:   readSecret("gmail-user"),
+		IMAPPass:   readSecret("gmail-pass"),
+		Mailbox:    "Factures",
+		From:       "confirmation-commande@amazon.fr",
+		SinceDays:  10,
+	}
 
+	msgs, err := fetchMails(config)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	gitRef, err := repo.Head()
+	for _, msg := range msgs {
+		fmt.Printf("Message %d - %s\n", msg.UID, msg.Envelope.Subject)
+	}
+}
+
+// TODO: context?
+func fetchMails(config *Config) ([]*imapclient.FetchMessageBuffer, error) {
+	client, err := imapclient.DialTLS(config.IMAPServer, nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to connect to IMAP server: %w", err)
+	}
+	defer client.Close()
+
+	if err := client.Login(config.IMAPUser, config.IMAPPass).Wait(); err != nil {
+		return nil, fmt.Errorf("failed to login to IMAP server: %w", err)
 	}
 
-	fmt.Printf("head commit: %s\n", gitRef.Hash())
-
-	wt, err := repo.Worktree()
+	_, err = client.Select(config.Mailbox, &imap.SelectOptions{ReadOnly: true}).Wait()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to connect to IMAP server: %w", err)
 	}
 
-	servers, err := readFiles(wt.Filesystem.Root(), wt.Filesystem)
+	criteria := &imap.SearchCriteria{
+		Since:  time.Now().AddDate(0, 0, -config.SinceDays),
+		Header: []imap.SearchCriteriaHeaderField{},
+	}
+
+	if config.From != "" {
+		criteria.Header = append(criteria.Header, imap.SearchCriteriaHeaderField{Key: "FROM", Value: config.From})
+	}
+
+	if config.Subject != "" {
+		criteria.Header = append(criteria.Header, imap.SearchCriteriaHeaderField{Key: "SUBJECT", Value: config.Subject})
+	}
+
+	searchData, err := client.UIDSearch(criteria, nil).Wait()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to search emails: %w", err)
 	}
 
-	wg := sync.WaitGroup{}
-
-	for _, server := range servers {
-		for _, service := range server.Services {
-			for _, container := range service.Containers {
-				fullName := container.CurrentImage.FullName
-				split := strings.Split(fullName, ":")
-
-				if len(split) < 2 {
-					// no proper version
-					continue
-				}
-
-				baseName := split[0]
-
-				container.LatestImage = &Image{
-					FullName: baseName + ":latest",
-				}
-
-				wg.Add(1)
-
-				go func(container *Container) {
-					if err := fetchImageData(container); err != nil {
-						log.Fatal(err)
-					}
-
-					wg.Done()
-				}(container)
-			}
-		}
+	msgs, err := client.Fetch(imap.UIDSetNum(searchData.AllUIDs()...), &imap.FetchOptions{
+		UID:           true,
+		Envelope:      true,
+		BodyStructure: &imap.FetchItemBodyStructure{Extended: true},
+	}).Collect()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch emails: %w", err)
 	}
 
-	wg.Wait()
+	return msgs, nil
+}
 
-	for _, server := range servers {
-		fmt.Printf("%s\n", server.Name)
-
-		for _, service := range server.Services {
-			fmt.Printf("  %s\n", service.Name)
-
-			for _, container := range service.Containers {
-				if container.CurrentImage != nil && container.LatestImage != nil {
-					isLatest := container.CurrentImage.Digest == container.LatestImage.Digest
-					fmt.Printf("    %s => %s (created %s, latest = %t)\n", container.Name, container.CurrentImage.FullName, container.CurrentImage.Created, isLatest)
-					if !isLatest {
-						fmt.Printf("      latest created %s\n", container.LatestImage.Created)
-					}
-				} else {
-					fmt.Printf("    %s => %s\n", container.Name, container.CurrentImage.FullName)
-				}
-			}
-		}
+func readSecret(name string) string {
+	buff, err := os.ReadFile("../secrets/" + name)
+	if err != nil {
+		panic(err)
 	}
 
+	return string(buff)
 }
