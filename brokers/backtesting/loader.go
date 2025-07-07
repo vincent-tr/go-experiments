@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"path"
 	"strconv"
 	"strings"
@@ -30,7 +29,7 @@ func loadFile(arrayPtr *[]Tick, year int, month int, symbol string) error {
 	// Unzip CSV
 	r, err := zip.OpenReader(zipFile)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to open ZIP archive '%s': %v", zipFile, err)
 	}
 	defer r.Close()
 
@@ -40,7 +39,7 @@ func loadFile(arrayPtr *[]Tick, year int, month int, symbol string) error {
 		if strings.HasSuffix(f.Name, ".csv") {
 			csvFile, err = f.Open()
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("failed to open CSV file '%s' in ZIP archive '%s': %v", f.Name, zipFile, err)
 			}
 
 			break

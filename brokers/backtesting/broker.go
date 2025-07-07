@@ -3,19 +3,22 @@ package backtesting
 import (
 	"fmt"
 	"go-experiments/brokers"
-	"log"
+	"go-experiments/common"
 	"time"
 )
 
+var log = common.NewLogger("backtesting")
+
 type broker struct {
-	ticks        []Tick
-	currentIndex int
-	capital      float64
+	ticks         []Tick
+	currentIndex  int
+	capital       float64
+	openPositions []*brokers.Position
 }
 
 // GetCapital implements brokers.Broker.
 func (b *broker) GetCapital() float64 {
-	panic("unimplemented")
+	return b.capital
 }
 
 // GetCurrentTime implements brokers.Broker.
@@ -41,15 +44,20 @@ func NewBroker(beginDate, endDate time.Time, symbol string, initialCapital float
 
 	ticks, err := loadData(beginDate, endDate, symbol)
 	if err != nil {
-		log.Fatalf("Failed to load data: %v", err)
+		return nil, fmt.Errorf("failed to load data: %w", err)
 	}
 
 	endTime := time.Now()
 	duration := endTime.Sub(beginTime)
-	fmt.Printf("⏱️ Unzipped and parsed CSV in %s.\n", duration)
-	fmt.Printf("📊 Read %d ticks from CSV file.\n", len(ticks))
+	log.Debug("⏱️ Unzipped and parsed CSV in %s.", duration)
+	log.Debug("📊 Read %d ticks from CSV file.", len(ticks))
 
-	fmt.Println("✅ Done.")
+	b := &broker{
+		ticks:         ticks,
+		currentIndex:  0,
+		capital:       initialCapital,
+		openPositions: make([]*brokers.Position, 0),
+	}
 
-	return &broker{}
+	return b, nil
 }

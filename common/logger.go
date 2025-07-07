@@ -11,6 +11,10 @@ func SetCurrentTime(t time.Time) {
 	currentTime = &t
 }
 
+func ClearCurrentTime() {
+	currentTime = nil
+}
+
 type LogLevel int
 
 const (
@@ -31,11 +35,8 @@ func NewLogger(name string) *Logger {
 func (l *Logger) Log(level LogLevel, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 
-	var now time.Time
 	if currentTime != nil {
-		now = *currentTime
-	} else {
-		now = time.Now()
+		msg = fmt.Sprintf("\033[90m(%s)\033[0m %s", currentTime.Format("2006-01-02 15:04:05"), msg)
 	}
 
 	var levelStr string
@@ -43,14 +44,14 @@ func (l *Logger) Log(level LogLevel, format string, args ...interface{}) {
 	case LogLevelDebug:
 		levelStr = "\033[36mDEBUG\033[0m" // Cyan
 	case LogLevelInfo:
-		levelStr = "\033[32mINFO\033[0m" // Green
+		levelStr = "\033[32mINFO \033[0m" // Green
 	case LogLevelWarning:
-		levelStr = "\033[33mWARNING\033[0m" // Yellow
+		levelStr = "\033[33mWARN \033[0m" // Yellow
 	case LogLevelError:
 		levelStr = "\033[31mERROR\033[0m" // Red
 	}
 
-	fmt.Printf("%s [%s] %s: %s\n", now.Format("2006-01-02 15:04:05"), levelStr, l.name, msg)
+	fmt.Printf("%s [%s] %s: %s\n", time.Now().Format("2006-01-02 15:04:05"), levelStr, l.name, msg)
 }
 
 func (l *Logger) Debug(format string, args ...interface{}) {
