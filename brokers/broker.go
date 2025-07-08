@@ -32,7 +32,11 @@ type Order struct {
 	// Direction of the position (long or short)
 	Direction PositionDirection
 
-	// Number of the asset to buy or sell
+	// Number of lot to buy or sell
+	// This is the number of lots, not the total amount of money invested.
+	//
+	// For example, if the lot size is 100 and Quantity is 10, and the price is 50,
+	// the total amount of money invested is 10 * 100 * 50 = 50000.
 	Quantity int
 
 	// Price at which to stop loss the position
@@ -49,6 +53,10 @@ type Order struct {
 type Position interface {
 	// Direction of the position (long or short)
 	Direction() PositionDirection
+
+	// Quantity of the position
+	// This is the number of lots, not the total amount of money invested.
+	Quantity() int
 
 	// Price at which the position was opened
 	OpenPrice() float64
@@ -72,6 +80,9 @@ type Position interface {
 // Broker is an interface that defines the methods required to interact with a trading broker.
 // A broker is responsible for providing market data, executing orders, and managing the trading account.
 type Broker interface {
+	// Get the size of a single lot for the trading instrument.
+	GetLotSize() int
+
 	// Get the current capital of the trading account.
 	GetCapital() float64
 

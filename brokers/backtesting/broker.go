@@ -22,6 +22,14 @@ func (b *broker) Run() error {
 	panic("unimplemented")
 }
 
+// GetLotSize implements brokers.Broker.
+func (b *broker) GetLotSize() int {
+	// For backtesting, we assume a lot size of 1 for simplicity.
+	// In a real broker, this would be the number of units per lot.
+	// Not that using IG broker, EUR/USD Mini has also a size of 1.
+	return 1
+}
+
 // GetCapital implements brokers.Broker.
 func (b *broker) GetCapital() float64 {
 	return b.capital
