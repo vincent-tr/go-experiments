@@ -14,7 +14,7 @@ type broker struct {
 	ticks         []tick
 	currentIndex  int
 	capital       float64
-	openPositions []*position
+	openPositions map[*position]struct{}
 	callbacks     map[brokers.Timeframe][]func(candle brokers.Candle)
 }
 
@@ -68,7 +68,7 @@ func (b *broker) PlaceOrder(order *brokers.Order) (brokers.Position, error) {
 	}
 
 	b.capital -= totalAmount
-	b.openPositions = append(b.openPositions, position)
+	b.openPositions[position] = struct{}{}
 
 	return position, nil
 }
@@ -94,7 +94,7 @@ func NewBroker(beginDate, endDate time.Time, symbol string, initialCapital float
 		ticks:         ticks,
 		currentIndex:  0,
 		capital:       initialCapital,
-		openPositions: make([]*position, 0),
+		openPositions: make(map[*position]struct{}),
 		callbacks:     make(map[brokers.Timeframe][]func(candle brokers.Candle)),
 	}
 
@@ -109,11 +109,13 @@ func (b *broker) processTick() {
 	currentTick := b.currentTick()
 	common.SetCurrentTime(currentTick.Timestamp)
 
-	log.Debug("📈 Processing tick at %s: Bid=%.5f, Ask=%.5f", currentTick.Timestamp.Format("2006-01-02 15:04:05"), currentTick.Bid, currentTick.Ask)
+	// log.Debug("📈 Processing tick at %s: Bid=%.5f, Ask=%.5f", currentTick.Timestamp.Format("2006-01-02 15:04:05"), currentTick.Bid, currentTick.Ask)
 
-	for _, pos := range b.openPositions {
+	for pos, _ := range b.openPositions {
 		if pos.isTriggered(currentTick) {
 			pos.closePosition(currentTick)
+			delete(b.openPositions, pos)
+
 			log.Debug("📉 Position closed at %s: Direction=%s, Quantity=%d, OpenPrice=%.5f, ClosePrice=%.5f",
 				currentTick.Timestamp.Format("2006-01-02 15:04:05"), pos.direction, pos.quantity, pos.openPrice, pos.closePrice)
 		}
@@ -124,8 +126,8 @@ func (b *broker) processTick() {
 		candle := b.tryCandle(timeframe)
 
 		if candle != nil {
-			log.Debug("📊 New candle for timeframe %s: Open=%.5f, Close=%.5f, High=%.5f, Low=%.5f",
-				timeframe, candle.Open, candle.Close, candle.High, candle.Low)
+			// log.Debug("📊 New candle for timeframe %s: Open=%.5f, Close=%.5f, High=%.5f, Low=%.5f",
+			// 	timeframe, candle.Open, candle.Close, candle.High, candle.Low)
 
 			// Call all registered callbacks for this timeframe
 			for _, callback := range callbacks {

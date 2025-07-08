@@ -9,7 +9,6 @@ var log = common.NewLogger("traders/basic")
 
 func SetupBasicTrader(broker brokers.Broker) {
 	broker.RegisterMarketDataCallback(brokers.Timeframe1Minute, func(candle brokers.Candle) {
-		log.Debug("Received candle: %v", candle)
 
 		// Example logic: if the candle closed higher than it opened, place a long order
 		if candle.Close > candle.Open {
