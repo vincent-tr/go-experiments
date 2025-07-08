@@ -48,6 +48,10 @@ func loadFile(arrayPtr *[]tick, year int, month int, symbol string) error {
 	reader := csv.NewReader(csvFile)
 	reader.Comma = ','
 
+	// https://www.histdata.com/f-a-q/
+	// The timezone of all data is: Eastern Standard Time (EST) time-zone WITHOUT Day Light Savings adjustments.
+	est := time.FixedZone("EST", -5*60*60) // -5 hours in seconds
+
 	for {
 		row, err := reader.Read()
 		if err == io.EOF {
@@ -68,7 +72,7 @@ func loadFile(arrayPtr *[]tick, year int, month int, symbol string) error {
 		splitIndex := len(dtStr) - 3
 		dtStr = dtStr[:splitIndex] + "." + dtStr[splitIndex:]
 
-		t, err := time.Parse("20060102 150405.000", dtStr)
+		t, err := time.ParseInLocation("20060102 150405.000", dtStr, est)
 		if err != nil {
 			return fmt.Errorf("failed to parse date '%s': %v", dtStr, err)
 		}
