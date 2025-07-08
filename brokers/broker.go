@@ -72,9 +72,6 @@ type Position interface {
 
 	// Whether the position is closed or not
 	Closed() bool
-
-	// Channel to signal when the position is closed
-	ClosedSignal() <-chan struct{}
 }
 
 // Broker is an interface that defines the methods required to interact with a trading broker.

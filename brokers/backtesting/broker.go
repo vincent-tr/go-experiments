@@ -10,10 +10,10 @@ import (
 var log = common.NewLogger("backtesting")
 
 type broker struct {
-	ticks         []Tick
+	ticks         []tick
 	currentIndex  int
 	capital       float64
-	openPositions []*brokers.Position
+	openPositions []*position
 	callbacks     map[brokers.Timeframe][]func(candle brokers.Candle)
 }
 
@@ -47,17 +47,18 @@ func (b *broker) RegisterMarketDataCallback(timeframe brokers.Timeframe, callbac
 
 // PlaceOrder implements brokers.Broker.
 func (b *broker) PlaceOrder(order *brokers.Order) (brokers.Position, error) {
-	var price float64
-	switch order.Direction {
-	case brokers.PositionDirectionLong:
-		price = b.currentTick().Ask
-	case brokers.PositionDirectionShort:
-		price = b.currentTick().Bid
-	default:
-		return nil, fmt.Errorf("invalid position direction: %s", order.Direction)
+	position := newPosition(b.currentTick(), order)
+
+	// Calculate the total amount of money invested based on the lot size and quantity.
+	totalAmount := float64(order.Quantity*b.GetLotSize()) * position.openPrice
+	if totalAmount > b.capital {
+		return nil, fmt.Errorf("insufficient capital: cannot place order for %d lots at price %.2f (total: %.2f)", order.Quantity, position.openPrice, totalAmount)
 	}
 
-	panic("unimplemented")
+	b.capital -= totalAmount
+	b.openPositions = append(b.openPositions, position)
+
+	return position, nil
 }
 
 var _ brokers.Broker = (*broker)(nil)
@@ -81,13 +82,13 @@ func NewBroker(beginDate, endDate time.Time, symbol string, initialCapital float
 		ticks:         ticks,
 		currentIndex:  0,
 		capital:       initialCapital,
-		openPositions: make([]*brokers.Position, 0),
+		openPositions: make([]*position, 0),
 		callbacks:     make(map[brokers.Timeframe][]func(candle brokers.Candle)),
 	}
 
 	return b, nil
 }
 
-func (b *broker) currentTick() Tick {
-	return b.ticks[b.currentIndex]
+func (b *broker) currentTick() *tick {
+	return &b.ticks[b.currentIndex]
 }

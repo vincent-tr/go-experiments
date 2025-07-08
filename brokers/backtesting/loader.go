@@ -15,14 +15,7 @@ const dataPath = "brokers/backtesting/data"
 
 // https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/EURUSD
 
-// Tick represents one row of tick data
-type Tick struct {
-	Timestamp time.Time
-	Bid       float64
-	Ask       float64
-}
-
-func loadFile(arrayPtr *[]Tick, year int, month int, symbol string) error {
+func loadFile(arrayPtr *[]tick, year int, month int, symbol string) error {
 
 	zipFile := path.Join(dataPath, fmt.Sprintf("HISTDATA_COM_ASCII_%s_T%04d%02d.zip", symbol, year, month))
 
@@ -80,7 +73,7 @@ func loadFile(arrayPtr *[]Tick, year int, month int, symbol string) error {
 			return fmt.Errorf("failed to parse date '%s': %v", dtStr, err)
 		}
 
-		tick := Tick{
+		tick := tick{
 			Timestamp: t,
 			Bid:       bid,
 			Ask:       ask,
@@ -91,8 +84,8 @@ func loadFile(arrayPtr *[]Tick, year int, month int, symbol string) error {
 	return nil
 }
 
-func loadData(beginDate time.Time, endDate time.Time, symbol string) ([]Tick, error) {
-	var ticks []Tick
+func loadData(beginDate time.Time, endDate time.Time, symbol string) ([]tick, error) {
+	var ticks []tick
 
 	// Loop through each month in the date range
 	for d := beginDate; d.Before(endDate); d = d.AddDate(0, 1, 0) {
