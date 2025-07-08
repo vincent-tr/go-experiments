@@ -76,7 +76,7 @@ func NewBroker(beginDate, endDate time.Time, symbol string, initialCapital float
 	endTime := time.Now()
 	duration := endTime.Sub(beginTime)
 	log.Debug("⏱️ Unzipped and parsed CSV in %s.", duration)
-	log.Debug("📊 Read %d ticks from CSV file.", len(ticks))
+	log.Debug("📊 Read %d ticks from CSV.", len(ticks))
 
 	b := &broker{
 		ticks:         ticks,
