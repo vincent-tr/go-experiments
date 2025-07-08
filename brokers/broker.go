@@ -27,6 +27,17 @@ const (
 	PositionDirectionShort
 )
 
+func (d PositionDirection) String() string {
+	switch d {
+	case PositionDirectionLong:
+		return "long"
+	case PositionDirectionShort:
+		return "short"
+	default:
+		return "unknown"
+	}
+}
+
 // Order represents an order to enter a position in the market.
 type Order struct {
 	// Direction of the position (long or short)
