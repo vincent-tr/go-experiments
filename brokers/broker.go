@@ -32,8 +32,8 @@ type Order struct {
 	// Direction of the position (long or short)
 	Direction PositionDirection
 
-	// Amount of the asset to buy or sell
-	Amount float64
+	// Number of the asset to buy or sell
+	Quantity int
 
 	// Price at which to stop loss the position
 	StopLoss float64
@@ -75,8 +75,8 @@ type Broker interface {
 	// Get the current capital of the trading account.
 	GetCapital() float64
 
-	// Get the current market data channel.
-	GetMarketDataChannel(timeframe Timeframe) <-chan Candle
+	// Register a callback to receive market data for a specific timeframe.
+	RegisterMarketDataCallback(timeframe Timeframe, callback func(candle Candle))
 
 	// Get the current time.
 	// It is important to use this rather than time.Now() because when running in a backtest, the time may be simulated and not the real time.
@@ -84,4 +84,12 @@ type Broker interface {
 
 	// Place an order to enter a position in the market.
 	PlaceOrder(order *Order) (Position, error)
+}
+
+// BacktestingBroker extends the Broker interface to include methods specific to backtesting scenarios.
+type BacktestingBroker interface {
+	Broker
+
+	// Run the backtesting simulation.
+	Run() error
 }

@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const dataPath = "brokers/backtesting"
+const dataPath = "brokers/backtesting/data"
 
 // https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/EURUSD
 
