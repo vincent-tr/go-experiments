@@ -2,7 +2,7 @@ package main
 
 import (
 	"go-experiments/brokers/backtesting"
-	traders "go-experiments/traders/basic"
+	"go-experiments/traders"
 	"time"
 )
 

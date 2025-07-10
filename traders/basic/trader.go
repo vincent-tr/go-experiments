@@ -1,4 +1,4 @@
-package traders
+package basic
 
 import (
 	"go-experiments/brokers"
@@ -7,7 +7,7 @@ import (
 
 var log = common.NewLogger("traders/basic")
 
-func SetupBasicTrader(broker brokers.Broker) {
+func Setup(broker brokers.Broker) {
 	broker.RegisterMarketDataCallback(brokers.Timeframe1Minute, func(candle brokers.Candle) {
 
 		// Example logic: if the candle closed higher than it opened, place a long order
