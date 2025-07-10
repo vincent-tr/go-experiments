@@ -28,6 +28,10 @@ func (h *History) AddCandle(candle brokers.Candle) {
 	h.candles = append(h.candles, candle)
 }
 
+func (h *History) GetPrice() float64 {
+	return h.candles[len(h.candles)-1].Close
+}
+
 func (h *History) GetClosePrices() []float64 {
 	size := len(h.candles)
 	prices := make([]float64, size)

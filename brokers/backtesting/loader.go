@@ -102,5 +102,13 @@ func loadData(beginDate time.Time, endDate time.Time, symbol string) ([]tick, er
 		}
 	}
 
-	return ticks, nil
+	// Filter ticks within the date range
+	var filteredTicks []tick
+	for _, t := range ticks {
+		if t.Timestamp.After(beginDate) && t.Timestamp.Before(endDate) {
+			filteredTicks = append(filteredTicks, t)
+		}
+	}
+
+	return filteredTicks, nil
 }

@@ -12,7 +12,7 @@ func main() {
 	//endDate := time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)
 
 	beginDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(2025, 1, 2, 0, 0, 0, 0, time.UTC)
 	broker, err := backtesting.NewBroker(beginDate, endDate, symbol, 10000)
 	if err != nil {
 		panic(err)

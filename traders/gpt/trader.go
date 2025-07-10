@@ -5,11 +5,14 @@ import (
 	"go-experiments/brokers"
 	"go-experiments/common"
 	"go-experiments/traders/tools"
+	"math"
 
 	"github.com/markcheno/go-talib"
 )
 
 var log = common.NewLogger("traders/gpt")
+
+const pipSize = 0.0001
 
 func Setup(broker brokers.Broker) {
 
@@ -48,10 +51,11 @@ func (t *trader) tick(candle brokers.Candle) {
 	entryPrice := candle.Close
 	stopLoss := t.computeStopLoss(direction)
 	takeProfit := t.computeTakeProfit(direction, entryPrice, stopLoss)
+	positionSize := t.computePositionSize(stopLoss)
 
 	order := &brokers.Order{
 		Direction:  direction,
-		Quantity:   1, // Default quantity, can be adjusted based on strategy
+		Quantity:   positionSize,
 		StopLoss:   stopLoss,
 		TakeProfit: takeProfit,
 		Reason:     fmt.Sprintf("GPT strategy: %s at %.5f", direction, entryPrice),
@@ -62,11 +66,44 @@ func (t *trader) tick(candle brokers.Candle) {
 	}
 }
 
+func (t *trader) shouldTakePosition() (bool, brokers.PositionDirection) {
+	var defaultValue brokers.PositionDirection
+
+	closePrices := t.history.GetClosePrices()
+
+	ema20 := talib.Ema(closePrices, 20)
+	ema5 := talib.Ema(closePrices, 5)
+	rsi := talib.Rsi(closePrices, 14)
+	last := len(closePrices) - 1
+
+	prevFast := ema5[last-1]
+	prevSlow := ema20[last-1]
+	currFast := ema5[last]
+	currSlow := ema20[last]
+	currRSI := rsi[last]
+
+	// RSI must be between 30 and 70 (neutral zone)
+	if currRSI < 30 || currRSI > 70 {
+		return false, defaultValue
+	}
+
+	// Buy signal: bullish crossover
+	if prevFast < prevSlow && currFast > currSlow {
+		return true, brokers.PositionDirectionLong
+	}
+
+	// Sell signal: bearish crossover
+	if prevFast > prevSlow && currFast < currSlow {
+		return true, brokers.PositionDirectionShort
+	}
+
+	return false, defaultValue
+}
+
 // Computes the stop-loss price based on the last 15 minutes of candles.
 // For long positions, it is set 3 pips below the lowest low in the last 15 minutes.
 // For short positions, it is set 3 pips above the highest high in the last 15 minutes.
 func (t *trader) computeStopLoss(direction brokers.PositionDirection) float64 {
-	const pipSize = 0.0001
 	const pipBuffer = 3
 
 	pipDistance := float64(pipBuffer) * pipSize
@@ -111,36 +148,21 @@ func (t *trader) computeTakeProfit(direction brokers.PositionDirection, entryPri
 	}
 }
 
-func (t *trader) shouldTakePosition() (bool, brokers.PositionDirection) {
-	var defaultValue brokers.PositionDirection
+func (t *trader) computePositionSize(stopLoss float64) int {
+	const riskPercent float64 = 1.0 // 1% risk per trade
 
-	closePrices := t.history.GetClosePrices()
+	accountBalance := t.broker.GetCapital()
+	accountRisk := accountBalance * (riskPercent / 100)
 
-	ema20 := talib.Ema(closePrices, 20)
-	ema5 := talib.Ema(closePrices, 5)
-	rsi := talib.Rsi(closePrices, 14)
-	last := len(closePrices) - 1
-
-	prevFast := ema5[last-1]
-	prevSlow := ema20[last-1]
-	currFast := ema5[last]
-	currSlow := ema20[last]
-	currRSI := rsi[last]
-
-	// RSI must be between 30 and 70 (neutral zone)
-	if currRSI < 30 || currRSI > 70 {
-		return false, defaultValue
+	entryPrice := t.history.GetPrice()
+	priceDiff := math.Abs(entryPrice - stopLoss)
+	if priceDiff <= 0 {
+		panic(fmt.Sprintf("Invalid stop loss price: entryPrice=%.5f, stopLoss=%.5f", entryPrice, stopLoss))
 	}
 
-	// Buy signal: bullish crossover
-	if prevFast < prevSlow && currFast > currSlow {
-		return true, brokers.PositionDirectionLong
-	}
+	lotSize := t.broker.GetLotSize()
+	riskPerLot := float64(lotSize) * priceDiff
+	positionSize := accountRisk / riskPerLot
 
-	// Sell signal: bearish crossover
-	if prevFast > prevSlow && currFast < currSlow {
-		return true, brokers.PositionDirectionShort
-	}
-
-	return false, defaultValue
+	return int(math.Floor(positionSize))
 }
