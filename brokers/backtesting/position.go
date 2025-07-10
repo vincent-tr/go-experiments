@@ -109,7 +109,7 @@ func (pos *position) isTriggered(currentTick *tick) CloseTrigger {
 		return CloseTriggerNone
 
 	default:
-		panic("invalid position direction: " + string(pos.direction))
+		panic("invalid position direction: " + pos.direction.String())
 	}
 }
 

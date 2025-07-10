@@ -22,10 +22,17 @@ type broker struct {
 func (b *broker) Run() error {
 	log.Info("🚀 Starting backtest with %d ticks and initial capital %.2f", len(b.ticks), b.capital)
 
-	for b.currentIndex < len(b.ticks) {
+	for {
 		b.processTick()
+
+		if b.currentIndex == len(b.ticks)-1 {
+			break
+		}
+
 		b.currentIndex++
 	}
+
+	b.closeAllOpenPositions()
 
 	common.ClearCurrentTime()
 
@@ -59,18 +66,22 @@ func (b *broker) RegisterMarketDataCallback(timeframe brokers.Timeframe, callbac
 
 // PlaceOrder implements brokers.Broker.
 func (b *broker) PlaceOrder(order *brokers.Order) (brokers.Position, error) {
-	position := newPosition(b.currentTick(), order)
+	pos := newPosition(b.currentTick(), order)
 
 	// Calculate the total amount of money invested based on the lot size and quantity.
-	totalAmount := float64(order.Quantity*b.GetLotSize()) * position.openPrice
+	totalAmount := float64(pos.Quantity()*b.GetLotSize()) * pos.OpenPrice()
 	if totalAmount > b.capital {
-		return nil, fmt.Errorf("insufficient capital: cannot place order for %d lots at price %.2f (total: %.2f)", order.Quantity, position.openPrice, totalAmount)
+		return nil, fmt.Errorf("insufficient capital: cannot place order for %d lots at price %.2f (total: %.2f)", pos.Quantity(), pos.OpenPrice(), totalAmount)
 	}
 
 	b.capital -= totalAmount
-	b.openPositions[position] = struct{}{}
+	b.openPositions[pos] = struct{}{}
 
-	return position, nil
+	log.Debug("📈 Placed order: Direction=%s, Quantity=%d, OpenPrice=%.5f, StopLoss=%.5f, TakeProfit=%.5f, Reason=%s",
+		pos.Direction(), pos.Quantity(), pos.openPrice, order.StopLoss, order.TakeProfit,
+		order.Reason)
+
+	return pos, nil
 }
 
 var _ brokers.Broker = (*broker)(nil)
@@ -111,7 +122,7 @@ func (b *broker) processTick() {
 
 	// log.Debug("📈 Processing tick at %s: Bid=%.5f, Ask=%.5f", currentTick.Timestamp.Format("2006-01-02 15:04:05"), currentTick.Bid, currentTick.Ask)
 
-	for pos, _ := range b.openPositions {
+	for pos := range b.openPositions {
 		switch pos.isTriggered(currentTick) {
 		case CloseTriggerNone:
 			// Position is still open, do nothing
@@ -120,6 +131,9 @@ func (b *broker) processTick() {
 			// Position should be closed
 			pos.closePosition(currentTick)
 			delete(b.openPositions, pos)
+
+			totalAmount := float64(pos.Quantity()*b.GetLotSize()) * pos.ClosePrice()
+			b.capital += totalAmount
 
 			closeReason := "unknown"
 			if pos.isTriggered(currentTick) == CloseTriggerStopLoss {
@@ -207,4 +221,18 @@ func getTimeframeBucket(tick *tick, timeframe brokers.Timeframe) string {
 	// This function should return the start time of the bucket for the given timeframe.
 	// For simplicity, we assume that the tick's timestamp is already aligned with the timeframe.
 	return tick.Timestamp.Truncate(time.Duration(timeframe)).Format("2006-01-02 15:04:05")
+}
+
+func (b *broker) closeAllOpenPositions() {
+	for pos := range b.openPositions {
+		pos.closePosition(b.currentTick())
+		delete(b.openPositions, pos)
+
+		totalAmount := float64(pos.Quantity()*b.GetLotSize()) * pos.ClosePrice()
+		b.capital += totalAmount
+
+		log.Debug("📉 Position closed (end of test) at %s: Direction=%s, Quantity=%d, OpenPrice=%.5f, ClosePrice=%.5f",
+			b.currentTick().Timestamp.Format("2006-01-02 15:04:05"),
+			pos.direction, pos.quantity, pos.openPrice, pos.closePrice)
+	}
 }

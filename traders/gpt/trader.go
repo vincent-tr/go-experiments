@@ -53,6 +53,11 @@ func (t *trader) tick(candle brokers.Candle) {
 	takeProfit := t.computeTakeProfit(direction, entryPrice, stopLoss)
 	positionSize := t.computePositionSize(stopLoss)
 
+	if positionSize == 0 {
+		// Not enough capital to take a position
+		return
+	}
+
 	order := &brokers.Order{
 		Direction:  direction,
 		Quantity:   positionSize,
@@ -160,9 +165,16 @@ func (t *trader) computePositionSize(stopLoss float64) int {
 		panic(fmt.Sprintf("Invalid stop loss price: entryPrice=%.5f, stopLoss=%.5f", entryPrice, stopLoss))
 	}
 
-	lotSize := t.broker.GetLotSize()
-	riskPerLot := float64(lotSize) * priceDiff
+	lotSize := float64(t.broker.GetLotSize())
+	riskPerLot := lotSize * priceDiff
 	positionSize := accountRisk / riskPerLot
+
+	// Ensure position size doesn't exceed account balance
+	// Total value = positionSize * lotSize * entryPrice
+	maxPositionSize := accountBalance / (lotSize * entryPrice)
+	if positionSize > maxPositionSize {
+		positionSize = maxPositionSize
+	}
 
 	return int(math.Floor(positionSize))
 }
