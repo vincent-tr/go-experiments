@@ -112,12 +112,26 @@ func (b *broker) processTick() {
 	// log.Debug("📈 Processing tick at %s: Bid=%.5f, Ask=%.5f", currentTick.Timestamp.Format("2006-01-02 15:04:05"), currentTick.Bid, currentTick.Ask)
 
 	for pos, _ := range b.openPositions {
-		if pos.isTriggered(currentTick) {
+		switch pos.isTriggered(currentTick) {
+		case CloseTriggerNone:
+			// Position is still open, do nothing
+			continue
+		case CloseTriggerStopLoss, CloseTriggerTakeProfit:
+			// Position should be closed
 			pos.closePosition(currentTick)
 			delete(b.openPositions, pos)
 
-			log.Debug("📉 Position closed at %s: Direction=%s, Quantity=%d, OpenPrice=%.5f, ClosePrice=%.5f",
-				currentTick.Timestamp.Format("2006-01-02 15:04:05"), pos.direction, pos.quantity, pos.openPrice, pos.closePrice)
+			closeReason := "unknown"
+			if pos.isTriggered(currentTick) == CloseTriggerStopLoss {
+				closeReason = "stop loss"
+			} else if pos.isTriggered(currentTick) == CloseTriggerTakeProfit {
+				closeReason = "take profit"
+			}
+
+			log.Debug("📉 Position closed (%s) at %s: Direction=%s, Quantity=%d, OpenPrice=%.5f, ClosePrice=%.5f",
+				closeReason,
+				currentTick.Timestamp.Format("2006-01-02 15:04:05"),
+				pos.direction, pos.quantity, pos.openPrice, pos.closePrice)
 		}
 	}
 

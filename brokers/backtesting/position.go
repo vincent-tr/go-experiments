@@ -72,18 +72,41 @@ func newPosition(currentTick *tick, order *brokers.Order) *position {
 	}
 }
 
-func (pos *position) isTriggered(currentTick *tick) bool {
+type CloseTrigger int
+
+const (
+	CloseTriggerNone CloseTrigger = iota
+	CloseTriggerStopLoss
+	CloseTriggerTakeProfit
+)
+
+// isTriggered checks if the position should be closed based on the current tick.
+func (pos *position) isTriggered(currentTick *tick) CloseTrigger {
 	price := getClosePrice(pos.direction, currentTick)
 
 	switch pos.direction {
 
 	case brokers.PositionDirectionLong:
 		// For long positions, we check if the price is below the stop loss or above the take profit.
-		return price <= pos.stopLoss || price >= pos.takeProfit
+		if price <= pos.stopLoss {
+			return CloseTriggerStopLoss
+		}
+		if price >= pos.takeProfit {
+			return CloseTriggerTakeProfit
+		}
+
+		return CloseTriggerNone
 
 	case brokers.PositionDirectionShort:
 		// For short positions, we check if the price is above the stop loss or below the take profit.
-		return price >= pos.stopLoss || price <= pos.takeProfit
+		if price >= pos.stopLoss {
+			return CloseTriggerStopLoss
+		}
+		if price <= pos.takeProfit {
+			return CloseTriggerTakeProfit
+		}
+
+		return CloseTriggerNone
 
 	default:
 		panic("invalid position direction: " + string(pos.direction))
