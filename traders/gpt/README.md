@@ -23,6 +23,22 @@ Enter a **short position** when:
 - **Stop-Loss:** Set stop-loss **3 pips above** the recent swing high over the past **15 minutes**  
 - **Take-Profit:** Set take-profit at a **2:1 reward-to-risk ratio** relative to the stop-loss distance (e.g., if stop-loss is 3 pips above entry, take-profit at 6 pips below)
 
+## Position Size Calculation
+
+To manage risk effectively, calculate your position size based on your stop-loss and the amount of capital you are willing to risk:
+
+- Determine your **account risk** (e.g., 1% of your total capital)  
+- Measure the **stop-loss distance** in pips (here, 3 pips)  
+- Calculate the **pip value** per lot for your currency pair (for EUR/USD, approximately $10 per pip per standard lot)  
+
+Use the formula:
+
+\[
+\text{Position Size (lots)} = \frac{\text{Account Risk (in currency)}}{\text{Stop-Loss (in pips)} \times \text{Pip Value per Lot}}
+\]
+
+This ensures your potential loss does not exceed your risk tolerance on any trade.
+
 ## Parameters to Tune During Backtesting
 
 - **EMA periods:** Try varying fast EMA (3 to 7) and slow EMA (15 to 30)  

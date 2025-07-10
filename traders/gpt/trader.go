@@ -1,6 +1,7 @@
 package gpt
 
 import (
+	"fmt"
 	"go-experiments/brokers"
 	"go-experiments/common"
 	"go-experiments/traders/tools"
@@ -27,28 +28,93 @@ type trader struct {
 func newTrader(broker brokers.Broker) *trader {
 	return &trader{
 		broker:  broker,
-		history: tools.NewHistory(100), // at least 21 to have prev EMA20. 100 to have enough data for last waves
+		history: tools.NewHistory(30), // at least 21 to have prev EMA20.
 	}
 }
 
 func (t *trader) tick(candle brokers.Candle) {
 	t.history.AddCandle(candle)
 
+	if !t.history.IsComplete() {
+		log.Debug("Not enough data to make a decision")
+		return
+	}
+
 	res, direction := t.shouldTakePosition()
 	if !res {
 		return
 	}
 
+	entryPrice := candle.Close
+	stopLoss := t.computeStopLoss(direction)
+	takeProfit := t.computeTakeProfit(direction, entryPrice, stopLoss)
+
+	order := &brokers.Order{
+		Direction:  direction,
+		Quantity:   1, // Default quantity, can be adjusted based on strategy
+		StopLoss:   stopLoss,
+		TakeProfit: takeProfit,
+		Reason:     fmt.Sprintf("GPT strategy: %s at %.5f", direction, entryPrice),
+	}
+
+	if _, err := t.broker.PlaceOrder(order); err != nil {
+		log.Error("Failed to place order: %v", err)
+	}
+}
+
+// Computes the stop-loss price based on the last 15 minutes of candles.
+// For long positions, it is set 3 pips below the lowest low in the last 15 minutes.
+// For short positions, it is set 3 pips above the highest high in the last 15 minutes.
+func (t *trader) computeStopLoss(direction brokers.PositionDirection) float64 {
+	const pipSize = 0.0001
+	const pipBuffer = 3
+
+	pipDistance := float64(pipBuffer) * pipSize
+
+	switch direction {
+	case brokers.PositionDirectionLong:
+		// find lowest low in last 15 minutes
+		lowest := t.history.GetLowest(15)
+		// stop loss is 3 pips below that low
+		return lowest - pipDistance
+
+	case brokers.PositionDirectionShort:
+		// find highest high in last 15 minutes
+		highest := t.history.GetHighest(15)
+		// stop loss is 3 pips above that high
+		return highest + pipDistance
+
+	default:
+		panic("invalid position direction: " + direction.String())
+	}
+}
+
+// The take-profit is set at a 2:1 reward-to-risk ratio relative to your stop-loss distance.
+func (t *trader) computeTakeProfit(direction brokers.PositionDirection, entryPrice, stopLoss float64) float64 {
+	switch direction {
+	case brokers.PositionDirectionLong:
+		risk := entryPrice - stopLoss
+		if risk <= 0 {
+			panic(fmt.Sprintf("invalid stoploss for long position: entryPrice=%.5f, stopLoss=%.5f", entryPrice, stopLoss))
+		}
+		return entryPrice + 2*risk
+
+	case brokers.PositionDirectionShort:
+		risk := stopLoss - entryPrice
+		if risk <= 0 {
+			panic(fmt.Sprintf("invalid stoploss for short position: entryPrice=%.5f, stopLoss=%.5f", entryPrice, stopLoss))
+		}
+		return entryPrice - 2*risk
+
+	default:
+		panic("invalid position direction: " + direction.String())
+	}
 }
 
 func (t *trader) shouldTakePosition() (bool, brokers.PositionDirection) {
 	var defaultValue brokers.PositionDirection
 
 	closePrices := t.history.GetClosePrices()
-	if closePrices == nil {
-		log.Debug("Not enough data")
-		return false, defaultValue
-	}
 
 	ema20 := talib.Ema(closePrices, 20)
 	ema5 := talib.Ema(closePrices, 5)

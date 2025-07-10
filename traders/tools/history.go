@@ -16,6 +16,10 @@ func NewHistory(maxSize int) *History {
 	}
 }
 
+func (h *History) IsComplete() bool {
+	return len(h.candles) == h.maxSize
+}
+
 func (h *History) AddCandle(candle brokers.Candle) {
 	if len(h.candles) >= h.maxSize {
 		h.candles = h.candles[1:] // Remove the oldest candle
@@ -26,11 +30,6 @@ func (h *History) AddCandle(candle brokers.Candle) {
 
 func (h *History) GetClosePrices() []float64 {
 	size := len(h.candles)
-
-	if size < h.maxSize {
-		return nil // Not enough data
-	}
-
 	prices := make([]float64, size)
 
 	for i := 0; i < size; i++ {
@@ -38,4 +37,30 @@ func (h *History) GetClosePrices() []float64 {
 	}
 
 	return prices
+}
+
+func (h *History) GetLowest(timeperiod int) float64 {
+	startIndex := len(h.candles) - timeperiod
+
+	lowest := h.candles[startIndex].Low
+	for i := startIndex + 1; i < len(h.candles); i++ {
+		if h.candles[i].Low < lowest {
+			lowest = h.candles[i].Low
+		}
+	}
+
+	return lowest
+}
+
+func (h *History) GetHighest(timeperiod int) float64 {
+	startIndex := len(h.candles) - timeperiod
+
+	highest := h.candles[startIndex].High
+	for i := startIndex + 1; i < len(h.candles); i++ {
+		if h.candles[i].High > highest {
+			highest = h.candles[i].High
+		}
+	}
+
+	return highest
 }

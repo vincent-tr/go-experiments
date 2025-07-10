@@ -106,7 +106,7 @@ func getOpenPrice(direction brokers.PositionDirection, currentTick *tick) float6
 		return currentTick.Bid
 
 	default:
-		panic("invalid position direction: " + string(direction))
+		panic("invalid position direction: " + direction.String())
 	}
 }
 
@@ -127,6 +127,6 @@ func getClosePrice(direction brokers.PositionDirection, currentTick *tick) float
 		return currentTick.Ask
 
 	default:
-		panic("invalid position direction: " + string(direction))
+		panic("invalid position direction: " + direction.String())
 	}
 }
