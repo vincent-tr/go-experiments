@@ -25,8 +25,9 @@ func Setup(broker brokers.Broker) {
 }
 
 type trader struct {
-	broker  brokers.Broker
-	history *tools.History
+	broker       brokers.Broker
+	history      *tools.History
+	openPosition brokers.Position
 }
 
 func newTrader(broker brokers.Broker) *trader {
@@ -41,6 +42,23 @@ func (t *trader) tick(candle brokers.Candle) {
 
 	if !t.history.IsComplete() {
 		log.Debug("Not enough data to make a decision")
+		return
+	}
+
+	// Check if we have an open position
+	if t.openPosition != nil {
+		if t.openPosition.Closed() {
+			t.openPosition = nil
+		}
+	}
+
+	// Only take one position at a time
+	if t.openPosition != nil {
+		return
+	}
+
+	// Check if we should trade regarding the calandar (holidays, weekday, session hours, etc.)
+	if !t.shouldTrade() {
 		return
 	}
 
@@ -67,17 +85,16 @@ func (t *trader) tick(candle brokers.Candle) {
 		Reason:     fmt.Sprintf("GPT strategy: %s at %.5f", direction, entryPrice),
 	}
 
-	if _, err := t.broker.PlaceOrder(order); err != nil {
+	position, err := t.broker.PlaceOrder(order)
+	if err != nil {
 		log.Error("Failed to place order: %v", err)
 	}
+
+	t.openPosition = position
 }
 
 func (t *trader) shouldTakePosition() (bool, brokers.PositionDirection) {
 	var defaultValue brokers.PositionDirection
-
-	if !t.shouldTrade() {
-		return false, defaultValue
-	}
 
 	closePrices := t.history.GetClosePrices()
 
