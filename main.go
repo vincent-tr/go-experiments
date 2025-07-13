@@ -22,9 +22,9 @@ func main() {
 	// This is a common leverage ratio in forex trading.
 	leverage := 30.0
 
-	beginDate := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2025, 1, 31, 0, 0, 0, 0, time.UTC)
-	broker, err := backtesting.NewBroker(beginDate, endDate, symbol, lotSize, leverage, 10000)
+	beginDate := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC)
+	broker, err := backtesting.NewBroker(beginDate, endDate, symbol, lotSize, leverage, 1000)
 	if err != nil {
 		panic(err)
 	}

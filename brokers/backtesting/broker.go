@@ -39,7 +39,8 @@ func (b *broker) Run() error {
 
 	common.ClearCurrentTime()
 
-	log.Info("✅ Backtest completed. Final capital: %.2f", b.capital)
+	log.Info("✅ Backtest completed.")
+	b.printSummary()
 
 	return nil
 }
@@ -72,16 +73,13 @@ func (b *broker) RegisterMarketDataCallback(timeframe brokers.Timeframe, callbac
 // PlaceOrder implements brokers.Broker.
 func (b *broker) PlaceOrder(order *brokers.Order) (brokers.Position, error) {
 	pos := newPosition(b.currentTick(), order)
+	margin := pos.getMargin(b.GetLeverage())
 
-	// Calculate the total amount of money invested based on the lot size and quantity.
-	totalAmount := float64(pos.Quantity()*b.GetLotSize()) * pos.OpenPrice()
-	totalAmount /= b.GetLeverage() // Adjust for leverage
-
-	if totalAmount > b.capital {
-		return nil, fmt.Errorf("insufficient capital: cannot place order for %d lots at price %.4f (total: %.2f, capital:  %.2f)", pos.Quantity(), pos.OpenPrice(), totalAmount, b.capital)
+	if margin > b.capital {
+		return nil, fmt.Errorf("insufficient capital: cannot place order for %d lots at price %.4f (margin: %.2f, capital:  %.2f)", pos.Quantity(), pos.OpenPrice(), margin, b.capital)
 	}
 
-	b.capital -= totalAmount
+	b.capital -= margin
 	b.openPositions[pos] = struct{}{}
 	b.positionsHistory = append(b.positionsHistory, pos)
 
@@ -143,9 +141,8 @@ func (b *broker) processTick() {
 			pos.closePosition(currentTick)
 			delete(b.openPositions, pos)
 
-			totalAmount := float64(pos.Quantity()*b.GetLotSize()) * pos.ClosePrice()
-			totalAmount /= b.GetLeverage() // Adjust for leverage
-			b.capital += totalAmount
+			b.capital += pos.getMargin(b.GetLeverage())
+			b.capital += pos.getProfitOrLoss()
 
 			closeReason := "unknown"
 			if pos.isTriggered(currentTick) == CloseTriggerStopLoss {
@@ -247,4 +244,29 @@ func (b *broker) closeAllOpenPositions() {
 			b.currentTick().Timestamp.Format("2006-01-02 15:04:05"),
 			pos.direction, pos.quantity, pos.openPrice, pos.closePrice)
 	}
+}
+
+func (b *broker) printSummary() {
+	log.Info("📊 Backtest Summary:")
+	log.Info("Total positions: %d", len(b.positionsHistory))
+	log.Info("Final capital: %.2f", b.capital)
+
+	log.Info("Positions history:")
+	for _, pos := range b.positionsHistory {
+		profit := pos.getProfitOrLoss()
+		var profitColor string
+		if profit < 0 {
+			profitColor = fmt.Sprintf("\033[31m%.2f\033[0m", profit) // Red for losses
+		} else if profit > 0 {
+			profitColor = fmt.Sprintf("\033[32m%.2f\033[0m", profit) // Green for profits
+		} else {
+			profitColor = fmt.Sprintf("%.2f", profit) // No color for zero
+		}
+
+		log.Info(" - Direction: %s, Quantity: %d, OpenPrice: %.5f, ClosePrice: %.5f, Profit: %s, Duration: %s",
+			pos.direction, pos.quantity, pos.openPrice, pos.closePrice, profitColor, pos.CloseTime().Sub(pos.OpenTime()).String())
+	}
+
+	log.Info("Total capital at the end of the test: %.2f", b.capital)
+	log.Info("Total number of positions taken: %d", len(b.positionsHistory))
 }

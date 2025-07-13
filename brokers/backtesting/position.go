@@ -153,3 +153,19 @@ func getClosePrice(direction brokers.PositionDirection, currentTick *tick) float
 		panic("invalid position direction: " + direction.String())
 	}
 }
+
+func (pos *position) getMargin(leverage float64) float64 {
+	totalAmount := float64(pos.Quantity()) * pos.openPrice
+	margin := totalAmount / leverage
+
+	return margin
+}
+
+func (pos *position) getProfitOrLoss() float64 {
+	if !pos.closed {
+		return 0.0
+	}
+
+	totalAmount := float64(pos.Quantity()) * (pos.closePrice - pos.openPrice)
+	return totalAmount
+}
