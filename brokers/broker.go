@@ -91,6 +91,9 @@ type Broker interface {
 	// Get the size of a single lot for the trading instrument.
 	GetLotSize() int
 
+	// Get the leverage for the trading account.
+	GetLeverage() float64
+
 	// Get the current capital of the trading account.
 	GetCapital() float64
 

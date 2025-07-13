@@ -11,6 +11,8 @@ import (
 var log = common.NewLogger("backtesting")
 
 type broker struct {
+	lotSize          int
+	leverage         float64
 	ticks            []tick
 	currentIndex     int
 	capital          float64
@@ -44,15 +46,17 @@ func (b *broker) Run() error {
 
 // GetLotSize implements brokers.Broker.
 func (b *broker) GetLotSize() int {
-	// For backtesting, we assume a lot size of 1 for simplicity.
-	// In a real broker, this would be the number of units per lot.
-	// Not that using IG broker, EUR/USD Mini has also a size of 1.
-	return 1
+	return b.lotSize
 }
 
 // GetCapital implements brokers.Broker.
 func (b *broker) GetCapital() float64 {
 	return b.capital
+}
+
+// GetLeverage implements brokers.Broker.
+func (b *broker) GetLeverage() float64 {
+	return b.leverage
 }
 
 // GetCurrentTime implements brokers.Broker.
@@ -71,8 +75,10 @@ func (b *broker) PlaceOrder(order *brokers.Order) (brokers.Position, error) {
 
 	// Calculate the total amount of money invested based on the lot size and quantity.
 	totalAmount := float64(pos.Quantity()*b.GetLotSize()) * pos.OpenPrice()
+	totalAmount /= b.GetLeverage() // Adjust for leverage
+
 	if totalAmount > b.capital {
-		return nil, fmt.Errorf("insufficient capital: cannot place order for %d lots at price %.2f (total: %.2f)", pos.Quantity(), pos.OpenPrice(), totalAmount)
+		return nil, fmt.Errorf("insufficient capital: cannot place order for %d lots at price %.4f (total: %.2f, capital:  %.2f)", pos.Quantity(), pos.OpenPrice(), totalAmount, b.capital)
 	}
 
 	b.capital -= totalAmount
@@ -90,7 +96,7 @@ var _ brokers.Broker = (*broker)(nil)
 var _ brokers.BacktestingBroker = (*broker)(nil)
 
 // NewBroker creates a new instance of the broker.
-func NewBroker(beginDate, endDate time.Time, symbol string, initialCapital float64) (brokers.BacktestingBroker, error) {
+func NewBroker(beginDate, endDate time.Time, symbol string, lotSize int, leverage float64, initialCapital float64) (brokers.BacktestingBroker, error) {
 	beginTime := time.Now()
 
 	ticks, err := loadData(beginDate, endDate, symbol)
@@ -104,6 +110,8 @@ func NewBroker(beginDate, endDate time.Time, symbol string, initialCapital float
 	log.Debug("📊 Read %d ticks from CSV.", len(ticks))
 
 	b := &broker{
+		lotSize:          lotSize,
+		leverage:         leverage,
 		ticks:            ticks,
 		currentIndex:     0,
 		capital:          initialCapital,
@@ -136,6 +144,7 @@ func (b *broker) processTick() {
 			delete(b.openPositions, pos)
 
 			totalAmount := float64(pos.Quantity()*b.GetLotSize()) * pos.ClosePrice()
+			totalAmount /= b.GetLeverage() // Adjust for leverage
 			b.capital += totalAmount
 
 			closeReason := "unknown"
