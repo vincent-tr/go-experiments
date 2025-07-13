@@ -39,6 +39,13 @@ Use the formula:
 
 This ensures your potential loss does not exceed your risk tolerance on any trade.
 
+## Trading Schedule ⏰
+
+This strategy should only be executed:
+- **Between Tuesday and Thursday**, when market volume and volatility are highest  
+- **During the London–New York session overlap** (typically **13:00 to 17:00 CET** or **12:00 to 16:00 GMT**, depending on DST)
+- **Avoid trading during public holidays** in the **UK or US**, as liquidity is lower and market behavior is less predictable
+
 ## Parameters to Tune During Backtesting
 
 - **EMA periods:** Try varying fast EMA (3 to 7) and slow EMA (15 to 30)  
