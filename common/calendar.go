@@ -138,6 +138,15 @@ func isNthWeekdayOfMonth(date time.Time, weekday time.Weekday, nth int) bool {
 	return false
 }
 
+// isLastWeekdayOfMonth returns true if the given date is the last occurrence of the weekday in the month.
+func isLastWeekdayOfMonth(date time.Time, weekday time.Weekday) bool {
+	if date.Weekday() != weekday {
+		return false
+	}
+	nextWeek := date.AddDate(0, 0, 7)
+	return nextWeek.Month() != date.Month()
+}
+
 // sameDay checks if two time.Time values are on the same calendar day.
 func sameDay(a, b time.Time) bool {
 	return a.Year() == b.Year() && a.YearDay() == b.YearDay()
@@ -179,3 +188,48 @@ func calculateEasterSunday(year int) time.Time {
 	day := ((h + l - 7*m + 114) % 31) + 1
 	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 }
+
+// Session represents a recurring daily session with opening and closing hours/minutes.
+type Session struct {
+	startHour int
+	startMin  int
+	endHour   int
+	endMin    int
+	location  *time.Location
+}
+
+// NewSession creates a new trading session with start/end time and timezone.
+func NewSession(startHour, startMin, endHour, endMin int, loc *time.Location) Session {
+	return Session{
+		startHour: startHour,
+		startMin:  startMin,
+		endHour:   endHour,
+		endMin:    endMin,
+		location:  loc,
+	}
+}
+
+// IsOpen returns true if the given time falls within the session (in session's time zone).
+func (s Session) IsOpen(t time.Time) bool {
+	localTime := t.In(s.location)
+
+	start := time.Date(localTime.Year(), localTime.Month(), localTime.Day(),
+		s.startHour, s.startMin, 0, 0, s.location)
+
+	end := time.Date(localTime.Year(), localTime.Month(), localTime.Day(),
+		s.endHour, s.endMin, 0, 0, s.location)
+
+	return !localTime.Before(start) && !localTime.After(end)
+}
+
+var (
+	LondonSession = func() Session {
+		loc, _ := time.LoadLocation("Europe/London")
+		return NewSession(8, 0, 17, 0, loc)
+	}()
+
+	NYSession = func() Session {
+		loc, _ := time.LoadLocation("America/New_York")
+		return NewSession(9, 0, 17, 0, loc)
+	}()
+)

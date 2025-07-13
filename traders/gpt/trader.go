@@ -6,6 +6,7 @@ import (
 	"go-experiments/common"
 	"go-experiments/traders/tools"
 	"math"
+	"time"
 
 	"github.com/markcheno/go-talib"
 )
@@ -74,6 +75,10 @@ func (t *trader) tick(candle brokers.Candle) {
 func (t *trader) shouldTakePosition() (bool, brokers.PositionDirection) {
 	var defaultValue brokers.PositionDirection
 
+	if !t.shouldTrade() {
+		return false, defaultValue
+	}
+
 	closePrices := t.history.GetClosePrices()
 
 	ema20 := talib.Ema(closePrices, 20)
@@ -103,6 +108,25 @@ func (t *trader) shouldTakePosition() (bool, brokers.PositionDirection) {
 	}
 
 	return false, defaultValue
+}
+
+func (t *trader) shouldTrade() bool {
+	currentTime := t.broker.GetCurrentTime()
+
+	weekday := currentTime.Weekday()
+	if weekday < time.Tuesday || weekday > time.Thursday {
+		return false
+	}
+
+	if common.IsUSHoliday(currentTime) || common.IsUKHoliday(currentTime) {
+		return false
+	}
+
+	if !common.LondonSession.IsOpen(currentTime) || !common.NYSession.IsOpen(currentTime) {
+		return false
+	}
+
+	return true
 }
 
 // Computes the stop-loss price based on the last 15 minutes of candles.

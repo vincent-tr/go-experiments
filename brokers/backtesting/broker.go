@@ -11,11 +11,12 @@ import (
 var log = common.NewLogger("backtesting")
 
 type broker struct {
-	ticks         []tick
-	currentIndex  int
-	capital       float64
-	openPositions map[*position]struct{}
-	callbacks     map[brokers.Timeframe][]func(candle brokers.Candle)
+	ticks            []tick
+	currentIndex     int
+	capital          float64
+	openPositions    map[*position]struct{}
+	callbacks        map[brokers.Timeframe][]func(candle brokers.Candle)
+	positionsHistory []*position
 }
 
 // Run implements brokers.BacktestingBroker.
@@ -76,6 +77,7 @@ func (b *broker) PlaceOrder(order *brokers.Order) (brokers.Position, error) {
 
 	b.capital -= totalAmount
 	b.openPositions[pos] = struct{}{}
+	b.positionsHistory = append(b.positionsHistory, pos)
 
 	log.Debug("📈 Placed order: Direction=%s, Quantity=%d, OpenPrice=%.5f, StopLoss=%.5f, TakeProfit=%.5f, Reason=%s",
 		pos.Direction(), pos.Quantity(), pos.openPrice, order.StopLoss, order.TakeProfit,
@@ -102,11 +104,12 @@ func NewBroker(beginDate, endDate time.Time, symbol string, initialCapital float
 	log.Debug("📊 Read %d ticks from CSV.", len(ticks))
 
 	b := &broker{
-		ticks:         ticks,
-		currentIndex:  0,
-		capital:       initialCapital,
-		openPositions: make(map[*position]struct{}),
-		callbacks:     make(map[brokers.Timeframe][]func(candle brokers.Candle)),
+		ticks:            ticks,
+		currentIndex:     0,
+		capital:          initialCapital,
+		openPositions:    make(map[*position]struct{}),
+		callbacks:        make(map[brokers.Timeframe][]func(candle brokers.Candle)),
+		positionsHistory: make([]*position, 0),
 	}
 
 	return b, nil
