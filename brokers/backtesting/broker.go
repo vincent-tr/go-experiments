@@ -252,7 +252,14 @@ func (b *broker) printSummary() {
 	log.Info("Final capital: %.2f", b.capital)
 
 	log.Info("Positions history:")
+	var currentMonth string
 	for _, pos := range b.positionsHistory {
+		monthKey := pos.openTime.Format("2006-01")
+		if monthKey != currentMonth {
+			currentMonth = monthKey
+			log.Info("📅 Month: %s", monthKey)
+		}
+
 		profit := pos.getProfitOrLoss()
 		var profitColor string
 		if profit < 0 {
