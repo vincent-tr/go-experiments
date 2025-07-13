@@ -72,7 +72,7 @@ func (b *broker) RegisterMarketDataCallback(timeframe brokers.Timeframe, callbac
 
 // PlaceOrder implements brokers.Broker.
 func (b *broker) PlaceOrder(order *brokers.Order) (brokers.Position, error) {
-	pos := newPosition(b.currentTick(), order)
+	pos := newPosition(b.currentTick(), b.GetCapital(), order)
 	margin := pos.getMargin(b.GetLeverage())
 
 	if margin > b.capital {
@@ -138,11 +138,7 @@ func (b *broker) processTick() {
 			continue
 		case CloseTriggerStopLoss, CloseTriggerTakeProfit:
 			// Position should be closed
-			pos.closePosition(currentTick)
-			delete(b.openPositions, pos)
-
-			b.capital += pos.getMargin(b.GetLeverage())
-			b.capital += pos.getProfitOrLoss()
+			b.closePosition(pos)
 
 			closeReason := "unknown"
 			if pos.isTriggered(currentTick) == CloseTriggerStopLoss {
@@ -234,16 +230,20 @@ func getTimeframeBucket(tick *tick, timeframe brokers.Timeframe) string {
 
 func (b *broker) closeAllOpenPositions() {
 	for pos := range b.openPositions {
-		pos.closePosition(b.currentTick())
-		delete(b.openPositions, pos)
-
-		totalAmount := float64(pos.Quantity()*b.GetLotSize()) * pos.ClosePrice()
-		b.capital += totalAmount
+		b.closePosition(pos)
 
 		log.Debug("📉 Position closed (end of test) at %s: Direction=%s, Quantity=%d, OpenPrice=%.5f, ClosePrice=%.5f",
 			b.currentTick().Timestamp.Format("2006-01-02 15:04:05"),
 			pos.direction, pos.quantity, pos.openPrice, pos.closePrice)
 	}
+}
+
+func (b *broker) closePosition(pos *position) {
+	pos.closePosition(b.currentTick())
+	delete(b.openPositions, pos)
+
+	b.capital += pos.getMargin(b.GetLeverage())
+	b.capital += pos.getProfitOrLoss()
 }
 
 func (b *broker) printSummary() {
@@ -263,8 +263,8 @@ func (b *broker) printSummary() {
 			profitColor = fmt.Sprintf("%.2f", profit) // No color for zero
 		}
 
-		log.Info(" - Direction: %s, Quantity: %d, OpenPrice: %.5f, ClosePrice: %.5f, Profit: %s, Duration: %s",
-			pos.direction, pos.quantity, pos.openPrice, pos.closePrice, profitColor, pos.CloseTime().Sub(pos.OpenTime()).String())
+		log.Info(" - Capital: %0.2f, Direction: %s, OpenTime: %s, Profit: %s, Duration: %s",
+			pos.capital, pos.direction, pos.openTime.Format("2006-01-02 15:04:05"), profitColor, pos.CloseTime().Sub(pos.OpenTime()).String())
 	}
 
 	log.Info("Total capital at the end of the test: %.2f", b.capital)

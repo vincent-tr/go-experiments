@@ -11,6 +11,7 @@ type position struct {
 	quantity  int
 	openPrice float64
 	openTime  time.Time
+	capital   float64 // Account capital at the time of opening
 
 	// Close trigger details
 	stopLoss   float64
@@ -59,13 +60,14 @@ func (p *position) Closed() bool {
 
 var _ brokers.Position = (*position)(nil)
 
-func newPosition(currentTick *tick, order *brokers.Order) *position {
+func newPosition(currentTick *tick, capital float64, order *brokers.Order) *position {
 
 	return &position{
 		direction: order.Direction,
 		quantity:  order.Quantity,
 		openPrice: getOpenPrice(order.Direction, currentTick),
 		openTime:  currentTick.Timestamp,
+		capital:   capital,
 
 		stopLoss:   order.StopLoss,
 		takeProfit: order.TakeProfit,
