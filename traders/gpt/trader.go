@@ -15,9 +15,29 @@ var log = common.NewLogger("traders/gpt")
 
 const pipSize = 0.0001
 
-func Setup(broker brokers.Broker) {
+type Config struct {
+	// Position management
 
-	trader := newTrader(broker)
+	EmaFastPeriod int     // Fast EMA period
+	EmaSlowPeriod int     // Slow EMA period
+	RsiPeriod     int     // RSI period
+	RsiMin        float64 // RSI neutral zone (30-70)
+	RsiMax        float64 // RSI neutral zone (30-70)
+
+	// Stop-loss and take-profit
+
+	StopLossPipBuffer    int     // Number of pips to buffer for stop-loss
+	StopLossLookupPeriod int     // Number of minutes to look back for stop-loss calculation
+	TakeProfitRatio      float64 // Ratio of risk to reward for take-profit
+
+	// Capital risk management
+
+	CapitalRiskPercent float64 // Percentage of capital to risk per trade
+}
+
+func Setup(broker brokers.Broker, config *Config) {
+
+	trader := newTrader(broker, config)
 
 	broker.RegisterMarketDataCallback(brokers.Timeframe1Minute, func(candle brokers.Candle) {
 		trader.tick(candle)
@@ -26,14 +46,25 @@ func Setup(broker brokers.Broker) {
 
 type trader struct {
 	broker       brokers.Broker
+	config       *Config
 	history      *tools.History
 	openPosition brokers.Position
 }
 
-func newTrader(broker brokers.Broker) *trader {
+func newTrader(broker brokers.Broker, config *Config) *trader {
+	biggestPeriod := config.EmaSlowPeriod
+	if config.RsiPeriod > biggestPeriod {
+		biggestPeriod = config.RsiPeriod
+	}
+	if config.StopLossLookupPeriod > biggestPeriod {
+		biggestPeriod = config.StopLossLookupPeriod
+	}
+	historySize := biggestPeriod + 1
+
 	return &trader{
 		broker:  broker,
-		history: tools.NewHistory(30), // at least 21 to have prev EMA20.
+		config:  config,
+		history: tools.NewHistory(historySize),
 	}
 }
 
@@ -98,19 +129,19 @@ func (t *trader) shouldTakePosition() (bool, brokers.PositionDirection) {
 
 	closePrices := t.history.GetClosePrices()
 
-	ema20 := talib.Ema(closePrices, 20)
-	ema5 := talib.Ema(closePrices, 5)
-	rsi := talib.Rsi(closePrices, 14)
+	emaSlow := talib.Ema(closePrices, t.config.EmaSlowPeriod)
+	emaFast := talib.Ema(closePrices, t.config.EmaFastPeriod)
+	rsi := talib.Rsi(closePrices, t.config.RsiPeriod)
 	last := len(closePrices) - 1
 
-	prevFast := ema5[last-1]
-	prevSlow := ema20[last-1]
-	currFast := ema5[last]
-	currSlow := ema20[last]
+	prevFast := emaFast[last-1]
+	prevSlow := emaSlow[last-1]
+	currFast := emaFast[last]
+	currSlow := emaSlow[last]
 	currRSI := rsi[last]
 
-	// RSI must be between 30 and 70 (neutral zone)
-	if currRSI < 30 || currRSI > 70 {
+	// RSI must be between RsiMin and RsiMax (neutral zone)
+	if currRSI < t.config.RsiMin || currRSI > t.config.RsiMax {
 		return false, defaultValue
 	}
 
@@ -146,24 +177,23 @@ func (t *trader) shouldTrade() bool {
 	return true
 }
 
-// Computes the stop-loss price based on the last 15 minutes of candles.
-// For long positions, it is set 3 pips below the lowest low in the last 15 minutes.
-// For short positions, it is set 3 pips above the highest high in the last 15 minutes.
+// Computes the stop-loss price based on the last lookupPeriod minutes of candles.
+// For long positions, it is set 3 pips below the lowest low in the last lookupPeriod minutes.
+// For short positions, it is set 3 pips above the highest high in the last lookupPeriod minutes.
 func (t *trader) computeStopLoss(direction brokers.PositionDirection) float64 {
-	const pipBuffer = 3
-
-	pipDistance := float64(pipBuffer) * pipSize
+	pipDistance := float64(t.config.StopLossPipBuffer) * pipSize
+	lookupPeriod := t.config.StopLossLookupPeriod
 
 	switch direction {
 	case brokers.PositionDirectionLong:
-		// find lowest low in last 15 minutes
-		lowest := t.history.GetLowest(15)
+		// find lowest low in last lookupPeriod minutes
+		lowest := t.history.GetLowest(lookupPeriod)
 		// stop loss is 3 pips below that low
 		return lowest - pipDistance
 
 	case brokers.PositionDirectionShort:
-		// find highest high in last 15 minutes
-		highest := t.history.GetHighest(15)
+		// find highest high in last lookupPeriod minutes
+		highest := t.history.GetHighest(lookupPeriod)
 		// stop loss is 3 pips above that high
 		return highest + pipDistance
 
@@ -172,7 +202,7 @@ func (t *trader) computeStopLoss(direction brokers.PositionDirection) float64 {
 	}
 }
 
-// The take-profit is set at a 2:1 reward-to-risk ratio relative to your stop-loss distance.
+// The take-profit is set at a takeProfitRatio reward-to-risk ratio relative to your stop-loss distance.
 func (t *trader) computeTakeProfit(direction brokers.PositionDirection, entryPrice, stopLoss float64) float64 {
 	switch direction {
 	case brokers.PositionDirectionLong:
@@ -180,14 +210,14 @@ func (t *trader) computeTakeProfit(direction brokers.PositionDirection, entryPri
 		if risk <= 0 {
 			panic(fmt.Sprintf("invalid stoploss for long position: entryPrice=%.5f, stopLoss=%.5f", entryPrice, stopLoss))
 		}
-		return entryPrice + 2*risk
+		return entryPrice + t.config.TakeProfitRatio*risk
 
 	case brokers.PositionDirectionShort:
 		risk := stopLoss - entryPrice
 		if risk <= 0 {
 			panic(fmt.Sprintf("invalid stoploss for short position: entryPrice=%.5f, stopLoss=%.5f", entryPrice, stopLoss))
 		}
-		return entryPrice - 2*risk
+		return entryPrice - t.config.TakeProfitRatio*risk
 
 	default:
 		panic("invalid position direction: " + direction.String())
@@ -195,10 +225,8 @@ func (t *trader) computeTakeProfit(direction brokers.PositionDirection, entryPri
 }
 
 func (t *trader) computePositionSize(stopLoss float64) int {
-	const riskPercent float64 = 1.0 // 1% risk per trade
-
 	accountBalance := t.broker.GetCapital()
-	accountRisk := accountBalance * (riskPercent / 100)
+	accountRisk := accountBalance * (t.config.CapitalRiskPercent / 100)
 
 	entryPrice := t.history.GetPrice()
 	priceDiff := math.Abs(entryPrice - stopLoss)

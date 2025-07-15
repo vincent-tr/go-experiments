@@ -10,9 +10,22 @@ import (
 
 var log = common.NewLogger("backtesting")
 
+type Config struct {
+	// Data configuration
+
+	BeginDate time.Time // Start date for the backtest
+	EndDate   time.Time // End date for the backtest
+	Symbol    string    // Symbol to trade
+
+	// Broker configuration
+
+	LotSize        int     // Size of the lot to trade
+	Leverage       float64 // Leverage to use for trading
+	InitialCapital float64 // Initial capital for the backtesting account
+}
+
 type broker struct {
-	lotSize          int
-	leverage         float64
+	config           *Config
 	ticks            []tick
 	currentIndex     int
 	capital          float64
@@ -47,7 +60,7 @@ func (b *broker) Run() error {
 
 // GetLotSize implements brokers.Broker.
 func (b *broker) GetLotSize() int {
-	return b.lotSize
+	return b.config.LotSize
 }
 
 // GetCapital implements brokers.Broker.
@@ -57,7 +70,7 @@ func (b *broker) GetCapital() float64 {
 
 // GetLeverage implements brokers.Broker.
 func (b *broker) GetLeverage() float64 {
-	return b.leverage
+	return b.config.Leverage
 }
 
 // GetCurrentTime implements brokers.Broker.
@@ -94,10 +107,10 @@ var _ brokers.Broker = (*broker)(nil)
 var _ brokers.BacktestingBroker = (*broker)(nil)
 
 // NewBroker creates a new instance of the broker.
-func NewBroker(beginDate, endDate time.Time, symbol string, lotSize int, leverage float64, initialCapital float64) (brokers.BacktestingBroker, error) {
+func NewBroker(config *Config) (brokers.BacktestingBroker, error) {
 	beginTime := time.Now()
 
-	ticks, err := loadData(beginDate, endDate, symbol)
+	ticks, err := loadData(config.BeginDate, config.EndDate, config.Symbol)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load data: %w", err)
 	}
@@ -108,11 +121,10 @@ func NewBroker(beginDate, endDate time.Time, symbol string, lotSize int, leverag
 	log.Debug("📊 Read %d ticks from CSV.", len(ticks))
 
 	b := &broker{
-		lotSize:          lotSize,
-		leverage:         leverage,
+		config:           config,
 		ticks:            ticks,
 		currentIndex:     0,
-		capital:          initialCapital,
+		capital:          config.InitialCapital,
 		openPositions:    make(map[*position]struct{}),
 		callbacks:        make(map[brokers.Timeframe][]func(candle brokers.Candle)),
 		positionsHistory: make([]*position, 0),
