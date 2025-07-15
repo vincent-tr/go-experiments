@@ -205,8 +205,6 @@ func (t *trader) computeStopLoss(direction brokers.PositionDirection) float64 {
 		last := len(atr) - 1
 		currAtr := atr[last]
 
-		fmt.Println("ATR for stop-loss calculation: ", currAtr)
-
 		pipDistance := currAtr * t.config.StopLossAtrMultiplier
 		entryPrice := t.history.GetPrice()
 
