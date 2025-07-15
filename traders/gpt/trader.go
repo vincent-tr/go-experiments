@@ -277,7 +277,8 @@ func (t *trader) computePositionSize(stopLoss float64) int {
 
 	// Ensure position size doesn't exceed account balance
 	// Total value = positionSize * lotSize * entryPrice
-	maxPositionSize := accountBalance * t.broker.GetLeverage() / (lotSize * entryPrice)
+	maxPositionSize := accountBalance*t.broker.GetLeverage()/(lotSize*entryPrice) - 1
+	maxPositionSize -= 1 // Avoid rounding issues
 	if positionSize > maxPositionSize {
 		positionSize = maxPositionSize
 	}
