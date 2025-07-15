@@ -16,6 +16,8 @@ var log = common.NewLogger("traders/gpt")
 const pipSize = 0.0001
 
 type Config struct {
+	HistorySize int // Size of the history buffer for technical indicators
+
 	// Position management
 
 	EmaFastPeriod int     // Fast EMA period
@@ -23,12 +25,19 @@ type Config struct {
 	RsiPeriod     int     // RSI period
 	RsiMin        float64 // RSI neutral zone (30-70)
 	RsiMax        float64 // RSI neutral zone (30-70)
+	AdxEnabled    bool    // Whether to use ADX for trend strength confirmation
+	AdxPeriod     int     // ADX period
+	AdxThreshold  float64 // ADX threshold to confirm trend strength (e.g., 20-25)
 
 	// Stop-loss and take-profit
+	StopLossPipBuffer    int // Number of pips to buffer for stop-loss
+	StopLossLookupPeriod int // Number of minutes to look back for stop-loss calculation
 
-	StopLossPipBuffer    int     // Number of pips to buffer for stop-loss
-	StopLossLookupPeriod int     // Number of minutes to look back for stop-loss calculation
-	TakeProfitRatio      float64 // Ratio of risk to reward for take-profit
+	StopLossAtrEnabled    bool    // Whether to use ATR for stop-loss calculation
+	StopLossAtrPeriod     int     // ATR period for stop-loss calculation
+	StopLossAtrMultiplier float64 // Multiplier for ATR-based stop-loss
+
+	TakeProfitRatio float64 // Ratio of risk to reward for take-profit
 
 	// Capital risk management
 
@@ -52,19 +61,11 @@ type trader struct {
 }
 
 func newTrader(broker brokers.Broker, config *Config) *trader {
-	biggestPeriod := config.EmaSlowPeriod
-	if config.RsiPeriod > biggestPeriod {
-		biggestPeriod = config.RsiPeriod
-	}
-	if config.StopLossLookupPeriod > biggestPeriod {
-		biggestPeriod = config.StopLossLookupPeriod
-	}
-	historySize := biggestPeriod + 1
 
 	return &trader{
 		broker:  broker,
 		config:  config,
-		history: tools.NewHistory(historySize),
+		history: tools.NewHistory(config.HistorySize),
 	}
 }
 
@@ -128,22 +129,34 @@ func (t *trader) shouldTakePosition() (bool, brokers.PositionDirection) {
 	var defaultValue brokers.PositionDirection
 
 	closePrices := t.history.GetClosePrices()
+	last := len(closePrices) - 1
+
+	// RSI must be between RsiMin and RsiMax (neutral zone)
+	rsi := talib.Rsi(closePrices, t.config.RsiPeriod)
+	currRSI := rsi[last]
+
+	if currRSI < t.config.RsiMin || currRSI > t.config.RsiMax {
+		return false, defaultValue
+	}
+
+	// If ADX is enabled, check if the trend is strong enough
+	if t.config.AdxEnabled {
+		highPrices := t.history.GetHighPrices()
+		lowPrices := t.history.GetLowPrices()
+		adx := talib.Adx(highPrices, lowPrices, closePrices, t.config.AdxPeriod)
+		currAdx := adx[last]
+
+		if currAdx < t.config.AdxThreshold {
+			return false, defaultValue
+		}
+	}
 
 	emaSlow := talib.Ema(closePrices, t.config.EmaSlowPeriod)
 	emaFast := talib.Ema(closePrices, t.config.EmaFastPeriod)
-	rsi := talib.Rsi(closePrices, t.config.RsiPeriod)
-	last := len(closePrices) - 1
-
 	prevFast := emaFast[last-1]
 	prevSlow := emaSlow[last-1]
 	currFast := emaFast[last]
 	currSlow := emaSlow[last]
-	currRSI := rsi[last]
-
-	// RSI must be between RsiMin and RsiMax (neutral zone)
-	if currRSI < t.config.RsiMin || currRSI > t.config.RsiMax {
-		return false, defaultValue
-	}
 
 	// Buy signal: bullish crossover
 	if prevFast < prevSlow && currFast > currSlow {
@@ -181,6 +194,32 @@ func (t *trader) shouldTrade() bool {
 // For long positions, it is set 3 pips below the lowest low in the last lookupPeriod minutes.
 // For short positions, it is set 3 pips above the highest high in the last lookupPeriod minutes.
 func (t *trader) computeStopLoss(direction brokers.PositionDirection) float64 {
+
+	if t.config.StopLossAtrEnabled {
+		// Use ATR for stop-loss calculation
+		highPrices := t.history.GetHighPrices()
+		lowPrices := t.history.GetLowPrices()
+		closePrices := t.history.GetClosePrices()
+
+		atr := talib.Atr(highPrices, lowPrices, closePrices, t.config.StopLossAtrPeriod)
+		last := len(atr) - 1
+		currAtr := atr[last]
+
+		fmt.Println("ATR for stop-loss calculation: ", currAtr)
+
+		pipDistance := currAtr * t.config.StopLossAtrMultiplier
+		entryPrice := t.history.GetPrice()
+
+		switch direction {
+		case brokers.PositionDirectionLong:
+			return entryPrice - pipDistance
+		case brokers.PositionDirectionShort:
+			return entryPrice + pipDistance
+		default:
+			panic("invalid position type")
+		}
+	}
+
 	pipDistance := float64(t.config.StopLossPipBuffer) * pipSize
 	lookupPeriod := t.config.StopLossLookupPeriod
 
@@ -240,10 +279,10 @@ func (t *trader) computePositionSize(stopLoss float64) int {
 
 	// Ensure position size doesn't exceed account balance
 	// Total value = positionSize * lotSize * entryPrice
-	// maxPositionSize := accountBalance / (lotSize * entryPrice)
-	// if positionSize > maxPositionSize {
-	// 	positionSize = maxPositionSize
-	// }
+	maxPositionSize := accountBalance * t.broker.GetLeverage() / (lotSize * entryPrice)
+	if positionSize > maxPositionSize {
+		positionSize = maxPositionSize
+	}
 
 	return int(math.Floor(positionSize))
 }

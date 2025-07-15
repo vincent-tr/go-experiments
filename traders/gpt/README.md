@@ -1,9 +1,11 @@
-# 📈 EMA Crossover + RSI Filter Trading Strategy (Long/Short with SL/TP)
+# 📈 EMA Crossover + RSI Filter Trading Strategy (Long/Short with SL/TP, ATR/ADX Enhanced)
 
 ## Indicators
 - **EMA(5)** — Fast exponential moving average  
 - **EMA(20)** — Slow exponential moving average  
 - **RSI(14)** — Relative Strength Index (14 periods)
+- **ATR(14)** — Average True Range (used for dynamic volatility-based stop-loss)
+- **ADX(14)** — Average Directional Index (used to confirm trend strength; threshold typically 20–25)
 
 ## Position Entry Rules
 

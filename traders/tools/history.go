@@ -43,6 +43,28 @@ func (h *History) GetClosePrices() []float64 {
 	return prices
 }
 
+func (h *History) GetHighPrices() []float64 {
+	size := len(h.candles)
+	prices := make([]float64, size)
+
+	for i := 0; i < size; i++ {
+		prices[i] = h.candles[i].High
+	}
+
+	return prices
+}
+
+func (h *History) GetLowPrices() []float64 {
+	size := len(h.candles)
+	prices := make([]float64, size)
+
+	for i := 0; i < size; i++ {
+		prices[i] = h.candles[i].Low
+	}
+
+	return prices
+}
+
 func (h *History) GetLowest(timeperiod int) float64 {
 	startIndex := len(h.candles) - timeperiod
 

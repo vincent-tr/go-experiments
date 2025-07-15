@@ -33,15 +33,22 @@ func main() {
 	}
 
 	traderConfig := &traders.GptConfig{
-		EmaFastPeriod:        5,
-		EmaSlowPeriod:        20,
-		RsiPeriod:            14,
-		RsiMin:               30,
-		RsiMax:               70,
-		StopLossPipBuffer:    3,
-		StopLossLookupPeriod: 15,
-		TakeProfitRatio:      2.0,
-		CapitalRiskPercent:   1.0,
+		HistorySize:           100,
+		EmaFastPeriod:         5,
+		EmaSlowPeriod:         20,
+		RsiPeriod:             14,
+		RsiMin:                30,
+		RsiMax:                70,
+		StopLossAtrEnabled:    true,
+		StopLossAtrPeriod:     14,
+		StopLossAtrMultiplier: 1,
+		//StopLossPipBuffer:     3,
+		//StopLossLookupPeriod:  15,
+		TakeProfitRatio:    2.0,
+		CapitalRiskPercent: 1.0,
+		AdxEnabled:         true,
+		AdxPeriod:          14,
+		AdxThreshold:       20.0,
 	}
 
 	traders.SetupGptTrader(broker, traderConfig)
