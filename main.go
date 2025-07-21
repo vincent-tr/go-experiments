@@ -7,12 +7,17 @@ import (
 )
 
 func main() {
+	dataset, err := backtesting.LoadDataset(
+		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC),
+		"EURUSD",
+	)
+
+	if err != nil {
+		panic(err)
+	}
 
 	brokerConfig := &backtesting.Config{
-		BeginDate: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		EndDate:   time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC),
-		Symbol:    "EURUSD",
-
 		// For backtesting, we assume a lot size of 1 for simplicity.
 		// In a real broker, this would be the number of units per lot.
 		// Not that using IG broker, EUR/USD Mini has also a size of 1.
@@ -27,7 +32,7 @@ func main() {
 		InitialCapital: 1000,
 	}
 
-	broker, err := backtesting.NewBroker(brokerConfig)
+	broker, err := backtesting.NewBroker(brokerConfig, dataset)
 	if err != nil {
 		panic(err)
 	}

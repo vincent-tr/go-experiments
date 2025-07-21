@@ -11,14 +11,6 @@ import (
 var log = common.NewLogger("backtesting")
 
 type Config struct {
-	// Data configuration
-
-	BeginDate time.Time // Start date for the backtest
-	EndDate   time.Time // End date for the backtest
-	Symbol    string    // Symbol to trade
-
-	// Broker configuration
-
 	LotSize        int     // Size of the lot to trade
 	Leverage       float64 // Leverage to use for trading
 	InitialCapital float64 // Initial capital for the backtesting account
@@ -107,12 +99,7 @@ var _ brokers.Broker = (*broker)(nil)
 var _ brokers.BacktestingBroker = (*broker)(nil)
 
 // NewBroker creates a new instance of the broker.
-func NewBroker(config *Config) (brokers.BacktestingBroker, error) {
-	dataset, err := LoadDataset(config.BeginDate, config.EndDate, config.Symbol)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open dataset: %v", err)
-	}
-
+func NewBroker(config *Config, dataset *Dataset) (brokers.BacktestingBroker, error) {
 	b := &broker{
 		config:           config,
 		ticks:            dataset.ticks,
