@@ -108,21 +108,14 @@ var _ brokers.BacktestingBroker = (*broker)(nil)
 
 // NewBroker creates a new instance of the broker.
 func NewBroker(config *Config) (brokers.BacktestingBroker, error) {
-	beginTime := time.Now()
-
-	ticks, err := loadData(config.BeginDate, config.EndDate, config.Symbol)
+	dataset, err := LoadDataset(config.BeginDate, config.EndDate, config.Symbol)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load data: %w", err)
+		return nil, fmt.Errorf("failed to open dataset: %v", err)
 	}
-
-	endTime := time.Now()
-	duration := endTime.Sub(beginTime)
-	log.Debug("⏱️ Unzipped and parsed CSV in %s.", duration)
-	log.Debug("📊 Read %d ticks from CSV.", len(ticks))
 
 	b := &broker{
 		config:           config,
-		ticks:            ticks,
+		ticks:            dataset.ticks,
 		currentIndex:     0,
 		capital:          config.InitialCapital,
 		openPositions:    make(map[*position]struct{}),
