@@ -191,6 +191,7 @@ func calculateEasterSunday(year int) time.Time {
 
 // Session represents a recurring daily session with opening and closing hours/minutes.
 type Session struct {
+	name      string
 	startHour int
 	startMin  int
 	endHour   int
@@ -199,8 +200,9 @@ type Session struct {
 }
 
 // NewSession creates a new trading session with start/end time and timezone.
-func NewSession(startHour, startMin, endHour, endMin int, loc *time.Location) Session {
-	return Session{
+func NewSession(name string, startHour, startMin, endHour, endMin int, loc *time.Location) *Session {
+	return &Session{
+		name:      name,
 		startHour: startHour,
 		startMin:  startMin,
 		endHour:   endHour,
@@ -210,7 +212,7 @@ func NewSession(startHour, startMin, endHour, endMin int, loc *time.Location) Se
 }
 
 // IsOpen returns true if the given time falls within the session (in session's time zone).
-func (s Session) IsOpen(t time.Time) bool {
+func (s *Session) IsOpen(t time.Time) bool {
 	localTime := t.In(s.location)
 
 	start := time.Date(localTime.Year(), localTime.Month(), localTime.Day(),
@@ -222,14 +224,18 @@ func (s Session) IsOpen(t time.Time) bool {
 	return !localTime.Before(start) && !localTime.After(end)
 }
 
+func (s *Session) String() string {
+	return s.name
+}
+
 var (
-	LondonSession = func() Session {
+	LondonSession = func() *Session {
 		loc, _ := time.LoadLocation("Europe/London")
-		return NewSession(8, 0, 17, 0, loc)
+		return NewSession("London", 8, 0, 17, 0, loc)
 	}()
 
-	NYSession = func() Session {
+	NYSession = func() *Session {
 		loc, _ := time.LoadLocation("America/New_York")
-		return NewSession(9, 0, 17, 0, loc)
+		return NewSession("New York", 9, 0, 17, 0, loc)
 	}()
 )
