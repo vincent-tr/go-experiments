@@ -5,7 +5,6 @@ import (
 	"go-experiments/brokers"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
-	"go-experiments/traders/tools"
 
 	"github.com/markcheno/go-talib"
 )
@@ -22,7 +21,8 @@ type stopLossAtr struct {
 	multiplier float64
 }
 
-func (oc *stopLossAtr) Compute(broker brokers.Broker, history *tools.History, order brokers.Order) error {
+func (oc *stopLossAtr) Compute(ctx context.TraderContext, order *brokers.Order) error {
+	history := ctx.HistoricalData()
 	atr := talib.Atr(history.GetHighPrices(), history.GetLowPrices(), history.GetClosePrices(), oc.period)
 
 	if len(atr) == 0 {

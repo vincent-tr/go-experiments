@@ -7,17 +7,17 @@ import (
 	"go-experiments/traders/modular/formatter"
 )
 
-func TakeProfitWithRatio(ratio float64) OrderComputer {
-	return &takeProfitWithRatio{
+func TakeProfitRatio(ratio float64) OrderComputer {
+	return &takeProfitRatio{
 		ratio: ratio,
 	}
 }
 
-type takeProfitWithRatio struct {
+type takeProfitRatio struct {
 	ratio float64
 }
 
-func (oc *takeProfitWithRatio) Compute(ctx context.TraderContext, order *brokers.Order) error {
+func (oc *takeProfitRatio) Compute(ctx context.TraderContext, order *brokers.Order) error {
 	if order.StopLoss == 0 {
 		return fmt.Errorf("stop loss must be set before calculating take profit")
 	}
@@ -46,8 +46,8 @@ func (oc *takeProfitWithRatio) Compute(ctx context.TraderContext, order *brokers
 	}
 }
 
-func (oc *takeProfitWithRatio) Format() *formatter.FormatterNode {
-	return formatter.Format("TakeProfitWithRatio",
+func (oc *takeProfitRatio) Format() *formatter.FormatterNode {
+	return formatter.Format("TakeProfitRatio",
 		formatter.Format(fmt.Sprintf("Ratio: %.4f", oc.ratio)),
 	)
 }

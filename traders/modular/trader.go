@@ -123,19 +123,19 @@ func (t *trader) takePosition(direction brokers.PositionDirection) {
 		Direction: direction,
 	}
 
-	err := t.stopLoss.Compute(t.broker, t.history, order)
+	err := t.stopLoss.Compute(t, order)
 	if err != nil {
 		log.Error("Failed to compute stop loss: %v", err)
 		return
 	}
 
-	err = t.takeProfit.Compute(t.broker, t.history, order)
+	err = t.takeProfit.Compute(t, order)
 	if err != nil {
 		log.Error("Failed to compute take profit: %v", err)
 		return
 	}
 
-	err = t.capitalAllocator.Compute(t.broker, t.history, order)
+	err = t.capitalAllocator.Compute(t, order)
 	if err != nil {
 		log.Error("Failed to compute capital allocation: %v", err)
 		return

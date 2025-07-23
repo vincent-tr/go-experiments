@@ -8,17 +8,17 @@ import (
 	"math"
 )
 
-func CapitalAllocatorFixedRisk(riskPerTradePercent float64) OrderComputer {
-	return &capitalAllocatorFixedRisk{
+func CapitalRiskPercent(riskPerTradePercent float64) OrderComputer {
+	return &capitalRiskPercent{
 		riskPerTradePercent: riskPerTradePercent,
 	}
 }
 
-type capitalAllocatorFixedRisk struct {
+type capitalRiskPercent struct {
 	riskPerTradePercent float64
 }
 
-func (oc *capitalAllocatorFixedRisk) Compute(ctx context.TraderContext, order *brokers.Order) error {
+func (oc *capitalRiskPercent) Compute(ctx context.TraderContext, order *brokers.Order) error {
 	broker := ctx.Broker()
 	accountBalance := broker.GetCapital()
 	accountRisk := accountBalance * (oc.riskPerTradePercent / 100)
@@ -45,8 +45,8 @@ func (oc *capitalAllocatorFixedRisk) Compute(ctx context.TraderContext, order *b
 	return nil
 }
 
-func (oc *capitalAllocatorFixedRisk) Format() *formatter.FormatterNode {
-	return formatter.Format("CapitalAllocatorFixedRisk",
+func (oc *capitalRiskPercent) Format() *formatter.FormatterNode {
+	return formatter.Format("CapitalRiskPercent",
 		formatter.Format(fmt.Sprintf("RiskPerTradePercent: %.2f%%", oc.riskPerTradePercent)),
 	)
 }

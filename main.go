@@ -3,7 +3,12 @@ package main
 import (
 	"go-experiments/brokers/backtesting"
 	"go-experiments/traders"
+	"go-experiments/traders/modular"
+	"go-experiments/traders/modular/condition"
+	"go-experiments/traders/modular/ordercomputer"
 	"time"
+
+	"go-experiments/common"
 )
 
 func main() {
@@ -37,26 +42,63 @@ func main() {
 		panic(err)
 	}
 
-	traderConfig := &traders.GptConfig{
-		HistorySize:           100,
-		EmaFastPeriod:         5,
-		EmaSlowPeriod:         20,
-		RsiPeriod:             14,
-		RsiMin:                30,
-		RsiMax:                70,
-		StopLossAtrEnabled:    true,
-		StopLossAtrPeriod:     14,
-		StopLossAtrMultiplier: 1,
-		//StopLossPipBuffer:     3,
-		//StopLossLookupPeriod:  15,
-		TakeProfitRatio:    2.0,
-		CapitalRiskPercent: 1.0,
-		AdxEnabled:         true,
-		AdxPeriod:          14,
-		AdxThreshold:       20.0,
-	}
+	/*
+		traderConfig := &traders.GptConfig{
+			HistorySize:           100,
+			EmaFastPeriod:         5,
+			EmaSlowPeriod:         20,
+			RsiPeriod:             14,
+			RsiMin:                30,
+			RsiMax:                70,
+			StopLossAtrEnabled:    true,
+			StopLossAtrPeriod:     14,
+			StopLossAtrMultiplier: 1,
+			//StopLossPipBuffer:     3,
+			//StopLossLookupPeriod:  15,
+			TakeProfitRatio:    2.0,
+			CapitalRiskPercent: 1.0,
+			AdxEnabled:         true,
+			AdxPeriod:          14,
+			AdxThreshold:       20.0,
+		}
 
-	traders.SetupGptTrader(broker, traderConfig)
+		traders.SetupGptTrader(broker, traderConfig)
+	*/
+
+	builder := modular.NewBuilder()
+	builder.SetHistorySize(100)
+
+	builder.Strategy().SetFilter(condition.And(
+		condition.HistoryComplete(),
+		condition.OnePositionAtATime(),
+
+		condition.Weekday(time.Tuesday, time.Wednesday, time.Thursday),
+		condition.ExcludeUKHolidays(),
+		condition.ExcludeUSHolidays(),
+		condition.Session(common.LondonSession),
+		condition.Session(common.NYSession),
+
+		condition.RsiRange(14, 30, 70),
+		// condition.AdxThreshold(14, 20.0),
+	))
+
+	//	builder.Strategy().SetLongTrigger()
+	//	builder.Strategy().SetShortTrigger()
+
+	builder.RiskManager().SetStopLoss(
+		ordercomputer.StopLossAtr(14, 1.0),
+		//ordercomputer.StopLossPipBuffer(3, 15),
+	).SetTakeProfit(
+		ordercomputer.TakeProfitRatio(2.0),
+	)
+
+	builder.CapitalAllocator().SetAllocator(
+		ordercomputer.CapitalRiskPercent(1.0),
+	)
+
+	if err := traders.SetupModularTrader(broker, builder); err != nil {
+		panic(err)
+	}
 
 	if err := broker.Run(); err != nil {
 		panic(err)

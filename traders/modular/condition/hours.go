@@ -5,7 +5,6 @@ import (
 	"go-experiments/common"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
-	"time"
 )
 
 func Hours(startHour, endHour int) Condition {
@@ -20,8 +19,9 @@ type hoursCondition struct {
 	endHour   int
 }
 
-func (h *hoursCondition) Execute(timestamp time.Time) bool {
-	return timestamp.Hour() >= h.startHour && timestamp.Hour() < h.endHour
+func (h *hoursCondition) Execute(ctx context.TraderContext) bool {
+	hour := ctx.Timestamp().Hour()
+	return hour >= h.startHour && hour < h.endHour
 }
 
 func (h *hoursCondition) Format() *formatter.FormatterNode {
