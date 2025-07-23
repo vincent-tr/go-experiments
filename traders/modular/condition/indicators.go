@@ -1,14 +1,14 @@
-package marketcondition
+package condition
 
 import (
 	"fmt"
+	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
-	"go-experiments/traders/tools"
 
 	"github.com/markcheno/go-talib"
 )
 
-func RsiRange(period int, min, max float64) MarketCondition {
+func RsiRange(period int, min, max float64) Condition {
 	return &rsiRangeCondition{
 		period: period,
 		min:    min,
@@ -22,8 +22,8 @@ type rsiRangeCondition struct {
 	max    float64
 }
 
-func (r *rsiRangeCondition) Execute(history *tools.History) bool {
-	closePrices := history.GetClosePrices()
+func (r *rsiRangeCondition) Execute(ctx context.TraderContext) bool {
+	closePrices := ctx.HistoricalData().GetClosePrices()
 	rsi := talib.Rsi(closePrices, r.period)
 
 	if len(rsi) == 0 {

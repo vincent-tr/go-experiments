@@ -1,13 +1,14 @@
-package opentimecondition
+package condition
 
 import (
 	"fmt"
 	"go-experiments/common"
+	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
 	"time"
 )
 
-func Hours(startHour, endHour int) OpenTimeCondition {
+func Hours(startHour, endHour int) Condition {
 	return &hoursCondition{
 		startHour: startHour,
 		endHour:   endHour,
@@ -30,7 +31,7 @@ func (h *hoursCondition) Format() *formatter.FormatterNode {
 	)
 }
 
-func Session(session *common.Session) OpenTimeCondition {
+func Session(session *common.Session) Condition {
 	return &sessionCondition{
 		session: session,
 	}
@@ -40,8 +41,8 @@ type sessionCondition struct {
 	session *common.Session
 }
 
-func (s *sessionCondition) Execute(timestamp time.Time) bool {
-	return s.session.IsOpen(timestamp)
+func (s *sessionCondition) Execute(ctx context.TraderContext) bool {
+	return s.session.IsOpen(ctx.Timestamp())
 }
 
 func (s *sessionCondition) Format() *formatter.FormatterNode {

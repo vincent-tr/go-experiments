@@ -3,8 +3,8 @@ package ordercomputer
 import (
 	"fmt"
 	"go-experiments/brokers"
+	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
-	"go-experiments/traders/tools"
 )
 
 func TakeProfitWithRatio(ratio float64) OrderComputer {
@@ -17,12 +17,12 @@ type takeProfitWithRatio struct {
 	ratio float64
 }
 
-func (oc *takeProfitWithRatio) Compute(broker brokers.Broker, history *tools.History, order *brokers.Order) error {
+func (oc *takeProfitWithRatio) Compute(ctx context.TraderContext, order *brokers.Order) error {
 	if order.StopLoss == 0 {
 		return fmt.Errorf("stop loss must be set before calculating take profit")
 	}
 
-	entryPrice := history.GetPrice()
+	entryPrice := ctx.EntryPrice()
 
 	switch order.Direction {
 	case brokers.PositionDirectionLong:

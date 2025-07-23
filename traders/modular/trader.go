@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"go-experiments/brokers"
 	"go-experiments/common"
-	"go-experiments/traders/modular/marketcondition"
-	"go-experiments/traders/modular/opentimecondition"
+	"go-experiments/traders/modular/condition"
+	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/ordercomputer"
 	"go-experiments/traders/tools"
+	"maps"
+	"slices"
+	"time"
 )
 
 var log = common.NewLogger("traders/modular")
@@ -27,16 +30,15 @@ func Setup(broker brokers.Broker, builder Builder) error {
 }
 
 type trader struct {
-	broker            brokers.Broker
-	history           *tools.History
-	openPosition      map[brokers.Position]struct{}
-	openTimeCondition opentimecondition.OpenTimeCondition
-	filter            marketcondition.MarketCondition
-	longTrigger       marketcondition.MarketCondition
-	shortTrigger      marketcondition.MarketCondition
-	stopLoss          ordercomputer.OrderComputer
-	takeProfit        ordercomputer.OrderComputer
-	capitalAllocator  ordercomputer.OrderComputer
+	broker           brokers.Broker
+	history          *tools.History
+	openPositions    map[brokers.Position]struct{}
+	filter           condition.Condition
+	longTrigger      condition.Condition
+	shortTrigger     condition.Condition
+	stopLoss         ordercomputer.OrderComputer
+	takeProfit       ordercomputer.OrderComputer
+	capitalAllocator ordercomputer.OrderComputer
 }
 
 func newTrader(broker brokers.Broker, builder Builder) (*trader, error) {
@@ -47,9 +49,6 @@ func newTrader(broker brokers.Broker, builder Builder) (*trader, error) {
 
 	if b.historySize <= 0 {
 		return nil, fmt.Errorf("history size must be greater than 0")
-	}
-	if b.openTimeCondition == nil {
-		return nil, fmt.Errorf("open time condition must be set")
 	}
 	if b.filter == nil {
 		return nil, fmt.Errorf("filter must be set")
@@ -68,16 +67,15 @@ func newTrader(broker brokers.Broker, builder Builder) (*trader, error) {
 	}
 
 	return &trader{
-		broker:            broker,
-		history:           tools.NewHistory(b.historySize),
-		openPosition:      make(map[brokers.Position]struct{}),
-		openTimeCondition: b.openTimeCondition,
-		filter:            b.filter,
-		longTrigger:       b.longTrigger,
-		shortTrigger:      b.shortTrigger,
-		stopLoss:          b.stopLoss,
-		takeProfit:        b.takeProfit,
-		capitalAllocator:  b.capitalAllocator,
+		broker:           broker,
+		history:          tools.NewHistory(b.historySize),
+		openPositions:    make(map[brokers.Position]struct{}),
+		filter:           b.filter,
+		longTrigger:      b.longTrigger,
+		shortTrigger:     b.shortTrigger,
+		stopLoss:         b.stopLoss,
+		takeProfit:       b.takeProfit,
+		capitalAllocator: b.capitalAllocator,
 	}, nil
 }
 
@@ -93,30 +91,18 @@ func getBuilder(bi Builder) (*builder, error) {
 func (t *trader) tick(candle brokers.Candle) {
 	t.history.AddCandle(candle)
 
-	for pos := range t.openPosition {
+	for pos := range t.openPositions {
 		if pos.Closed() {
-			delete(t.openPosition, pos)
+			delete(t.openPositions, pos)
 		}
 	}
 
-	// TODO:
-	// // Only take one position at a time
-	// if t.openPosition != nil {
-	// 	return
-	// }
-
-	currentTime := t.broker.GetCurrentTime()
-
-	if !t.openTimeCondition.Execute(currentTime) {
+	if !t.filter.Execute(t) {
 		return
 	}
 
-	if !t.filter.Execute(t.history) {
-		return
-	}
-
-	shouldTakeLong := t.longTrigger.Execute(t.history)
-	shouldTakeShort := t.shortTrigger.Execute(t.history)
+	shouldTakeLong := t.longTrigger.Execute(t)
+	shouldTakeShort := t.shortTrigger.Execute(t)
 
 	if shouldTakeLong && shouldTakeShort {
 		log.Warning("Both long and short triggers are true, ignoring")
@@ -124,15 +110,15 @@ func (t *trader) tick(candle brokers.Candle) {
 	}
 
 	if shouldTakeLong {
-		t.takePosition(candle, brokers.PositionDirectionLong)
+		t.takePosition(brokers.PositionDirectionLong)
 	}
 
 	if shouldTakeShort {
-		t.takePosition(candle, brokers.PositionDirectionShort)
+		t.takePosition(brokers.PositionDirectionShort)
 	}
 }
 
-func (t *trader) takePosition(candle brokers.Candle, direction brokers.PositionDirection) {
+func (t *trader) takePosition(direction brokers.PositionDirection) {
 	order := &brokers.Order{
 		Direction: direction,
 	}
@@ -163,5 +149,26 @@ func (t *trader) takePosition(candle brokers.Candle, direction brokers.PositionD
 		return
 	}
 
-	t.openPosition[pos] = struct{}{}
+	t.openPositions[pos] = struct{}{}
+}
+
+var _ context.TraderContext = (*trader)(nil)
+
+func (t *trader) Broker() brokers.Broker {
+	return t.broker
+}
+func (t *trader) HistoricalData() *tools.History {
+	return t.history
+}
+
+func (t *trader) OpenPositions() []brokers.Position {
+	return slices.Collect(maps.Keys(t.openPositions))
+}
+
+func (t *trader) Timestamp() time.Time {
+	return t.broker.GetCurrentTime()
+}
+
+func (t *trader) EntryPrice() float64 {
+	return t.history.GetPrice()
 }

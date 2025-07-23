@@ -1,19 +1,20 @@
-package opentimecondition
+package condition
 
 import (
 	"go-experiments/common"
+	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
 	"time"
 )
 
-func ExcludeUKHolidays() OpenTimeCondition {
+func ExcludeUKHolidays() Condition {
 	return &excludeCallbackCondition{
 		name:     "ExcludeUKHolidays",
 		callback: common.IsUKHoliday,
 	}
 }
 
-func ExcludeUSHolidays() OpenTimeCondition {
+func ExcludeUSHolidays() Condition {
 	return &excludeCallbackCondition{
 		name:     "ExcludeUSHolidays",
 		callback: common.IsUSHoliday,
@@ -25,8 +26,8 @@ type excludeCallbackCondition struct {
 	callback func(t time.Time) bool
 }
 
-func (e *excludeCallbackCondition) Execute(timestamp time.Time) bool {
-	return !e.callback(timestamp)
+func (e *excludeCallbackCondition) Execute(ctx context.TraderContext) bool {
+	return !e.callback(ctx.Timestamp())
 }
 
 func (e *excludeCallbackCondition) Format() *formatter.FormatterNode {

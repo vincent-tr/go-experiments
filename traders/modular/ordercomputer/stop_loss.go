@@ -3,6 +3,7 @@ package ordercomputer
 import (
 	"fmt"
 	"go-experiments/brokers"
+	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
 	"go-experiments/traders/tools"
 
@@ -52,19 +53,19 @@ type stopLossPipBuffer struct {
 	lookupPeriod int
 }
 
-func (oc *stopLossPipBuffer) Compute(broker brokers.Broker, history *tools.History, order *brokers.Order) error {
+func (oc *stopLossPipBuffer) Compute(ctx context.TraderContext, order *brokers.Order) error {
 	pipSize := 0.0001 // Assuming a pip size of 0.0001 for most currency pairs
 	pipDistance := float64(oc.pipBuffer) * pipSize
 
 	switch order.Direction {
 	case brokers.PositionDirectionLong:
 		// find lowest low in last lookupPeriod minutes
-		lowest := history.GetLowest(oc.lookupPeriod)
+		lowest := ctx.HistoricalData().GetLowest(oc.lookupPeriod)
 		order.StopLoss = lowest - pipDistance
 		return nil
 	case brokers.PositionDirectionShort:
 		// find highest high in last lookupPeriod minutes
-		highest := history.GetHighest(oc.lookupPeriod)
+		highest := ctx.HistoricalData().GetHighest(oc.lookupPeriod)
 		order.StopLoss = highest + pipDistance
 		return nil
 	default:

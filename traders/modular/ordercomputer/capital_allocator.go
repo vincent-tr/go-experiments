@@ -3,8 +3,8 @@ package ordercomputer
 import (
 	"fmt"
 	"go-experiments/brokers"
+	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
-	"go-experiments/traders/tools"
 	"math"
 )
 
@@ -18,11 +18,12 @@ type capitalAllocatorFixedRisk struct {
 	riskPerTradePercent float64
 }
 
-func (oc *capitalAllocatorFixedRisk) Compute(broker brokers.Broker, history *tools.History, order *brokers.Order) error {
+func (oc *capitalAllocatorFixedRisk) Compute(ctx context.TraderContext, order *brokers.Order) error {
+	broker := ctx.Broker()
 	accountBalance := broker.GetCapital()
 	accountRisk := accountBalance * (oc.riskPerTradePercent / 100)
 
-	entryPrice := history.GetPrice()
+	entryPrice := ctx.EntryPrice()
 	priceDiff := math.Abs(entryPrice - order.StopLoss)
 	if priceDiff <= 0 {
 		return fmt.Errorf("invalid stop loss price: entryPrice=%.5f, stopLoss=%.5f", entryPrice, order.StopLoss)

@@ -1,9 +1,8 @@
 package modular
 
 import (
+	"go-experiments/traders/modular/condition"
 	"go-experiments/traders/modular/formatter"
-	"go-experiments/traders/modular/marketcondition"
-	"go-experiments/traders/modular/opentimecondition"
 	"go-experiments/traders/modular/ordercomputer"
 )
 
@@ -20,10 +19,9 @@ func NewBuilder() Builder {
 }
 
 type StrategyBuilder interface {
-	SetOpenTimeCondition(condition opentimecondition.OpenTimeCondition) StrategyBuilder
-	SetFilter(filter marketcondition.MarketCondition) StrategyBuilder
-	SetLongTrigger(trigger marketcondition.MarketCondition) StrategyBuilder
-	SetShortTrigger(trigger marketcondition.MarketCondition) StrategyBuilder
+	SetFilter(condition condition.Condition) StrategyBuilder
+	SetLongTrigger(trigger condition.Condition) StrategyBuilder
+	SetShortTrigger(trigger condition.Condition) StrategyBuilder
 }
 
 type RiskManagerBuilder interface {
@@ -36,14 +34,13 @@ type CapitalAllocatorBuilder interface {
 }
 
 type builder struct {
-	historySize       int
-	openTimeCondition opentimecondition.OpenTimeCondition
-	filter            marketcondition.MarketCondition
-	longTrigger       marketcondition.MarketCondition
-	shortTrigger      marketcondition.MarketCondition
-	stopLoss          ordercomputer.OrderComputer
-	takeProfit        ordercomputer.OrderComputer
-	capitalAllocator  ordercomputer.OrderComputer
+	historySize      int
+	filter           condition.Condition
+	longTrigger      condition.Condition
+	shortTrigger     condition.Condition
+	stopLoss         ordercomputer.OrderComputer
+	takeProfit       ordercomputer.OrderComputer
+	capitalAllocator ordercomputer.OrderComputer
 }
 
 var _ Builder = (*builder)(nil)
@@ -68,22 +65,17 @@ func (b *builder) CapitalAllocator() CapitalAllocatorBuilder {
 	return b
 }
 
-func (b *builder) SetOpenTimeCondition(condition opentimecondition.OpenTimeCondition) StrategyBuilder {
-	b.openTimeCondition = condition
-	return b
-}
-
-func (b *builder) SetFilter(filter marketcondition.MarketCondition) StrategyBuilder {
+func (b *builder) SetFilter(filter condition.Condition) StrategyBuilder {
 	b.filter = filter
 	return b
 }
 
-func (b *builder) SetLongTrigger(trigger marketcondition.MarketCondition) StrategyBuilder {
+func (b *builder) SetLongTrigger(trigger condition.Condition) StrategyBuilder {
 	b.longTrigger = trigger
 	return b
 }
 
-func (b *builder) SetShortTrigger(trigger marketcondition.MarketCondition) StrategyBuilder {
+func (b *builder) SetShortTrigger(trigger condition.Condition) StrategyBuilder {
 	b.shortTrigger = trigger
 	return b
 }
