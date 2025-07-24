@@ -243,27 +243,45 @@ func (b *broker) printSummary() {
 
 	log.Debug("Positions history:")
 	var currentMonth string
+	var monthProfit float64
+	monthCapital := b.config.InitialCapital
 	for _, pos := range b.positionsHistory {
 		monthKey := pos.openTime.Format("2006-01")
 		if monthKey != currentMonth {
+			if currentMonth != "" {
+				log.Info("📅 Month: %s, Initial capital: %.2f, Profit: %s", currentMonth, monthCapital, b.formatProfit(monthProfit))
+			}
+
+			monthCapital += monthProfit
+			monthProfit = 0 // Reset for new month
 			currentMonth = monthKey
 			log.Debug("📅 Month: %s", monthKey)
 		}
 
 		profit := pos.getProfitOrLoss()
-		var profitColor string
-		if profit < 0 {
-			profitColor = fmt.Sprintf("\033[31m%.2f\033[0m", profit) // Red for losses
-		} else if profit > 0 {
-			profitColor = fmt.Sprintf("\033[32m%.2f\033[0m", profit) // Green for profits
-		} else {
-			profitColor = fmt.Sprintf("%.2f", profit) // No color for zero
-		}
+		monthProfit += profit
 
 		log.Debug(" - Capital: %0.2f, Direction: %s, OpenTime: %s, Profit: %s, Duration: %s",
-			pos.capital, pos.direction, pos.openTime.Format("2006-01-02 15:04:05"), profitColor, pos.CloseTime().Sub(pos.OpenTime()).String())
+			pos.capital, pos.direction, pos.openTime.Format("2006-01-02 15:04:05"), b.formatProfit(profit), pos.CloseTime().Sub(pos.OpenTime()).String())
 	}
+
+	log.Info("📅 Month: %s, Initial capital: %.2f, Profit: %s", currentMonth, monthCapital, b.formatProfit(monthProfit))
+	monthProfit = 0 // Reset for new month
 
 	log.Info("Total positions: %d", len(b.positionsHistory))
 	log.Info("Final capital: %.2f", b.capital)
+
+	totalProfit := b.capital - b.config.InitialCapital
+	ratio := totalProfit / b.config.InitialCapital * 100
+	log.Info("Total profit/loss: %s (%s%%)", b.formatProfit(b.capital-b.config.InitialCapital), b.formatProfit(ratio))
+}
+
+func (b *broker) formatProfit(value float64) string {
+	if value < 0 {
+		return fmt.Sprintf("\033[31m%.2f\033[0m", value) // Red for losses
+	} else if value > 0 {
+		return fmt.Sprintf("\033[32m%.2f\033[0m", value) // Green for profits
+	} else {
+		return fmt.Sprintf("%.2f", value) // No color for zero
+	}
 }
