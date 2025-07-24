@@ -43,37 +43,9 @@ func main() {
 	}
 
 	builder := modular.NewBuilder()
-	builder.SetHistorySize(100)
+	builder.SetHistorySize(250)
 
-	builder.Strategy().SetFilter(condition.And(
-		condition.HistoryComplete(),
-		condition.NoOpenPositions(),
-
-		condition.Weekday(time.Tuesday, time.Wednesday, time.Thursday),
-		condition.ExcludeUKHolidays(),
-		condition.ExcludeUSHolidays(),
-		condition.Session(common.LondonSession),
-		condition.Session(common.NYSession),
-
-		condition.IndicatorRange(indicators.RSI(14), 30, 70),
-		condition.Threshold(indicators.ADX(14), 20.0, condition.Above),
-	))
-
-	builder.Strategy().SetLongTrigger(
-		condition.CrossOver(
-			indicators.EMA(20),
-			indicators.EMA(5),
-			condition.CrossOverUp,
-		),
-	)
-
-	builder.Strategy().SetShortTrigger(
-		condition.CrossOver(
-			indicators.EMA(20),
-			indicators.EMA(5),
-			condition.CrossOverDown,
-		),
-	)
+	strategies.Breakout(builder.Strategy())
 
 	builder.RiskManager().SetStopLoss(
 		ordercomputer.StopLossATR(indicators.ATR(14), 1.0),
