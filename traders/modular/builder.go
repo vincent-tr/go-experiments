@@ -1,6 +1,7 @@
 package modular
 
 import (
+	"fmt"
 	"go-experiments/traders/modular/condition"
 	"go-experiments/traders/modular/formatter"
 	"go-experiments/traders/modular/ordercomputer"
@@ -96,5 +97,13 @@ func (b *builder) SetAllocator(computer ordercomputer.OrderComputer) CapitalAllo
 }
 
 func (b *builder) Format() *formatter.FormatterNode {
-	panic("TODO: implement builder.Format()")
+	return formatter.Format("Builder",
+		formatter.Format(fmt.Sprintf("HistorySize: %d", b.historySize)),
+		formatter.FormatWithChildren("Filter", b.filter),
+		formatter.FormatWithChildren("LongTrigger", b.longTrigger),
+		formatter.FormatWithChildren("ShortTrigger", b.shortTrigger),
+		formatter.FormatWithChildren("StopLoss", b.stopLoss),
+		formatter.FormatWithChildren("TakeProfit", b.takeProfit),
+		formatter.FormatWithChildren("CapitalAllocator", b.capitalAllocator),
+	)
 }
