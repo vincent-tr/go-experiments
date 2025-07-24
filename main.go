@@ -2,14 +2,13 @@ package main
 
 import (
 	"go-experiments/brokers/backtesting"
+	"go-experiments/common"
 	"go-experiments/traders"
 	"go-experiments/traders/modular"
 	"go-experiments/traders/modular/condition"
 	"go-experiments/traders/modular/indicators"
 	"go-experiments/traders/modular/ordercomputer"
 	"time"
-
-	"go-experiments/common"
 )
 
 func main() {
@@ -42,7 +41,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	/*
 		traderConfig := &traders.GptConfig{
 			HistorySize:           100,
@@ -65,7 +63,6 @@ func main() {
 
 		traders.SetupGptTrader(broker, traderConfig)
 	*/
-
 	builder := modular.NewBuilder()
 	builder.SetHistorySize(100)
 
@@ -80,7 +77,7 @@ func main() {
 		condition.Session(common.NYSession),
 
 		condition.IndicatorRange(indicators.RSI(14), 30, 70),
-		// condition.AdxThreshold(14, 20.0),
+		condition.Threshold(indicators.ADX(14), 20.0),
 	))
 
 	builder.Strategy().SetLongTrigger(
@@ -113,7 +110,6 @@ func main() {
 	if err := traders.SetupModularTrader(broker, builder); err != nil {
 		panic(err)
 	}
-
 	if err := broker.Run(); err != nil {
 		panic(err)
 	}
