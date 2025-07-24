@@ -70,7 +70,7 @@ func LoadDataset(beginDate, endDate time.Time, symbol string) (*Dataset, error) 
 
 	endTime := time.Now()
 	duration := endTime.Sub(beginTime)
-	log.Debug("⏱️ Read %d ticks from %d file(s) in %s.", tickCount, len(files), duration)
+	log.Debug("⏱️  Read %d ticks from %d file(s) in %s.", tickCount, len(files), duration)
 
 	return &Dataset{ticks: ticks}, nil
 }
