@@ -56,7 +56,7 @@ func main() {
 		condition.Session(common.NYSession),
 
 		condition.IndicatorRange(indicators.RSI(14), 30, 70),
-		condition.Threshold(indicators.ADX(14), 20.0),
+		condition.Threshold(indicators.ADX(14), 20.0, condition.Above),
 	))
 
 	builder.Strategy().SetLongTrigger(
