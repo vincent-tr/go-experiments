@@ -41,28 +41,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	/*
-		traderConfig := &traders.GptConfig{
-			HistorySize:           100,
-			EmaFastPeriod:         5,
-			EmaSlowPeriod:         20,
-			RsiPeriod:             14,
-			RsiMin:                30,
-			RsiMax:                70,
-			StopLossAtrEnabled:    true,
-			StopLossAtrPeriod:     14,
-			StopLossAtrMultiplier: 1,
-			//StopLossPipBuffer:     3,
-			//StopLossLookupPeriod:  15,
-			TakeProfitRatio:    2.0,
-			CapitalRiskPercent: 1.0,
-			AdxEnabled:         true,
-			AdxPeriod:          14,
-			AdxThreshold:       20.0,
-		}
 
-		traders.SetupGptTrader(broker, traderConfig)
-	*/
 	builder := modular.NewBuilder()
 	builder.SetHistorySize(100)
 
@@ -122,3 +101,26 @@ func begin(year int, month int) time.Time {
 func end(year int, month int) time.Time {
 	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC).AddDate(0, 1, -1)
 }
+
+/*
+	traderConfig := &traders.GptConfig{
+		HistorySize:           100,
+		EmaFastPeriod:         5,
+		EmaSlowPeriod:         20,
+		RsiPeriod:             14,
+		RsiMin:                30,
+		RsiMax:                70,
+		StopLossAtrEnabled:    true,
+		StopLossAtrPeriod:     14,
+		StopLossAtrMultiplier: 1,
+		//StopLossPipBuffer:     3,
+		//StopLossLookupPeriod:  15,
+		TakeProfitRatio:    2.0,
+		CapitalRiskPercent: 1.0,
+		AdxEnabled:         true,
+		AdxPeriod:          14,
+		AdxThreshold:       20.0,
+	}
+
+	traders.SetupGptTrader(broker, traderConfig)
+*/
