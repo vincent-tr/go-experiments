@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"go-experiments/brokers"
 	"go-experiments/common"
-	"go-experiments/traders/modular/condition"
+	"go-experiments/traders/modular/conditions"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/indicators"
 	"go-experiments/traders/modular/ordercomputer"
@@ -37,9 +37,9 @@ type trader struct {
 	history          *tools.History
 	openPositions    map[brokers.Position]struct{}
 	indicatorCache   context.IndicatorCache
-	filter           condition.Condition
-	longTrigger      condition.Condition
-	shortTrigger     condition.Condition
+	filter           conditions.Condition
+	longTrigger      conditions.Condition
+	shortTrigger     conditions.Condition
 	stopLoss         ordercomputer.OrderComputer
 	takeProfit       ordercomputer.OrderComputer
 	capitalAllocator ordercomputer.OrderComputer

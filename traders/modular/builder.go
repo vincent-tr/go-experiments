@@ -2,7 +2,7 @@ package modular
 
 import (
 	"fmt"
-	"go-experiments/traders/modular/condition"
+	"go-experiments/traders/modular/conditions"
 	"go-experiments/traders/modular/formatter"
 	"go-experiments/traders/modular/ordercomputer"
 )
@@ -20,9 +20,9 @@ func NewBuilder() Builder {
 }
 
 type StrategyBuilder interface {
-	SetFilter(condition condition.Condition) StrategyBuilder
-	SetLongTrigger(trigger condition.Condition) StrategyBuilder
-	SetShortTrigger(trigger condition.Condition) StrategyBuilder
+	SetFilter(condition conditions.Condition) StrategyBuilder
+	SetLongTrigger(trigger conditions.Condition) StrategyBuilder
+	SetShortTrigger(trigger conditions.Condition) StrategyBuilder
 }
 
 type RiskManagerBuilder interface {
@@ -36,9 +36,9 @@ type CapitalAllocatorBuilder interface {
 
 type builder struct {
 	historySize      int
-	filter           condition.Condition
-	longTrigger      condition.Condition
-	shortTrigger     condition.Condition
+	filter           conditions.Condition
+	longTrigger      conditions.Condition
+	shortTrigger     conditions.Condition
 	stopLoss         ordercomputer.OrderComputer
 	takeProfit       ordercomputer.OrderComputer
 	capitalAllocator ordercomputer.OrderComputer
@@ -66,17 +66,17 @@ func (b *builder) CapitalAllocator() CapitalAllocatorBuilder {
 	return b
 }
 
-func (b *builder) SetFilter(filter condition.Condition) StrategyBuilder {
+func (b *builder) SetFilter(filter conditions.Condition) StrategyBuilder {
 	b.filter = filter
 	return b
 }
 
-func (b *builder) SetLongTrigger(trigger condition.Condition) StrategyBuilder {
+func (b *builder) SetLongTrigger(trigger conditions.Condition) StrategyBuilder {
 	b.longTrigger = trigger
 	return b
 }
 
-func (b *builder) SetShortTrigger(trigger condition.Condition) StrategyBuilder {
+func (b *builder) SetShortTrigger(trigger conditions.Condition) StrategyBuilder {
 	b.shortTrigger = trigger
 	return b
 }

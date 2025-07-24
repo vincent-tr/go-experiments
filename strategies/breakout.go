@@ -3,45 +3,45 @@ package strategies
 import (
 	"go-experiments/common"
 	"go-experiments/traders/modular"
-	"go-experiments/traders/modular/condition"
+	"go-experiments/traders/modular/conditions"
 	"go-experiments/traders/modular/indicators"
 	"time"
 )
 
 func Breakout(strategy modular.StrategyBuilder) {
 
-	strategy.SetFilter(condition.And(
-		condition.HistoryComplete(),
-		condition.NoOpenPositions(),
+	strategy.SetFilter(conditions.And(
+		conditions.HistoryComplete(),
+		conditions.NoOpenPositions(),
 
-		condition.Weekday(time.Tuesday, time.Wednesday, time.Thursday),
-		condition.ExcludeUKHolidays(),
-		condition.ExcludeUSHolidays(),
-		condition.Session(common.LondonSession),
-		condition.Session(common.NYSession),
+		conditions.Weekday(time.Tuesday, time.Wednesday, time.Thursday),
+		conditions.ExcludeUKHolidays(),
+		conditions.ExcludeUSHolidays(),
+		conditions.Session(common.LondonSession),
+		conditions.Session(common.NYSession),
 
-		condition.IndicatorRange(indicators.RSI(14), 30, 70),
-		condition.Threshold(indicators.ADX(14), 20.0, condition.Above),
+		conditions.IndicatorRange(indicators.RSI(14), 30, 70),
+		conditions.Threshold(indicators.ADX(14), 20.0, conditions.Above),
 	))
 
 	strategy.SetLongTrigger(
-		condition.And(
-			//condition.PriceThreshold(indicators.EMA(200), condition.Above),
-			condition.CrossOver(
+		conditions.And(
+			//conditions.PriceThreshold(indicators.EMA(200), conditions.Above),
+			conditions.CrossOver(
 				indicators.EMA(20),
 				indicators.EMA(5),
-				condition.CrossOverUp,
+				conditions.CrossOverUp,
 			),
 		),
 	)
 
 	strategy.SetShortTrigger(
-		condition.And(
-			//condition.PriceThreshold(indicators.EMA(200), condition.Below),
-			condition.CrossOver(
+		conditions.And(
+			//conditions.PriceThreshold(indicators.EMA(200), conditions.Below),
+			conditions.CrossOver(
 				indicators.EMA(20),
 				indicators.EMA(5),
-				condition.CrossOverDown,
+				conditions.CrossOverDown,
 			),
 		),
 	)
