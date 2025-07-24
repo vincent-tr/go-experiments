@@ -20,13 +20,13 @@ func TrendFollow(strategy modular.StrategyBuilder) {
 			conditions.Session(common.LondonSession),
 			conditions.Session(common.NYSession),
 
-			conditions.IndicatorRange(indicators.RSI(14), 30, 70),
 			conditions.Threshold(indicators.ADX(14), 20.0, conditions.Above),
 		),
 	)
 
 	strategy.SetLongTrigger(
 		conditions.And(
+			conditions.IndicatorRange(indicators.RSI(14), 40, 70),
 			conditions.PriceThreshold(indicators.EMA(50), conditions.Above),
 			conditions.CrossOver(
 				indicators.EMA(50),
@@ -38,6 +38,7 @@ func TrendFollow(strategy modular.StrategyBuilder) {
 
 	strategy.SetShortTrigger(
 		conditions.And(
+			conditions.IndicatorRange(indicators.RSI(14), 30, 60),
 			conditions.PriceThreshold(indicators.EMA(50), conditions.Below),
 			conditions.CrossOver(
 				indicators.EMA(50),
