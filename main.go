@@ -83,8 +83,21 @@ func main() {
 		// condition.AdxThreshold(14, 20.0),
 	))
 
-	//	builder.Strategy().SetLongTrigger()
-	//	builder.Strategy().SetShortTrigger()
+	builder.Strategy().SetLongTrigger(
+		condition.CrossOver(
+			indicators.EMA(20),
+			indicators.EMA(5),
+			condition.CrossOverUp,
+		),
+	)
+
+	builder.Strategy().SetShortTrigger(
+		condition.CrossOver(
+			indicators.EMA(20),
+			indicators.EMA(5),
+			condition.CrossOverDown,
+		),
+	)
 
 	builder.RiskManager().SetStopLoss(
 		ordercomputer.StopLossATR(14, 1.0),
