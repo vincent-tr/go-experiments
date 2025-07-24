@@ -28,3 +28,18 @@ func FormatWithChildren[T Formatter](value string, children ...T) *FormatterNode
 
 	return node
 }
+
+func (n *FormatterNode) String() string {
+	if len(n.children) == 0 {
+		return n.value
+	}
+
+	result := n.value + "("
+	for i, child := range n.children {
+		if i > 0 {
+			result += ", "
+		}
+		result += child.String()
+	}
+	return result + ")"
+}

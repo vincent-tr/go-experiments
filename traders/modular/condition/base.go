@@ -10,72 +10,79 @@ type Condition interface {
 	Execute(ctx context.TraderContext) bool
 }
 
-func And(conditions ...Condition) Condition {
-	return &andCondition{conditions: conditions}
-}
-
-type andCondition struct {
-	conditions []Condition
-}
-
-func (a *andCondition) Execute(ctx context.TraderContext) bool {
-	for _, condition := range a.conditions {
-		if !condition.Execute(ctx) {
-			return false
-		}
+func newCondition(
+	execute func(ctx context.TraderContext) bool,
+	format func() *formatter.FormatterNode,
+) Condition {
+	return &condition{
+		execute: execute,
+		format:  format,
 	}
-	return true
 }
 
-func (a *andCondition) Format() *formatter.FormatterNode {
-	return formatter.FormatWithChildren("And", a.conditions...)
+type condition struct {
+	execute func(ctx context.TraderContext) bool
+	format  func() *formatter.FormatterNode
+}
+
+func (c *condition) Execute(ctx context.TraderContext) bool {
+	return c.execute(ctx)
+}
+
+func (c *condition) Format() *formatter.FormatterNode {
+	return c.format()
+}
+
+func And(conditions ...Condition) Condition {
+	return newCondition(
+		func(ctx context.TraderContext) bool {
+			for _, condition := range conditions {
+				if !condition.Execute(ctx) {
+					return false
+				}
+			}
+			return true
+		},
+		func() *formatter.FormatterNode {
+			return formatter.FormatWithChildren("And", conditions...)
+		},
+	)
 }
 
 func Or(conditions ...Condition) Condition {
-	return &orCondition{conditions: conditions}
-}
-
-type orCondition struct {
-	conditions []Condition
-}
-
-func (o *orCondition) Execute(ctx context.TraderContext) bool {
-	for _, condition := range o.conditions {
-		if condition.Execute(ctx) {
-			return true
-		}
-	}
-	return false
-}
-
-func (o *orCondition) Format() *formatter.FormatterNode {
-	return formatter.FormatWithChildren("Or", o.conditions...)
+	return newCondition(
+		func(ctx context.TraderContext) bool {
+			for _, condition := range conditions {
+				if condition.Execute(ctx) {
+					return true
+				}
+			}
+			return false
+		},
+		func() *formatter.FormatterNode {
+			return formatter.FormatWithChildren("Or", conditions...)
+		},
+	)
 }
 
 func HistoryComplete() Condition {
-	return &historyCompleteCondition{}
+	return newCondition(
+		func(ctx context.TraderContext) bool {
+			return ctx.HistoricalData().IsComplete()
+		},
+		func() *formatter.FormatterNode {
+			return formatter.Format("HistoryComplete")
+		},
+	)
 }
 
-type historyCompleteCondition struct{}
-
-func (h *historyCompleteCondition) Execute(ctx context.TraderContext) bool {
-	return ctx.HistoricalData().IsComplete()
-}
-
-func (h *historyCompleteCondition) Format() *formatter.FormatterNode {
-	return formatter.Format("HistoryComplete")
-}
-
-func OnePositionAtATime() Condition {
-	return &onePositionAtATimeCondition{}
-}
-
-type onePositionAtATimeCondition struct{}
-
-func (o *onePositionAtATimeCondition) Execute(ctx context.TraderContext) bool {
-	return len(ctx.OpenPositions()) == 0
-}
-
-func (o *onePositionAtATimeCondition) Format() *formatter.FormatterNode {
-	return formatter.Format("OnePositionAtATime")
+func NoOpenPositions() Condition {
+	return newCondition(
+		func(ctx context.TraderContext) bool {
+			return len(ctx.OpenPositions()) == 0
+		},
+		func() *formatter.FormatterNode {
+			return formatter.Format("NoOpenPositions")
+		},
+	)
 }

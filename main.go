@@ -5,6 +5,7 @@ import (
 	"go-experiments/traders"
 	"go-experiments/traders/modular"
 	"go-experiments/traders/modular/condition"
+	"go-experiments/traders/modular/indicators"
 	"go-experiments/traders/modular/ordercomputer"
 	"time"
 
@@ -70,7 +71,7 @@ func main() {
 
 	builder.Strategy().SetFilter(condition.And(
 		condition.HistoryComplete(),
-		condition.OnePositionAtATime(),
+		condition.NoOpenPositions(),
 
 		condition.Weekday(time.Tuesday, time.Wednesday, time.Thursday),
 		condition.ExcludeUKHolidays(),
@@ -78,7 +79,7 @@ func main() {
 		condition.Session(common.LondonSession),
 		condition.Session(common.NYSession),
 
-		condition.RsiRange(14, 30, 70),
+		condition.IndicatorRange(indicators.RSI(14), 30, 70),
 		// condition.AdxThreshold(14, 20.0),
 	))
 
@@ -86,7 +87,7 @@ func main() {
 	//	builder.Strategy().SetShortTrigger()
 
 	builder.RiskManager().SetStopLoss(
-		ordercomputer.StopLossAtr(14, 1.0),
+		ordercomputer.StopLossATR(14, 1.0),
 		//ordercomputer.StopLossPipBuffer(3, 15),
 	).SetTakeProfit(
 		ordercomputer.TakeProfitRatio(2.0),

@@ -4,32 +4,26 @@ import (
 	"go-experiments/common"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
-	"time"
 )
 
 func ExcludeUKHolidays() Condition {
-	return &excludeCallbackCondition{
-		name:     "ExcludeUKHolidays",
-		callback: common.IsUKHoliday,
-	}
+	return newCondition(
+		func(ctx context.TraderContext) bool {
+			return !common.IsUKHoliday(ctx.Timestamp())
+		},
+		func() *formatter.FormatterNode {
+			return formatter.Format("ExcludeUKHolidays")
+		},
+	)
 }
 
 func ExcludeUSHolidays() Condition {
-	return &excludeCallbackCondition{
-		name:     "ExcludeUSHolidays",
-		callback: common.IsUSHoliday,
-	}
-}
-
-type excludeCallbackCondition struct {
-	name     string
-	callback func(t time.Time) bool
-}
-
-func (e *excludeCallbackCondition) Execute(ctx context.TraderContext) bool {
-	return !e.callback(ctx.Timestamp())
-}
-
-func (e *excludeCallbackCondition) Format() *formatter.FormatterNode {
-	return formatter.Format(e.name)
+	return newCondition(
+		func(ctx context.TraderContext) bool {
+			return !common.IsUSHoliday(ctx.Timestamp())
+		},
+		func() *formatter.FormatterNode {
+			return formatter.Format("ExcludeUSHolidays")
+		},
+	)
 }

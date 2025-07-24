@@ -6,6 +6,7 @@ import (
 	"go-experiments/common"
 	"go-experiments/traders/modular/condition"
 	"go-experiments/traders/modular/context"
+	"go-experiments/traders/modular/indicators"
 	"go-experiments/traders/modular/ordercomputer"
 	"go-experiments/traders/tools"
 	"maps"
@@ -33,6 +34,7 @@ type trader struct {
 	broker           brokers.Broker
 	history          *tools.History
 	openPositions    map[brokers.Position]struct{}
+	indicatorCache   context.IndicatorCache
 	filter           condition.Condition
 	longTrigger      condition.Condition
 	shortTrigger     condition.Condition
@@ -70,6 +72,7 @@ func newTrader(broker brokers.Broker, builder Builder) (*trader, error) {
 		broker:           broker,
 		history:          tools.NewHistory(b.historySize),
 		openPositions:    make(map[brokers.Position]struct{}),
+		indicatorCache:   indicators.NewCache(),
 		filter:           b.filter,
 		longTrigger:      b.longTrigger,
 		shortTrigger:     b.shortTrigger,
@@ -96,6 +99,8 @@ func (t *trader) tick(candle brokers.Candle) {
 			delete(t.openPositions, pos)
 		}
 	}
+
+	t.indicatorCache.Tick()
 
 	if !t.filter.Execute(t) {
 		return
@@ -163,6 +168,10 @@ func (t *trader) HistoricalData() *tools.History {
 
 func (t *trader) OpenPositions() []brokers.Position {
 	return slices.Collect(maps.Keys(t.openPositions))
+}
+
+func (t *trader) IndicatorCache() context.IndicatorCache {
+	return t.indicatorCache
 }
 
 func (t *trader) Timestamp() time.Time {

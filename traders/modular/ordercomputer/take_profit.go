@@ -8,46 +8,39 @@ import (
 )
 
 func TakeProfitRatio(ratio float64) OrderComputer {
-	return &takeProfitRatio{
-		ratio: ratio,
-	}
-}
+	return newOrderComputer(
+		func(ctx context.TraderContext, order *brokers.Order) error {
+			if order.StopLoss == 0 {
+				return fmt.Errorf("stop loss must be set before calculating take profit")
+			}
 
-type takeProfitRatio struct {
-	ratio float64
-}
+			entryPrice := ctx.EntryPrice()
 
-func (oc *takeProfitRatio) Compute(ctx context.TraderContext, order *brokers.Order) error {
-	if order.StopLoss == 0 {
-		return fmt.Errorf("stop loss must be set before calculating take profit")
-	}
+			switch order.Direction {
+			case brokers.PositionDirectionLong:
+				risk := entryPrice - order.StopLoss
+				if risk <= 0 {
+					return fmt.Errorf("invalid stoploss for long position: entryPrice=%.5f, stopLoss=%.5f", entryPrice, order.StopLoss)
+				}
+				order.TakeProfit = entryPrice + ratio*risk
+				return nil
 
-	entryPrice := ctx.EntryPrice()
+			case brokers.PositionDirectionShort:
+				risk := order.StopLoss - entryPrice
+				if risk <= 0 {
+					return fmt.Errorf("invalid stoploss for short position: entryPrice=%.5f, stopLoss=%.5f", entryPrice, order.StopLoss)
+				}
+				order.TakeProfit = entryPrice - ratio*risk
+				return nil
 
-	switch order.Direction {
-	case brokers.PositionDirectionLong:
-		risk := entryPrice - order.StopLoss
-		if risk <= 0 {
-			return fmt.Errorf("invalid stoploss for long position: entryPrice=%.5f, stopLoss=%.5f", entryPrice, order.StopLoss)
-		}
-		order.TakeProfit = entryPrice + oc.ratio*risk
-		return nil
-
-	case brokers.PositionDirectionShort:
-		risk := order.StopLoss - entryPrice
-		if risk <= 0 {
-			return fmt.Errorf("invalid stoploss for short position: entryPrice=%.5f, stopLoss=%.5f", entryPrice, order.StopLoss)
-		}
-		order.TakeProfit = entryPrice - oc.ratio*risk
-		return nil
-
-	default:
-		return fmt.Errorf("invalid position direction: %s", order.Direction.String())
-	}
-}
-
-func (oc *takeProfitRatio) Format() *formatter.FormatterNode {
-	return formatter.Format("TakeProfitRatio",
-		formatter.Format(fmt.Sprintf("Ratio: %.4f", oc.ratio)),
+			default:
+				return fmt.Errorf("invalid position direction: %s", order.Direction.String())
+			}
+		},
+		func() *formatter.FormatterNode {
+			return formatter.Format("TakeProfitRatio",
+				formatter.Format(fmt.Sprintf("Ratio: %.4f", ratio)),
+			)
+		},
 	)
 }
