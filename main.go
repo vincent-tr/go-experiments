@@ -2,10 +2,9 @@ package main
 
 import (
 	"go-experiments/brokers/backtesting"
-	"go-experiments/common"
+	"go-experiments/strategies"
 	"go-experiments/traders"
 	"go-experiments/traders/modular"
-	"go-experiments/traders/modular/condition"
 	"go-experiments/traders/modular/indicators"
 	"go-experiments/traders/modular/ordercomputer"
 	"time"
