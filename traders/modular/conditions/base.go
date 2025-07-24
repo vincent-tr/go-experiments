@@ -1,4 +1,4 @@
-package condition
+package conditions
 
 import (
 	"go-experiments/traders/modular/context"
