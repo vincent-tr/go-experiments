@@ -13,8 +13,8 @@ import (
 
 func main() {
 	dataset, err := backtesting.LoadDataset(
-		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-		time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC),
+		begin(2024, 1),
+		end(2024, 1),
 		"EURUSD",
 	)
 
@@ -113,4 +113,12 @@ func main() {
 	if err := broker.Run(); err != nil {
 		panic(err)
 	}
+}
+
+func begin(year int, month int) time.Time {
+	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+}
+
+func end(year int, month int) time.Time {
+	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC).AddDate(0, 1, -1)
 }
