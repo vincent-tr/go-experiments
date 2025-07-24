@@ -2,6 +2,8 @@ package common
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -24,6 +26,28 @@ const (
 	LogLevelError
 )
 
+func parseLogLevel(s string) LogLevel {
+	switch strings.ToUpper(s) {
+	case "DEBUG":
+		return LogLevelDebug
+	case "INFO":
+		return LogLevelInfo
+	case "WARN":
+		return LogLevelWarning
+	case "ERROR":
+		return LogLevelError
+	default:
+		return LogLevelInfo // default
+	}
+}
+
+var minLevel LogLevel
+
+func init() {
+	env := os.Getenv("LOG_LEVEL")
+	minLevel = parseLogLevel(env)
+}
+
 type Logger struct {
 	name string
 }
@@ -33,6 +57,10 @@ func NewLogger(name string) *Logger {
 }
 
 func (l *Logger) Log(level LogLevel, format string, args ...interface{}) {
+	if level < minLevel {
+		return
+	}
+
 	msg := fmt.Sprintf(format, args...)
 
 	if currentTime != nil {
