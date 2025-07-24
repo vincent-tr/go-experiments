@@ -19,7 +19,7 @@ func Threshold(indicator indicators.Indicator, threshold float64) Condition {
 		},
 		func() *formatter.FormatterNode {
 			return formatter.Format("Threshold",
-				formatter.FormatWithChildren("Indicator", indicator),
+				indicator.Format(),
 				formatter.Format(fmt.Sprintf("Value: %.2f", threshold)),
 			)
 		},

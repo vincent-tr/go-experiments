@@ -47,7 +47,7 @@ func newIndicator(compute func(ctx context.TraderContext) []float64, format func
 
 func (i *indicator) Values(ctx context.TraderContext) []float64 {
 	c := ctx.IndicatorCache().(*cache)
-	key := i.format().String()
+	key := i.format().Compact()
 
 	return c.access(key, func() []float64 {
 		return i.compute(ctx)

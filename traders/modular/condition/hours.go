@@ -28,9 +28,7 @@ func Session(session *common.Session) Condition {
 			return session.IsOpen(ctx.Timestamp())
 		},
 		func() *formatter.FormatterNode {
-			return formatter.Format("Session",
-				formatter.Format(fmt.Sprintf("Session: %s", session.String())),
-			)
+			return formatter.Format(fmt.Sprintf("Session: %s", session.String()))
 		},
 	)
 }

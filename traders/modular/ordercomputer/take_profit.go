@@ -38,9 +38,7 @@ func TakeProfitRatio(ratio float64) OrderComputer {
 			}
 		},
 		func() *formatter.FormatterNode {
-			return formatter.Format("TakeProfitRatio",
-				formatter.Format(fmt.Sprintf("Ratio: %.4f", ratio)),
-			)
+			return formatter.Format(fmt.Sprintf("TakeProfitRatio: %.4f", ratio))
 		},
 	)
 }

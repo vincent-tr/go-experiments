@@ -97,7 +97,7 @@ func (b *builder) SetAllocator(computer ordercomputer.OrderComputer) CapitalAllo
 }
 
 func (b *builder) Format() *formatter.FormatterNode {
-	return formatter.Format("Builder",
+	return formatter.Format("ModularTrader",
 		formatter.Format(fmt.Sprintf("HistorySize: %d", b.historySize)),
 		formatter.FormatWithChildren("Filter", b.filter),
 		formatter.FormatWithChildren("LongTrigger", b.longTrigger),

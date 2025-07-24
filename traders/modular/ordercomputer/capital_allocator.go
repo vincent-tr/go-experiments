@@ -37,9 +37,7 @@ func CapitalRiskPercent(riskPerTradePercent float64) OrderComputer {
 			return nil
 		},
 		func() *formatter.FormatterNode {
-			return formatter.Format("CapitalRiskPercent",
-				formatter.Format(fmt.Sprintf("RiskPerTradePercent: %.2f%%", riskPerTradePercent)),
-			)
+			return formatter.Format(fmt.Sprintf("CapitalRiskPercent: %.2f%%", riskPerTradePercent))
 		},
 	)
 }

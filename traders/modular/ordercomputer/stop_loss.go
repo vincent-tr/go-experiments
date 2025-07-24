@@ -36,7 +36,7 @@ func StopLossATR(atr indicators.Indicator, multiplier float64) OrderComputer {
 		},
 		func() *formatter.FormatterNode {
 			return formatter.Format("StopLossATR",
-				formatter.FormatWithChildren("ATR", atr),
+				atr.Format(),
 				formatter.Format(fmt.Sprintf("Multiplier: %.4f", multiplier)),
 			)
 		},
