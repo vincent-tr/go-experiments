@@ -100,7 +100,7 @@ func main() {
 	)
 
 	builder.RiskManager().SetStopLoss(
-		ordercomputer.StopLossATR(14, 1.0),
+		ordercomputer.StopLossATR(indicators.ATR(14), 1.0),
 		//ordercomputer.StopLossPipBuffer(3, 15),
 	).SetTakeProfit(
 		ordercomputer.TakeProfitRatio(2.0),
