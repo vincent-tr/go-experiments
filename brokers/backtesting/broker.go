@@ -240,16 +240,14 @@ func (b *broker) closePosition(pos *position) {
 
 func (b *broker) printSummary() {
 	log.Info("📊 Backtest Summary:")
-	log.Info("Total positions: %d", len(b.positionsHistory))
-	log.Info("Final capital: %.2f", b.capital)
 
-	log.Info("Positions history:")
+	log.Debug("Positions history:")
 	var currentMonth string
 	for _, pos := range b.positionsHistory {
 		monthKey := pos.openTime.Format("2006-01")
 		if monthKey != currentMonth {
 			currentMonth = monthKey
-			log.Info("📅 Month: %s", monthKey)
+			log.Debug("📅 Month: %s", monthKey)
 		}
 
 		profit := pos.getProfitOrLoss()
@@ -262,10 +260,10 @@ func (b *broker) printSummary() {
 			profitColor = fmt.Sprintf("%.2f", profit) // No color for zero
 		}
 
-		log.Info(" - Capital: %0.2f, Direction: %s, OpenTime: %s, Profit: %s, Duration: %s",
+		log.Debug(" - Capital: %0.2f, Direction: %s, OpenTime: %s, Profit: %s, Duration: %s",
 			pos.capital, pos.direction, pos.openTime.Format("2006-01-02 15:04:05"), profitColor, pos.CloseTime().Sub(pos.OpenTime()).String())
 	}
 
-	log.Info("Total capital at the end of the test: %.2f", b.capital)
-	log.Info("Total number of positions taken: %d", len(b.positionsHistory))
+	log.Info("Total positions: %d", len(b.positionsHistory))
+	log.Info("Final capital: %.2f", b.capital)
 }
