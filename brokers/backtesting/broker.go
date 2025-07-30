@@ -168,6 +168,14 @@ func (b *broker) processTick() {
 	currentTick := b.currentTick()
 	common.SetCurrentTime(currentTick.Timestamp)
 
+	if b.currentIndex > 0 {
+		previousTick := &b.ticks[b.currentIndex-1]
+		diff := currentTick.Timestamp.Sub(previousTick.Timestamp)
+		if diff > time.Minute {
+			log.Warning("⏳ Large gap detected: %s between %s and %s", diff, previousTick.Timestamp.Format("2006-01-02 15:04:05"), currentTick.Timestamp.Format("2006-01-02 15:04:05"))
+		}
+	}
+
 	// log.Debug("📈 Processing tick at %s: Bid=%.5f, Ask=%.5f", currentTick.Timestamp.Format("2006-01-02 15:04:05"), currentTick.Bid, currentTick.Ask)
 
 	for pos := range b.openPositions {
