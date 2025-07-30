@@ -2,6 +2,7 @@ package backtesting
 
 import (
 	"fmt"
+	"go-experiments/common"
 	"path"
 	"runtime"
 	"time"
@@ -38,11 +39,12 @@ func (d *Dataset) TickCount() int {
 	return len(d.ticks)
 }
 
-// For now we only take full months
-func LoadDataset(beginDate, endDate time.Time, symbol string) (*Dataset, error) {
+func LoadDataset(begin, end common.Month, symbol string) (*Dataset, error) {
 	beginTime := time.Now()
 
 	files := make([]*file, 0) // Preallocate for 12 months
+	beginDate := begin.FirstDay()
+	endDate := end.LastDay()
 
 	for d := beginDate; d.Before(endDate); d = d.AddDate(0, 1, 0) {
 		f, err := openFile(d.Year(), int(d.Month()), symbol)
@@ -71,7 +73,7 @@ func LoadDataset(beginDate, endDate time.Time, symbol string) (*Dataset, error) 
 	endTime := time.Now()
 	duration := endTime.Sub(beginTime)
 	log.Debug("⏱️  Read %d ticks from %d file(s) in %s.", tickCount, len(files), duration)
-	log.Info("📈 Loaded dataset from %s to %s", beginDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
+	log.Info("📈 Loaded dataset from %s to %s", begin.String(), end.String())
 
 	return &Dataset{ticks: ticks}, nil
 }

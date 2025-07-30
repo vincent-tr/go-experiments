@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-experiments/brokers"
 	"go-experiments/common"
+	"math"
 	"slices"
 	"time"
 )
@@ -14,6 +15,42 @@ type Config struct {
 	LotSize        int     // Size of the lot to trade
 	Leverage       float64 // Leverage to use for trading
 	InitialCapital float64 // Initial capital for the backtesting account
+}
+
+type Metrics struct {
+	// TotalTrades is the number of trades taken during the test period.
+	// Important to ensure statistical significance.
+	TotalTrades int
+
+	// WinRate is the percentage of trades that were profitable.
+	// Calculated as (WinningTrades / TotalTrades) * 100.
+	WinRate float64 // in percent
+
+	// NetPnL is the total profit or loss at the end of the test period.
+	// Usually expressed in base currency (e.g., USD).
+	NetPnL float64
+
+	// ProfitFactor is the ratio of gross profit to gross loss.
+	// A value > 1 means the system was profitable overall.
+	ProfitFactor float64
+
+	// MaxDrawdownPct is the largest percentage drop from a peak in equity.
+	// Shows the worst-case capital exposure during the test.
+	MaxDrawdownPct float64 // in percent
+
+	// ExpectedValueR is the average return per trade in R-multiples.
+	// Helps understand the return relative to risk.
+	ExpectedValueR float64
+
+	// AvgTradeDuration is the average duration a trade was open.
+	// Useful for evaluating intraday vs swing behavior.
+	AvgTradeDuration time.Duration
+
+	// LongTrades is the number of trades taken in the long (buy) direction.
+	LongTrades int
+
+	// ShortTrades is the number of trades taken in the short (sell) direction.
+	ShortTrades int
 }
 
 type broker struct {
@@ -111,6 +148,16 @@ func NewBroker(config *Config, dataset *Dataset) (brokers.BacktestingBroker, err
 	}
 
 	return b, nil
+}
+
+func ComputeMetrics(b brokers.BacktestingBroker) (map[common.Month]*Metrics, error) {
+	bb, ok := b.(*broker)
+	if !ok {
+		return nil, fmt.Errorf("invalid broker type: expected *broker, got %T", b)
+	}
+
+	metrics := bb.computeMetrics()
+	return metrics, nil
 }
 
 func (b *broker) currentTick() *tick {
@@ -284,4 +331,110 @@ func (b *broker) formatProfit(value float64) string {
 	} else {
 		return fmt.Sprintf("%.2f", value) // No color for zero
 	}
+}
+
+func (b *broker) computeMetrics() map[common.Month]*Metrics {
+	positionsByMonth := make(map[common.Month][]*position)
+
+	// Group positions by month
+	for _, pos := range b.positionsHistory {
+		month := common.FromDate(pos.openTime)
+		positionsByMonth[month] = append(positionsByMonth[month], pos)
+	}
+
+	// Compute metrics for each month
+	metrics := make(map[common.Month]*Metrics)
+	for month, positions := range positionsByMonth {
+		monthlyMetrics := b.computeMonthlyMetrics(positions)
+		metrics[month] = monthlyMetrics
+	}
+
+	return metrics
+}
+
+func (b *broker) computeMonthlyMetrics(positions []*position) *Metrics {
+	var totalTrades, winningTrades, longTrades, shortTrades int
+	var netPnL, grossProfit, grossLoss, totalR, maxR float64
+	var totalDuration time.Duration
+
+	equity := 0.0
+	peakEquity := 0.0
+	maxDrawdown := 0.0
+
+	metrics := &Metrics{}
+
+	for _, pos := range positions {
+		if !pos.closed {
+			continue
+		}
+
+		totalTrades++
+
+		// Trade direction
+		switch pos.direction {
+		case brokers.PositionDirectionLong:
+			longTrades++
+		case brokers.PositionDirectionShort:
+			shortTrades++
+		}
+
+		// PnL
+		pnl := (pos.closePrice - pos.openPrice)
+		if pos.direction == brokers.PositionDirectionShort {
+			pnl = -pnl
+		}
+		pnl *= float64(pos.quantity)
+		netPnL += pnl
+		equity += pnl
+
+		// Track peak equity and drawdown
+		if equity > peakEquity || totalTrades == 1 {
+			peakEquity = equity
+		}
+		drawdown := peakEquity - equity
+		if drawdown > maxDrawdown {
+			maxDrawdown = drawdown
+		}
+
+		// R-multiple
+		risk := math.Abs(pos.openPrice - pos.stopLoss)
+		if risk > 0 {
+			r := pnl / (risk * float64(pos.quantity))
+			totalR += r
+			if r > maxR {
+				maxR = r
+			}
+		}
+
+		// Profit stats
+		if pnl > 0 {
+			winningTrades++
+			grossProfit += pnl
+		} else {
+			grossLoss += -pnl
+		}
+
+		// Duration
+		duration := pos.closeTime.Sub(pos.openTime)
+		totalDuration += duration
+	}
+
+	metrics.TotalTrades = totalTrades
+	metrics.NetPnL = netPnL
+	metrics.LongTrades = longTrades
+	metrics.ShortTrades = shortTrades
+
+	if totalTrades > 0 {
+		metrics.WinRate = float64(winningTrades) / float64(totalTrades) * 100
+		metrics.ExpectedValueR = totalR / float64(totalTrades)
+		metrics.AvgTradeDuration = totalDuration / time.Duration(totalTrades)
+	}
+	if grossLoss > 0 {
+		metrics.ProfitFactor = grossProfit / grossLoss
+	}
+	if peakEquity != 0 {
+		metrics.MaxDrawdownPct = (maxDrawdown / peakEquity) * 100
+	}
+
+	return metrics
 }

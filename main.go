@@ -2,18 +2,20 @@ package main
 
 import (
 	"go-experiments/brokers/backtesting"
+	"go-experiments/common"
 	"go-experiments/strategies"
 	"go-experiments/traders"
 	"go-experiments/traders/modular"
 	"go-experiments/traders/modular/indicators"
 	"go-experiments/traders/modular/ordercomputer"
-	"time"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 func main() {
 	dataset, err := backtesting.LoadDataset(
-		begin(2024, 1),
-		end(2024, 1),
+		common.NewMonth(2023, 1),
+		common.NewMonth(2023, 3),
 		"EURUSD",
 	)
 
@@ -33,7 +35,7 @@ func main() {
 		// This is a common leverage ratio in forex trading.
 		Leverage: 30.0,
 
-		InitialCapital: 1000,
+		InitialCapital: 100000,
 	}
 
 	broker, err := backtesting.NewBroker(brokerConfig, dataset)
@@ -54,7 +56,7 @@ func main() {
 	)
 
 	builder.CapitalAllocator().SetAllocator(
-		ordercomputer.CapitalRiskPercent(1.0),
+		ordercomputer.CapitalFixed(10),
 	)
 
 	if err := traders.SetupModularTrader(broker, builder); err != nil {
@@ -63,12 +65,10 @@ func main() {
 	if err := broker.Run(); err != nil {
 		panic(err)
 	}
-}
 
-func begin(year int, month int) time.Time {
-	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
-}
-
-func end(year int, month int) time.Time {
-	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC).AddDate(0, 1, -1)
+	metrics, err := backtesting.ComputeMetrics(broker)
+	if err != nil {
+		panic(err)
+	}
+	spew.Dump(metrics)
 }
