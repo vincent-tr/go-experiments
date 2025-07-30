@@ -282,7 +282,7 @@ func (b *broker) closePosition(pos *position) {
 	delete(b.openPositions, pos)
 
 	b.capital += pos.getMargin(b.GetLeverage())
-	b.capital += pos.getProfitOrLoss()
+	b.capital += pos.getProfitAndLoss()
 }
 
 func (b *broker) printSummary() {
@@ -305,7 +305,7 @@ func (b *broker) printSummary() {
 			log.Debug("📅 Month: %s", monthKey)
 		}
 
-		profit := pos.getProfitOrLoss()
+		profit := pos.getProfitAndLoss()
 		monthProfit += profit
 
 		log.Debug(" - Capital: %0.2f, Direction: %s, OpenTime: %s, Profit: %s, Duration: %s",
@@ -379,11 +379,7 @@ func (b *broker) computeMonthlyMetrics(positions []*position) *Metrics {
 		}
 
 		// PnL
-		pnl := (pos.closePrice - pos.openPrice)
-		if pos.direction == brokers.PositionDirectionShort {
-			pnl = -pnl
-		}
-		pnl *= float64(pos.quantity)
+		pnl := pos.getProfitAndLoss()
 		netPnL += pnl
 		equity += pnl
 

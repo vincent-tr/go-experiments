@@ -163,7 +163,7 @@ func (pos *position) getMargin(leverage float64) float64 {
 	return margin
 }
 
-func (pos *position) getProfitOrLoss() float64 {
+func (pos *position) getProfitAndLoss() float64 {
 	if !pos.closed {
 		return 0.0
 	}
