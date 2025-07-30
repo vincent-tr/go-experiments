@@ -14,8 +14,8 @@ import (
 
 func main() {
 	dataset, err := backtesting.LoadDataset(
-		common.NewMonth(2023, 1),
-		common.NewMonth(2023, 3),
+		common.NewMonth(2023, 4),
+		common.NewMonth(2023, 6),
 		"EURUSD",
 	)
 
