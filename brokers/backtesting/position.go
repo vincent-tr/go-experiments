@@ -168,6 +168,10 @@ func (pos *position) getProfitOrLoss() float64 {
 		return 0.0
 	}
 
-	totalAmount := float64(pos.Quantity()) * (pos.closePrice - pos.openPrice)
+	diff := pos.closePrice - pos.openPrice
+	if pos.direction == brokers.PositionDirectionShort {
+		diff = -diff
+	}
+	totalAmount := float64(pos.Quantity()) * diff
 	return totalAmount
 }
