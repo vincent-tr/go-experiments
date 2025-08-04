@@ -11,7 +11,7 @@ import (
 func Breakout(strategy modular.StrategyBuilder) {
 
 	strategy.SetFilter(conditions.And(
-		conditions.HistoryComplete(),
+		conditions.HistoryUsable(),
 		conditions.NoOpenPositions(),
 
 		conditions.Weekday(time.Tuesday, time.Wednesday, time.Thursday),

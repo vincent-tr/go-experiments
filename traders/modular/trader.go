@@ -97,7 +97,7 @@ func (t *trader) tick(candle brokers.Candle) {
 	t.history.AddCandle(candle)
 
 	for pos := range t.openPositions {
-		if pos.Closed() {
+		if pos.Closed() || pos.Canceled() {
 			delete(t.openPositions, pos)
 		}
 	}

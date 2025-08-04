@@ -95,8 +95,8 @@ func newTrader(broker brokers.Broker, config *Config) *trader {
 func (t *trader) tick(candle brokers.Candle) {
 	t.history.AddCandle(candle)
 
-	if !t.history.IsComplete() {
-		log.Debug("Not enough data to make a decision")
+	if !t.history.IsUsable() {
+		log.Debug("History is not usable")
 		return
 	}
 

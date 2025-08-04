@@ -164,19 +164,32 @@ func (b *broker) currentTick() *tick {
 	return &b.ticks[b.currentIndex]
 }
 
+func (b *broker) printGap() {
+	currentTick := b.currentTick()
+	if !currentTick.IsGap || b.currentIndex == 0 {
+		return
+	}
+	previousTick := b.ticks[b.currentIndex-1]
+	if !previousTick.IsGap {
+		return
+	}
+
+	log.Warning("⏳ Gap detected at %s: Previous=%s, Difference=%s",
+		currentTick.Timestamp.Format("2006-01-02 15:04:05"),
+		previousTick.Timestamp.Format("2006-01-02 15:04:05"),
+		currentTick.Timestamp.Sub(previousTick.Timestamp).String())
+}
+
 func (b *broker) processTick() {
 	currentTick := b.currentTick()
 	common.SetCurrentTime(currentTick.Timestamp)
 
-	if b.currentIndex > 0 {
-		previousTick := &b.ticks[b.currentIndex-1]
-		diff := currentTick.Timestamp.Sub(previousTick.Timestamp)
-		if diff > time.Minute {
-			log.Warning("⏳ Large gap detected: %s between %s and %s", diff, previousTick.Timestamp.Format("2006-01-02 15:04:05"), currentTick.Timestamp.Format("2006-01-02 15:04:05"))
-		}
-	}
-
+	// b.printGap()
 	// log.Debug("📈 Processing tick at %s: Bid=%.5f, Ask=%.5f", currentTick.Timestamp.Format("2006-01-02 15:04:05"), currentTick.Bid, currentTick.Ask)
+
+	if currentTick.IsGap {
+		b.cancelAllOpenPositions()
+	}
 
 	for pos := range b.openPositions {
 		switch pos.isTriggered(currentTick) {
@@ -249,6 +262,7 @@ func (b *broker) tryCandle(timeframe brokers.Timeframe) *brokers.Candle {
 	slices.Reverse(timeframeTicks)
 
 	// Create a candle from the timeframe ticks
+	usable := true
 	low := timeframeTicks[0].Price()
 	high := timeframeTicks[0].Price()
 	for _, t := range timeframeTicks {
@@ -259,13 +273,17 @@ func (b *broker) tryCandle(timeframe brokers.Timeframe) *brokers.Candle {
 		if price > high {
 			high = price
 		}
+		if t.IsGap {
+			usable = false // If any tick is a gap, the candle is not usable
+		}
 	}
 
 	return &brokers.Candle{
-		Open:  timeframeTicks[0].Price(),
-		Close: timeframeTicks[len(timeframeTicks)-1].Price(),
-		High:  high,
-		Low:   low,
+		Open:   timeframeTicks[0].Price(),
+		Close:  timeframeTicks[len(timeframeTicks)-1].Price(),
+		High:   high,
+		Low:    low,
+		Usable: usable,
 	}
 }
 
@@ -273,6 +291,23 @@ func getTimeframeBucket(tick *tick, timeframe brokers.Timeframe) string {
 	// This function should return the start time of the bucket for the given timeframe.
 	// For simplicity, we assume that the tick's timestamp is already aligned with the timeframe.
 	return tick.Timestamp.Truncate(time.Duration(timeframe)).Format("2006-01-02 15:04:05")
+}
+
+func (b *broker) cancelAllOpenPositions() {
+	for pos := range b.openPositions {
+		pos.cancelPosition()
+		delete(b.openPositions, pos)
+		b.positionsHistory = slices.DeleteFunc(b.positionsHistory, func(p *position) bool {
+			return p == pos
+		})
+
+		b.capital += pos.getMargin(b.GetLeverage()) // Return margin to capital
+		// Note: We do not add profit/loss here because the position is canceled, not closed.
+
+		log.Debug("📉 Position canceled at %s: Direction=%s, Quantity=%d, OpenPrice=%.5f",
+			b.currentTick().Timestamp.Format("2006-01-02 15:04:05"),
+			pos.direction, pos.quantity, pos.openPrice)
+	}
 }
 
 func (b *broker) closeAllOpenPositions() {

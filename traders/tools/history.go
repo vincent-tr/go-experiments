@@ -16,8 +16,18 @@ func NewHistory(maxSize int) *History {
 	}
 }
 
-func (h *History) IsComplete() bool {
-	return len(h.candles) == h.maxSize
+func (h *History) IsUsable() bool {
+	if len(h.candles) < h.maxSize {
+		return false
+	}
+
+	for _, candle := range h.candles {
+		if !candle.Usable {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (h *History) AddCandle(candle brokers.Candle) {

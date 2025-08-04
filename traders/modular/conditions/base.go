@@ -65,13 +65,13 @@ func Or(conditions ...Condition) Condition {
 	)
 }
 
-func HistoryComplete() Condition {
+func HistoryUsable() Condition {
 	return newCondition(
 		func(ctx context.TraderContext) bool {
-			return ctx.HistoricalData().IsComplete()
+			return ctx.HistoricalData().IsUsable()
 		},
 		func() *formatter.FormatterNode {
-			return formatter.Format("HistoryComplete")
+			return formatter.Format("HistoryUsable")
 		},
 	)
 }

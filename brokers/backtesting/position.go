@@ -21,6 +21,9 @@ type position struct {
 	closePrice float64
 	closeTime  time.Time
 	closed     bool
+
+	// Backtesting specific
+	canceled bool
 }
 
 // Direction implements brokers.Position.
@@ -56,6 +59,10 @@ func (p *position) CloseTime() time.Time {
 // Closed implements brokers.Position.
 func (p *position) Closed() bool {
 	return p.closed
+}
+
+func (p *position) Canceled() bool {
+	return p.canceled
 }
 
 var _ brokers.Position = (*position)(nil)
@@ -119,6 +126,10 @@ func (pos *position) closePosition(currentTick *tick) {
 	pos.closePrice = getClosePrice(pos.direction, currentTick)
 	pos.closeTime = currentTick.Timestamp
 	pos.closed = true
+}
+
+func (pos *position) cancelPosition() {
+	pos.canceled = true
 }
 
 func getOpenPrice(direction brokers.PositionDirection, currentTick *tick) float64 {

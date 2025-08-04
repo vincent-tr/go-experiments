@@ -11,7 +11,7 @@ import (
 func Reversal(strategy modular.StrategyBuilder) {
 	strategy.SetFilter(
 		conditions.And(
-			conditions.HistoryComplete(),
+			conditions.HistoryUsable(),
 			conditions.NoOpenPositions(),
 			conditions.Weekday(time.Tuesday, time.Wednesday, time.Thursday),
 			conditions.Session(common.LondonSession),

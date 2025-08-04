@@ -14,6 +14,8 @@ import (
 
 const dataPath = "brokers/backtesting/data"
 
+const MaxGap = time.Minute // Maximum allowed gap between ticks
+
 // https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/EURUSD
 
 type Dataset struct {
@@ -70,6 +72,9 @@ func LoadDataset(begin, end common.Month, symbol string) (*Dataset, error) {
 		offset += f.TickCount()
 	}
 
+	// Mark gaps in the data
+	markGaps(ticks)
+
 	endTime := time.Now()
 	duration := endTime.Sub(beginTime)
 	log.Debug("⏱️  Read %d ticks from %d file(s) in %s.", tickCount, len(files), duration)
@@ -78,11 +83,24 @@ func LoadDataset(begin, end common.Month, symbol string) (*Dataset, error) {
 	return &Dataset{ticks: ticks}, nil
 }
 
+func markGaps(ticks []tick) {
+	for i := 1; i < len(ticks)-1; i++ {
+		previous := &ticks[i-1]
+		current := &ticks[i]
+
+		if current.Timestamp.Sub(previous.Timestamp) > MaxGap {
+			current.IsGap = true
+			previous.IsGap = true
+		}
+	}
+}
+
 // Tick represents one row of tick data
 type tick struct {
 	Timestamp time.Time
 	Bid       float64
 	Ask       float64
+	IsGap     bool // Indicates if there is a gap in the data before or after this tick
 }
 
 // Use intermediate struct with int64 timestamp
@@ -141,6 +159,7 @@ func (f *file) ReadTicks(array []tick, offset int) error {
 			Timestamp: time.UnixMilli(r.Timestamp),
 			Bid:       r.Bid,
 			Ask:       r.Ask,
+			IsGap:     false, // Default to false, will be updated later
 		}
 	}
 

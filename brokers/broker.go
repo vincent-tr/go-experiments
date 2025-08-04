@@ -11,10 +11,11 @@ const (
 )
 
 type Candle struct {
-	Open  float64
-	Close float64
-	High  float64
-	Low   float64
+	Open   float64
+	Close  float64
+	High   float64
+	Low    float64
+	Usable bool // Backtesting only: Indicates if the candle is usable for trading
 }
 
 type PositionDirection int
@@ -83,6 +84,9 @@ type Position interface {
 
 	// Whether the position is closed or not
 	Closed() bool
+
+	// Backtesting only: position can get canceled if there is gaps in data
+	Canceled() bool
 }
 
 // Broker is an interface that defines the methods required to interact with a trading broker.
