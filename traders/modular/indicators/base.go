@@ -3,6 +3,7 @@ package indicators
 import (
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
+	"go-experiments/traders/modular/json"
 )
 
 type cache struct {
@@ -56,4 +57,14 @@ func (i *indicator) Values(ctx context.TraderContext) []float64 {
 
 func (i *indicator) Format() *formatter.FormatterNode {
 	return i.format()
+}
+
+var jsonParsers = json.NewRegistry[Indicator]()
+
+func FromJSON(jsonData []byte) (Indicator, error) {
+	return jsonParsers.FromJSON(jsonData)
+}
+
+func ToJSON(indicator Indicator) ([]byte, error) {
+	panic("ToJSON not implemented for indicators")
 }

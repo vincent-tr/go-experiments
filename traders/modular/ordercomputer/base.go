@@ -4,6 +4,7 @@ import (
 	"go-experiments/brokers"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
+	"go-experiments/traders/modular/json"
 )
 
 type OrderComputer interface {
@@ -31,4 +32,14 @@ func (oc *orderComputer) Compute(ctx context.TraderContext, order *brokers.Order
 }
 func (oc *orderComputer) Format() *formatter.FormatterNode {
 	return oc.format()
+}
+
+var jsonParsers = json.NewRegistry[OrderComputer]()
+
+func FromJSON(jsonData []byte) (OrderComputer, error) {
+	return jsonParsers.FromJSON(jsonData)
+}
+
+func ToJSON(oc OrderComputer) ([]byte, error) {
+	panic("ToJSON not implemented for order computers")
 }
