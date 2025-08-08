@@ -59,6 +59,28 @@ func main() {
 		ordercomputer.CapitalFixed(10),
 	)
 
+	// ////// TEST
+	// raw, err := modular.ToJSON(builder)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// newBuilder, err := modular.FromJSON(raw)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// str1 := modular.Format(builder)
+	// str2 := modular.Format(newBuilder)
+
+	// if str1 != str2 {
+	// 	fmt.Printf("Original: %s\n", str1)
+	// 	fmt.Printf("New: %s\n", str2)
+	// 	panic("formatted strings do not match")
+	// }
+
+	// ////// TEST
+
 	if err := traders.SetupModularTrader(broker, builder); err != nil {
 		panic(err)
 	}

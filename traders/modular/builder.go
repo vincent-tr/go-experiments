@@ -107,3 +107,12 @@ func (b *builder) Format() *formatter.FormatterNode {
 		formatter.FormatWithChildren("CapitalAllocator", b.capitalAllocator),
 	)
 }
+
+func Format(b Builder) string {
+	bu, ok := b.(*builder)
+	if !ok {
+		panic(fmt.Sprintf("invalid builder type: %T", b))
+	}
+
+	return bu.Format().Detailed()
+}

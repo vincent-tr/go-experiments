@@ -29,16 +29,21 @@ func Weekday(weekdays ...time.Weekday) Condition {
 		func() (string, any) {
 			weekdaysStr := make([]string, len(weekdays))
 			for i, day := range weekdays {
-				weekdaysStr[i] = day.String()
+				weekdaysStr[i] = strings.ToLower(day.String())
 			}
-			return "weekday", map[string]any{
-				"weekdays": weekdaysStr,
-			}
+			return "weekday", weekdaysStr
 		},
 	)
 }
 
 func init() {
+	parser := make(map[string]time.Weekday)
+
+	for i := 0; i < 7; i++ {
+		day := time.Weekday(i)
+		parser[strings.ToLower(day.String())] = day
+	}
+
 	jsonParsers.RegisterParser("weekday", func(arg json.RawMessage) (Condition, error) {
 		var weekdays []string
 
@@ -48,11 +53,11 @@ func init() {
 
 		var days []time.Weekday
 		for _, dayStr := range weekdays {
-			day, err := time.Parse("Monday", dayStr)
-			if err != nil {
+			day, ok := parser[strings.ToLower(dayStr)]
+			if !ok {
 				return nil, fmt.Errorf("invalid weekday: %s", dayStr)
 			}
-			days = append(days, day.Weekday())
+			days = append(days, day)
 		}
 
 		return Weekday(days...), nil

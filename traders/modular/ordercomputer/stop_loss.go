@@ -54,15 +54,20 @@ func StopLossATR(atr indicators.Indicator, multiplier float64) OrderComputer {
 func init() {
 	jsonParsers.RegisterParser("stopLossATR", func(arg json.RawMessage) (OrderComputer, error) {
 		var params struct {
-			ATR        indicators.Indicator `json:"atr"`
-			Multiplier float64              `json:"multiplier"`
+			ATR        json.RawMessage `json:"atr"`
+			Multiplier float64         `json:"multiplier"`
 		}
 
 		if err := json.Unmarshal(arg, &params); err != nil {
 			return nil, fmt.Errorf("failed to parse StopLossATR parameters: %w", err)
 		}
 
-		return StopLossATR(params.ATR, params.Multiplier), nil
+		atr, err := indicators.FromJSON(params.ATR)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse ATR indicator: %w", err)
+		}
+
+		return StopLossATR(atr, params.Multiplier), nil
 	})
 }
 

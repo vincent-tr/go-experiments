@@ -62,15 +62,20 @@ func FromJSON(jsonData []byte) (Builder, error) {
 	return res, nil
 }
 
-func (b *builder) ToJSON() ([]byte, error) {
+func ToJSON(b Builder) ([]byte, error) {
+	bu, ok := b.(*builder)
+	if !ok {
+		return nil, fmt.Errorf("invalid builder type")
+	}
+
 	bjson := &builderJSON{
-		HistorySize:      b.historySize,
-		Filter:           marshal.ToJSON(b.filter),
-		LongTrigger:      marshal.ToJSON(b.longTrigger),
-		ShortTrigger:     marshal.ToJSON(b.shortTrigger),
-		StopLoss:         marshal.ToJSON(b.stopLoss),
-		TakeProfit:       marshal.ToJSON(b.takeProfit),
-		CapitalAllocator: marshal.ToJSON(b.capitalAllocator),
+		HistorySize:      bu.historySize,
+		Filter:           marshal.ToJSON(bu.filter),
+		LongTrigger:      marshal.ToJSON(bu.longTrigger),
+		ShortTrigger:     marshal.ToJSON(bu.shortTrigger),
+		StopLoss:         marshal.ToJSON(bu.stopLoss),
+		TakeProfit:       marshal.ToJSON(bu.takeProfit),
+		CapitalAllocator: marshal.ToJSON(bu.capitalAllocator),
 	}
 
 	return json.Marshal(bjson)
