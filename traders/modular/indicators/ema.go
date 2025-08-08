@@ -1,6 +1,7 @@
 package indicators
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
@@ -20,4 +21,15 @@ func EMA(period int) Indicator {
 			)
 		},
 	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("ema", func(arg json.RawMessage) (Indicator, error) {
+		var period int
+		if err := json.Unmarshal(arg, &period); err != nil {
+			return nil, fmt.Errorf("failed to parse EMA period: %w", err)
+		}
+
+		return EMA(period), nil
+	})
 }

@@ -1,6 +1,7 @@
 package conditions
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
@@ -26,4 +27,25 @@ func Weekday(weekdays ...time.Weekday) Condition {
 			return formatter.Format(fmt.Sprintf("Weekday: %s", strings.Join(weekdaysStr, ", ")))
 		},
 	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("weekday", func(arg json.RawMessage) (Condition, error) {
+		var weekdays []string
+
+		if err := json.Unmarshal(arg, &weekdays); err != nil {
+			return nil, fmt.Errorf("failed to parse weekday condition: %w", err)
+		}
+
+		var days []time.Weekday
+		for _, dayStr := range weekdays {
+			day, err := time.Parse("Monday", dayStr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid weekday: %s", dayStr)
+			}
+			days = append(days, day.Weekday())
+		}
+
+		return Weekday(days...), nil
+	})
 }

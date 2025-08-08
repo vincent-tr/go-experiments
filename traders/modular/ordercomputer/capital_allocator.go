@@ -1,6 +1,7 @@
 package ordercomputer
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-experiments/brokers"
 	"go-experiments/traders/modular/context"
@@ -42,6 +43,17 @@ func CapitalRiskPercent(riskPerTradePercent float64) OrderComputer {
 	)
 }
 
+func init() {
+	jsonParsers.RegisterParser("capitalRiskPercent", func(arg json.RawMessage) (OrderComputer, error) {
+		var riskPerTradePercent float64
+		if err := json.Unmarshal(arg, &riskPerTradePercent); err != nil {
+			return nil, fmt.Errorf("failed to parse CapitalRiskPercent: %w", err)
+		}
+
+		return CapitalRiskPercent(riskPerTradePercent), nil
+	})
+}
+
 func CapitalFixed(amount float64) OrderComputer {
 	return newOrderComputer(
 		func(ctx context.TraderContext, order *brokers.Order) error {
@@ -74,4 +86,15 @@ func CapitalFixed(amount float64) OrderComputer {
 			return formatter.Format(fmt.Sprintf("CapitalFixed: %.2f", amount))
 		},
 	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("capitalFixed", func(arg json.RawMessage) (OrderComputer, error) {
+		var amount float64
+		if err := json.Unmarshal(arg, &amount); err != nil {
+			return nil, fmt.Errorf("failed to parse CapitalFixed: %w", err)
+		}
+
+		return CapitalFixed(amount), nil
+	})
 }

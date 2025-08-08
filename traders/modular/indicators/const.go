@@ -1,6 +1,7 @@
 package indicators
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
@@ -24,4 +25,19 @@ func Const(period int, value float64) Indicator {
 			)
 		},
 	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("const", func(arg json.RawMessage) (Indicator, error) {
+		var params struct {
+			Period int     `json:"period"`
+			Value  float64 `json:"value"`
+		}
+
+		if err := json.Unmarshal(arg, &params); err != nil {
+			return nil, fmt.Errorf("failed to parse Const parameters: %w", err)
+		}
+
+		return Const(params.Period, params.Value), nil
+	})
 }

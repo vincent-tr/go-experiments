@@ -1,6 +1,7 @@
 package conditions
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
@@ -25,4 +26,25 @@ func IndicatorRange(indicator indicators.Indicator, min, max float64) Condition 
 			)
 		},
 	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("indicatorRange", func(arg json.RawMessage) (Condition, error) {
+		var params struct {
+			Indicator json.RawMessage `json:"indicator"`
+			Min       float64         `json:"min"`
+			Max       float64         `json:"max"`
+		}
+
+		if err := json.Unmarshal(arg, &params); err != nil {
+			return nil, fmt.Errorf("failed to parse IndicatorRange parameters: %w", err)
+		}
+
+		indicator, err := indicators.FromJSON(params.Indicator)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse indicator: %w", err)
+		}
+
+		return IndicatorRange(indicator, params.Min, params.Max), nil
+	})
 }

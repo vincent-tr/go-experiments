@@ -1,6 +1,7 @@
 package ordercomputer
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-experiments/brokers"
 	"go-experiments/traders/modular/context"
@@ -41,4 +42,15 @@ func TakeProfitRatio(ratio float64) OrderComputer {
 			return formatter.Format(fmt.Sprintf("TakeProfitRatio: %.4f", ratio))
 		},
 	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("takeProfitRatio", func(arg json.RawMessage) (OrderComputer, error) {
+		var ratio float64
+		if err := json.Unmarshal(arg, &ratio); err != nil {
+			return nil, fmt.Errorf("failed to parse TakeProfitRatio: %w", err)
+		}
+
+		return TakeProfitRatio(ratio), nil
+	})
 }

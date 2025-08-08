@@ -1,6 +1,7 @@
 package indicators
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
@@ -20,4 +21,15 @@ func RSI(period int) Indicator {
 			)
 		},
 	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("rsi", func(arg json.RawMessage) (Indicator, error) {
+		var period int
+		if err := json.Unmarshal(arg, &period); err != nil {
+			return nil, fmt.Errorf("failed to parse RSI period: %w", err)
+		}
+
+		return RSI(period), nil
+	})
 }

@@ -1,6 +1,7 @@
 package ordercomputer
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-experiments/brokers"
 	"go-experiments/traders/modular/context"
@@ -43,6 +44,21 @@ func StopLossATR(atr indicators.Indicator, multiplier float64) OrderComputer {
 	)
 }
 
+func init() {
+	jsonParsers.RegisterParser("stopLossATR", func(arg json.RawMessage) (OrderComputer, error) {
+		var params struct {
+			ATR        indicators.Indicator `json:"atr"`
+			Multiplier float64              `json:"multiplier"`
+		}
+
+		if err := json.Unmarshal(arg, &params); err != nil {
+			return nil, fmt.Errorf("failed to parse StopLossATR parameters: %w", err)
+		}
+
+		return StopLossATR(params.ATR, params.Multiplier), nil
+	})
+}
+
 const pipSize = 0.0001
 
 func StopLossPipBuffer(pipBuffer int, lookupPeriod int) OrderComputer {
@@ -75,4 +91,19 @@ func StopLossPipBuffer(pipBuffer int, lookupPeriod int) OrderComputer {
 			)
 		},
 	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("stopLossPipBuffer", func(arg json.RawMessage) (OrderComputer, error) {
+		var params struct {
+			PipBuffer    int `json:"pipBuffer"`
+			LookupPeriod int `json:"lookupPeriod"`
+		}
+
+		if err := json.Unmarshal(arg, &params); err != nil {
+			return nil, fmt.Errorf("failed to parse StopLossPipBuffer parameters: %w", err)
+		}
+
+		return StopLossPipBuffer(params.PipBuffer, params.LookupPeriod), nil
+	})
 }

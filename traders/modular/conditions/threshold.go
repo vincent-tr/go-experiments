@@ -1,6 +1,7 @@
 package conditions
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
@@ -54,6 +55,37 @@ func Threshold(indicator indicators.Indicator, threshold float64, direction Dire
 	)
 }
 
+func init() {
+	jsonParsers.RegisterParser("threshold", func(arg json.RawMessage) (Condition, error) {
+		var params struct {
+			Indicator json.RawMessage `json:"indicator"`
+			Threshold float64         `json:"threshold"`
+			Direction string          `json:"direction"`
+		}
+
+		if err := json.Unmarshal(arg, &params); err != nil {
+			return nil, fmt.Errorf("failed to parse Threshold parameters: %w", err)
+		}
+
+		indicator, err := indicators.FromJSON(params.Indicator)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse indicator: %w", err)
+		}
+
+		var direction Direction
+		switch params.Direction {
+		case "above":
+			direction = Above
+		case "below":
+			direction = Below
+		default:
+			return nil, fmt.Errorf("unknown direction: %s", params.Direction)
+		}
+
+		return Threshold(indicator, params.Threshold, direction), nil
+	})
+}
+
 // PriceThreshold checks if the current price is above or below the value of an indicator.
 func PriceThreshold(indicator indicators.Indicator, direction Direction) Condition {
 	return newCondition(
@@ -81,5 +113,34 @@ func PriceThreshold(indicator indicators.Indicator, direction Direction) Conditi
 			)
 		},
 	)
+}
 
+func init() {
+	jsonParsers.RegisterParser("priceThreshold", func(arg json.RawMessage) (Condition, error) {
+		var params struct {
+			Indicator json.RawMessage `json:"indicator"`
+			Direction string          `json:"direction"`
+		}
+
+		if err := json.Unmarshal(arg, &params); err != nil {
+			return nil, fmt.Errorf("failed to parse PriceThreshold parameters: %w", err)
+		}
+
+		indicator, err := indicators.FromJSON(params.Indicator)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse indicator: %w", err)
+		}
+
+		var direction Direction
+		switch params.Direction {
+		case "above":
+			direction = Above
+		case "below":
+			direction = Below
+		default:
+			return nil, fmt.Errorf("unknown direction: %s", params.Direction)
+		}
+
+		return PriceThreshold(indicator, direction), nil
+	})
 }

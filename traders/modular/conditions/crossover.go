@@ -1,6 +1,8 @@
 package conditions
 
 import (
+	"encoding/json"
+	"fmt"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
 	"go-experiments/traders/modular/indicators"
@@ -43,4 +45,40 @@ func CrossOver(reference, test indicators.Indicator, direction CrossOverDirectio
 			)
 		},
 	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("crossover", func(arg json.RawMessage) (Condition, error) {
+		var params struct {
+			Reference json.RawMessage `json:"reference"`
+			Test      json.RawMessage `json:"test"`
+			Direction string          `json:"direction"`
+		}
+
+		if err := json.Unmarshal(arg, &params); err != nil {
+			return nil, err
+		}
+
+		reference, err := indicators.FromJSON(params.Reference)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse reference indicator: %w", err)
+		}
+
+		test, err := indicators.FromJSON(params.Test)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse test indicator: %w", err)
+		}
+
+		var direction CrossOverDirection
+		switch params.Direction {
+		case "up":
+			direction = CrossOverUp
+		case "down":
+			direction = CrossOverDown
+		default:
+			return nil, fmt.Errorf("invalid crossover direction: %s", params.Direction)
+		}
+
+		return CrossOver(reference, test, direction), nil
+	})
 }

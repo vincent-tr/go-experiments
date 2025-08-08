@@ -1,6 +1,7 @@
 package indicators
 
 import (
+	"encoding/json"
 	"fmt"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
@@ -18,4 +19,15 @@ func ATR(period int) Indicator {
 			return formatter.Format("ATR", formatter.Format(fmt.Sprintf("Period: %d", period)))
 		},
 	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("atr", func(arg json.RawMessage) (Indicator, error) {
+		var period int
+		if err := json.Unmarshal(arg, &period); err != nil {
+			return nil, fmt.Errorf("failed to parse ATR period: %w", err)
+		}
+
+		return ATR(period), nil
+	})
 }
