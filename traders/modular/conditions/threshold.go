@@ -6,6 +6,7 @@ import (
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
 	"go-experiments/traders/modular/indicators"
+	"go-experiments/traders/modular/marshal"
 )
 
 type Direction int
@@ -51,6 +52,23 @@ func Threshold(indicator indicators.Indicator, threshold float64, direction Dire
 				formatter.Format(fmt.Sprintf("Value: %.2f", threshold)),
 				formatter.Format(fmt.Sprintf("Direction: %s", direction.String())),
 			)
+		},
+		func() (string, any) {
+			var directionStr string
+			switch direction {
+			case Above:
+				directionStr = "above"
+			case Below:
+				directionStr = "below"
+			default:
+				panic(fmt.Sprintf("unknown threshold direction: %d", direction))
+			}
+
+			return "threshold", map[string]any{
+				"indicator": marshal.ToJSON(indicator),
+				"threshold": threshold,
+				"direction": directionStr,
+			}
 		},
 	)
 }
@@ -111,6 +129,22 @@ func PriceThreshold(indicator indicators.Indicator, direction Direction) Conditi
 				indicator.Format(),
 				formatter.Format(fmt.Sprintf("Direction: %s", direction.String())),
 			)
+		},
+		func() (string, any) {
+			var directionStr string
+			switch direction {
+			case Above:
+				directionStr = "above"
+			case Below:
+				directionStr = "below"
+			default:
+				panic(fmt.Sprintf("unknown threshold direction: %d", direction))
+			}
+
+			return "priceThreshold", map[string]any{
+				"indicator": marshal.ToJSON(indicator),
+				"direction": directionStr,
+			}
 		},
 	)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-experiments/traders/modular/conditions"
+	"go-experiments/traders/modular/marshal"
 	"go-experiments/traders/modular/ordercomputer"
 )
 
@@ -63,39 +64,13 @@ func FromJSON(jsonData []byte) (Builder, error) {
 
 func (b *builder) ToJSON() ([]byte, error) {
 	bjson := &builderJSON{
-		HistorySize: b.historySize,
-	}
-
-	var err error
-
-	bjson.Filter, err = conditions.ToJSON(b.filter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize filter condition: %w", err)
-	}
-
-	bjson.LongTrigger, err = conditions.ToJSON(b.longTrigger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize long trigger condition: %w", err)
-	}
-
-	bjson.ShortTrigger, err = conditions.ToJSON(b.shortTrigger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize short trigger condition: %w", err)
-	}
-
-	bjson.StopLoss, err = ordercomputer.ToJSON(b.stopLoss)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize stop loss order computer: %w", err)
-	}
-
-	bjson.TakeProfit, err = ordercomputer.ToJSON(b.takeProfit)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize take profit order computer: %w", err)
-	}
-
-	bjson.CapitalAllocator, err = ordercomputer.ToJSON(b.capitalAllocator)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize capital allocator order computer: %w", err)
+		HistorySize:      b.historySize,
+		Filter:           marshal.ToJSON(b.filter),
+		LongTrigger:      marshal.ToJSON(b.longTrigger),
+		ShortTrigger:     marshal.ToJSON(b.shortTrigger),
+		StopLoss:         marshal.ToJSON(b.stopLoss),
+		TakeProfit:       marshal.ToJSON(b.takeProfit),
+		CapitalAllocator: marshal.ToJSON(b.capitalAllocator),
 	}
 
 	return json.Marshal(bjson)

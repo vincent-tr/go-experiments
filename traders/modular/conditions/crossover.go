@@ -6,6 +6,7 @@ import (
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
 	"go-experiments/traders/modular/indicators"
+	"go-experiments/traders/modular/marshal"
 )
 
 type CrossOverDirection int
@@ -43,6 +44,23 @@ func CrossOver(reference, test indicators.Indicator, direction CrossOverDirectio
 				formatter.FormatWithChildren("Reference", reference),
 				formatter.FormatWithChildren("Test", test),
 			)
+		},
+		func() (string, any) {
+			var directionStr string
+			switch direction {
+			case CrossOverUp:
+				directionStr = "up"
+			case CrossOverDown:
+				directionStr = "down"
+			default:
+				panic("unknown crossover direction")
+			}
+
+			return "crossover", map[string]any{
+				"reference": marshal.ToJSON(reference),
+				"test":      marshal.ToJSON(test),
+				"direction": directionStr,
+			}
 		},
 	)
 }

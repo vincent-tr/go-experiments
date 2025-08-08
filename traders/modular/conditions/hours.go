@@ -20,6 +20,12 @@ func Hours(startHour, endHour int) Condition {
 				formatter.Format(fmt.Sprintf("EndHour: %d", endHour)),
 			)
 		},
+		func() (string, any) {
+			return "hours", map[string]any{
+				"startHour": startHour,
+				"endHour":   endHour,
+			}
+		},
 	)
 }
 
@@ -45,6 +51,20 @@ func Session(session *common.Session) Condition {
 		func() *formatter.FormatterNode {
 			return formatter.Format(fmt.Sprintf("Session: %s", session.String()))
 		},
+		func() (string, any) {
+			// TODO: more dynamic
+			var sessionName string
+			switch session {
+			case common.LondonSession:
+				sessionName = "london"
+			case common.NYSession:
+				sessionName = "new-york"
+			default:
+				panic(fmt.Sprintf("unknown session: %+v", session))
+			}
+
+			return "session", sessionName
+		},
 	)
 }
 
@@ -58,9 +78,9 @@ func init() {
 		var session *common.Session
 		// TODO: more dynamic
 		switch sessionName {
-		case "London":
+		case "london":
 			session = common.LondonSession
-		case "New York":
+		case "new-york":
 			session = common.NYSession
 		default:
 			return nil, fmt.Errorf("unknown session: %s", sessionName)

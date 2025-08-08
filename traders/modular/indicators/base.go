@@ -3,7 +3,7 @@ package indicators
 import (
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
-	"go-experiments/traders/modular/json"
+	"go-experiments/traders/modular/marshal"
 )
 
 type cache struct {
@@ -32,17 +32,24 @@ func (c *cache) access(key string, computer func() []float64) []float64 {
 type Indicator interface {
 	formatter.Formatter
 	Values(ctx context.TraderContext) []float64
+	ToJsonSpec() (string, any)
 }
 
 type indicator struct {
-	compute func(ctx context.TraderContext) []float64
-	format  func() *formatter.FormatterNode
+	compute    func(ctx context.TraderContext) []float64
+	format     func() *formatter.FormatterNode
+	toJsonSpec func() (string, any)
 }
 
-func newIndicator(compute func(ctx context.TraderContext) []float64, format func() *formatter.FormatterNode) Indicator {
+func newIndicator(
+	compute func(ctx context.TraderContext) []float64,
+	format func() *formatter.FormatterNode,
+	toJsonSpec func() (string, any),
+) Indicator {
 	return &indicator{
-		compute: compute,
-		format:  format,
+		compute:    compute,
+		format:     format,
+		toJsonSpec: toJsonSpec,
 	}
 }
 
@@ -59,12 +66,12 @@ func (i *indicator) Format() *formatter.FormatterNode {
 	return i.format()
 }
 
-var jsonParsers = json.NewRegistry[Indicator]()
+func (i *indicator) ToJsonSpec() (string, any) {
+	return i.toJsonSpec()
+}
+
+var jsonParsers = marshal.NewRegistry[Indicator]()
 
 func FromJSON(jsonData []byte) (Indicator, error) {
 	return jsonParsers.FromJSON(jsonData)
-}
-
-func ToJSON(indicator Indicator) ([]byte, error) {
-	panic("ToJSON not implemented for indicators")
 }

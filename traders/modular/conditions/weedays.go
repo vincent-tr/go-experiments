@@ -26,6 +26,15 @@ func Weekday(weekdays ...time.Weekday) Condition {
 			}
 			return formatter.Format(fmt.Sprintf("Weekday: %s", strings.Join(weekdaysStr, ", ")))
 		},
+		func() (string, any) {
+			weekdaysStr := make([]string, len(weekdays))
+			for i, day := range weekdays {
+				weekdaysStr[i] = day.String()
+			}
+			return "weekday", map[string]any{
+				"weekdays": weekdaysStr,
+			}
+		},
 	)
 }
 

@@ -1,4 +1,4 @@
-package json
+package marshal
 
 import (
 	"encoding/json"

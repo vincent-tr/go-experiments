@@ -18,6 +18,9 @@ func ATR(period int) Indicator {
 		func() *formatter.FormatterNode {
 			return formatter.Format("ATR", formatter.Format(fmt.Sprintf("Period: %d", period)))
 		},
+		func() (string, any) {
+			return "atr", period
+		},
 	)
 }
 

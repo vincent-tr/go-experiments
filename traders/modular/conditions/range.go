@@ -6,6 +6,7 @@ import (
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
 	"go-experiments/traders/modular/indicators"
+	"go-experiments/traders/modular/marshal"
 )
 
 func IndicatorRange(indicator indicators.Indicator, min, max float64) Condition {
@@ -24,6 +25,13 @@ func IndicatorRange(indicator indicators.Indicator, min, max float64) Condition 
 				formatter.Format(fmt.Sprintf("Min: %.2f", min)),
 				formatter.Format(fmt.Sprintf("Max: %.2f", max)),
 			)
+		},
+		func() (string, any) {
+			return "indicatorRange", map[string]any{
+				"indicator": marshal.ToJSON(indicator),
+				"min":       min,
+				"max":       max,
+			}
 		},
 	)
 }

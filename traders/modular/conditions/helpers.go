@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
+	"go-experiments/traders/modular/marshal"
 )
 
 func And(conditions ...Condition) Condition {
@@ -18,6 +19,14 @@ func And(conditions ...Condition) Condition {
 		},
 		func() *formatter.FormatterNode {
 			return formatter.FormatWithChildren("And", conditions...)
+		},
+		func() (string, any) {
+			var conditionSpecs []any
+			for _, condition := range conditions {
+				spec := marshal.ToJSON(condition)
+				conditionSpecs = append(conditionSpecs, spec)
+			}
+			return "and", conditionSpecs
 		},
 	)
 }
@@ -55,6 +64,14 @@ func Or(conditions ...Condition) Condition {
 		func() *formatter.FormatterNode {
 			return formatter.FormatWithChildren("Or", conditions...)
 		},
+		func() (string, any) {
+			var conditionSpecs []any
+			for _, condition := range conditions {
+				spec := marshal.ToJSON(condition)
+				conditionSpecs = append(conditionSpecs, spec)
+			}
+			return "or", conditionSpecs
+		},
 	)
 }
 
@@ -86,6 +103,9 @@ func HistoryUsable() Condition {
 		func() *formatter.FormatterNode {
 			return formatter.Format("HistoryUsable")
 		},
+		func() (string, any) {
+			return "historyUsable", nil
+		},
 	)
 }
 
@@ -102,6 +122,9 @@ func NoOpenPositions() Condition {
 		},
 		func() *formatter.FormatterNode {
 			return formatter.Format("NoOpenPositions")
+		},
+		func() (string, any) {
+			return "noOpenPositions", nil
 		},
 	)
 }

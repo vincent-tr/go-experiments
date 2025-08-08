@@ -24,6 +24,12 @@ func Const(period int, value float64) Indicator {
 				formatter.Format(fmt.Sprintf("Value: %.4f", value)),
 			)
 		},
+		func() (string, any) {
+			return "const", map[string]any{
+				"period": period,
+				"value":  value,
+			}
+		},
 	)
 }
 

@@ -20,6 +20,9 @@ func RSI(period int) Indicator {
 				formatter.Format(fmt.Sprintf("Period: %d", period)),
 			)
 		},
+		func() (string, any) {
+			return "rsi", period
+		},
 	)
 }
 

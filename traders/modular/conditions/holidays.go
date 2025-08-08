@@ -15,6 +15,9 @@ func ExcludeUKHolidays() Condition {
 		func() *formatter.FormatterNode {
 			return formatter.Format("ExcludeUKHolidays")
 		},
+		func() (string, any) {
+			return "excludeUKHolidays", nil
+		},
 	)
 }
 
@@ -31,6 +34,9 @@ func ExcludeUSHolidays() Condition {
 		},
 		func() *formatter.FormatterNode {
 			return formatter.Format("ExcludeUSHolidays")
+		},
+		func() (string, any) {
+			return "excludeUSHolidays", nil
 		},
 	)
 }

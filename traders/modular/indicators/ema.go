@@ -20,6 +20,9 @@ func EMA(period int) Indicator {
 				formatter.Format(fmt.Sprintf("Period: %d", period)),
 			)
 		},
+		func() (string, any) {
+			return "ema", period
+		},
 	)
 }
 

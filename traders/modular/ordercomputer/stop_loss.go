@@ -7,6 +7,7 @@ import (
 	"go-experiments/traders/modular/context"
 	"go-experiments/traders/modular/formatter"
 	"go-experiments/traders/modular/indicators"
+	"go-experiments/traders/modular/marshal"
 )
 
 func StopLossATR(atr indicators.Indicator, multiplier float64) OrderComputer {
@@ -40,6 +41,12 @@ func StopLossATR(atr indicators.Indicator, multiplier float64) OrderComputer {
 				atr.Format(),
 				formatter.Format(fmt.Sprintf("Multiplier: %.4f", multiplier)),
 			)
+		},
+		func() (string, any) {
+			return "stopLossATR", map[string]any{
+				"atr":        marshal.ToJSON(atr),
+				"multiplier": multiplier,
+			}
 		},
 	)
 }
@@ -89,6 +96,12 @@ func StopLossPipBuffer(pipBuffer int, lookupPeriod int) OrderComputer {
 				formatter.Format(fmt.Sprintf("Pip Buffer: %d", pipBuffer)),
 				formatter.Format(fmt.Sprintf("Lookup Period: %d", lookupPeriod)),
 			)
+		},
+		func() (string, any) {
+			return "stopLossPipBuffer", map[string]any{
+				"pipBuffer":    pipBuffer,
+				"lookupPeriod": lookupPeriod,
+			}
 		},
 	)
 }

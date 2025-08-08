@@ -18,6 +18,9 @@ func ADX(period int) Indicator {
 		func() *formatter.FormatterNode {
 			return formatter.Format("ADX", formatter.Format(fmt.Sprintf("Period: %d", period)))
 		},
+		func() (string, any) {
+			return "adx", period
+		},
 	)
 }
 
