@@ -62,11 +62,8 @@ func FromJSON(jsonData []byte) (Builder, error) {
 	return res, nil
 }
 
-func ToJSON(b Builder) ([]byte, error) {
-	bu, ok := b.(*builder)
-	if !ok {
-		return nil, fmt.Errorf("invalid builder type")
-	}
+func ToJSON(b Builder) string {
+	bu := b.(*builder)
 
 	bjson := &builderJSON{
 		HistorySize:      bu.historySize,
@@ -78,5 +75,10 @@ func ToJSON(b Builder) ([]byte, error) {
 		CapitalAllocator: marshal.ToJSON(bu.capitalAllocator),
 	}
 
-	return json.Marshal(bjson)
+	data, err := json.Marshal(bjson)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(data)
 }
