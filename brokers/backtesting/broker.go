@@ -79,8 +79,6 @@ func (b *broker) Run() error {
 
 	b.closeAllOpenPositions()
 
-	common.ClearCurrentTime()
-
 	log.Info("✅ Backtest completed.")
 	b.printSummary()
 
@@ -182,8 +180,6 @@ func (b *broker) printGap() {
 
 func (b *broker) processTick() {
 	currentTick := b.currentTick()
-	common.SetCurrentTime(currentTick.Timestamp)
-
 	// b.printGap()
 	// log.Debug("📈 Processing tick at %s: Bid=%.5f, Ask=%.5f", currentTick.Timestamp.Format("2006-01-02 15:04:05"), currentTick.Bid, currentTick.Ask)
 

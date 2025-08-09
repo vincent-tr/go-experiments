@@ -7,16 +7,6 @@ import (
 	"time"
 )
 
-var currentTime *time.Time
-
-func SetCurrentTime(t time.Time) {
-	currentTime = &t
-}
-
-func ClearCurrentTime() {
-	currentTime = nil
-}
-
 type LogLevel int
 
 const (
@@ -62,10 +52,6 @@ func (l *Logger) Log(level LogLevel, format string, args ...interface{}) {
 	}
 
 	msg := fmt.Sprintf(format, args...)
-
-	if currentTime != nil {
-		msg = fmt.Sprintf("\033[90m(%s)\033[0m %s", currentTime.Format("2006-01-02 15:04:05"), msg)
-	}
 
 	var levelStr string
 	switch level {
