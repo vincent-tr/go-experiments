@@ -76,7 +76,7 @@ func (db *Database) FindRun(instrument, timeRange, strategy string) (*run, error
 	key := db.ComputeKey(instrument, timeRange, strategy)
 
 	query := `
-    SELECT (
+    SELECT
         key,
         instrument,
         time_range,
@@ -90,7 +90,6 @@ func (db *Database) FindRun(instrument, timeRange, strategy string) (*run, error
         avg_trade_duration_seconds,
         long_trades,
         short_trades
-    )
     FROM runs
     WHERE key = ?;`
 
