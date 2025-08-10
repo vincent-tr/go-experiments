@@ -95,6 +95,46 @@ func init() {
 	})
 }
 
+func True() Condition {
+	return newCondition(
+		func(ctx context.TraderContext) bool {
+			return true
+		},
+		func() *formatter.FormatterNode {
+			return formatter.Format("True")
+		},
+		func() (string, any) {
+			return "true", nil
+		},
+	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("true", func(arg json.RawMessage) (Condition, error) {
+		return True(), nil
+	})
+}
+
+func False() Condition {
+	return newCondition(
+		func(ctx context.TraderContext) bool {
+			return false
+		},
+		func() *formatter.FormatterNode {
+			return formatter.Format("False")
+		},
+		func() (string, any) {
+			return "false", nil
+		},
+	)
+}
+
+func init() {
+	jsonParsers.RegisterParser("false", func(arg json.RawMessage) (Condition, error) {
+		return False(), nil
+	})
+}
+
 func HistoryUsable() Condition {
 	return newCondition(
 		func(ctx context.TraderContext) bool {

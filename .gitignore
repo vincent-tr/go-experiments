@@ -16,3 +16,5 @@
 
 # Generated code
 *generated.go
+
+data.db
