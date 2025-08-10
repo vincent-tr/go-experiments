@@ -65,7 +65,7 @@ type broker struct {
 
 // Run implements brokers.BacktestingBroker.
 func (b *broker) Run() error {
-	log.Info("🚀 Starting backtest with %d ticks and initial capital %.2f", len(b.ticks), b.capital)
+	log.Debug("🚀 Starting backtest with %d ticks and initial capital %.2f", len(b.ticks), b.capital)
 
 	for {
 		b.processTick()
@@ -79,8 +79,8 @@ func (b *broker) Run() error {
 
 	b.closeAllOpenPositions()
 
-	log.Info("✅ Backtest completed.")
-	b.printSummary()
+	log.Debug("✅ Backtest completed.")
+	// b.printSummary()
 
 	return nil
 }

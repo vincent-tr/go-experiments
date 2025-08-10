@@ -98,13 +98,22 @@ func (r *Runner) run(instrument string, month common.Month, strategy modular.Bui
 		return fmt.Errorf("failed to compute metrics: %w", err)
 	}
 
-	if len(metrics) != 1 {
-		return fmt.Errorf("expected exactly one metric, got %d", len(metrics))
-	}
+	var metrics0 *backtesting.Metrics
 
-	metrics0, ok := metrics[month]
-	if !ok {
-		return fmt.Errorf("no metrics found for month %s", month.String())
+	switch len(metrics) {
+	case 0:
+		// No metrics means no position has been taken
+		metrics0 = &backtesting.Metrics{}
+
+	case 1:
+		var ok bool
+		metrics0, ok = metrics[month]
+		if !ok {
+			return fmt.Errorf("no metrics found for month %s", month.String())
+		}
+
+	default:
+		return fmt.Errorf("expected exactly one metric, got %d", len(metrics))
 	}
 
 	if err := r.saveResult(instrument, month, strategy, metrics0); err != nil {

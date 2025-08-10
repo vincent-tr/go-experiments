@@ -23,7 +23,7 @@ func Setup(broker brokers.Broker, builder Builder) error {
 		return err
 	}
 
-	log.Info("%s", builder.Format().Detailed())
+	log.Debug("%s", builder.Format().Detailed())
 
 	broker.RegisterMarketDataCallback(brokers.Timeframe1Minute, func(candle brokers.Candle) {
 		trader.tick(candle)
