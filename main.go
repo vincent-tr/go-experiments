@@ -51,7 +51,7 @@ func buildStrategy(combo gridsearch.Combo) modular.Builder {
 	builder := modular.NewBuilder()
 	builder.SetHistorySize(250)
 
-	strategies.Breakout(builder.Strategy())
+	strategies.BreakoutGS(builder.Strategy(), combo)
 
 	builder.RiskManager().SetStopLoss(
 		ordercomputer.StopLossATR(indicators.ATR(14), 1.0),
