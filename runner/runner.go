@@ -30,8 +30,8 @@ func NewRunner() (*Runner, error) {
 }
 
 func (r *Runner) Close() {
-	r.db.Close()
 	r.pool.Close()
+	r.db.Close()
 }
 
 func (r *Runner) SubmitRun(instrument string, month common.Month, strategy modular.Builder) error {
