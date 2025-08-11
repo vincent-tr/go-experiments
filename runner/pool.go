@@ -17,7 +17,7 @@ func NewTaskPool() *TaskPool {
 	workers := runtime.NumCPU() // Use number of CPU cores as default
 
 	p := &TaskPool{
-		tasks: make(chan Task),
+		tasks: make(chan Task, 10000000),
 	}
 
 	p.wg.Add(workers)
