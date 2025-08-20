@@ -41,6 +41,16 @@ func (d *Dataset) TickCount() int {
 	return len(d.ticks)
 }
 
+func (d *Dataset) Ticks() func(yield func(Tick) bool) {
+	return func(yield func(Tick) bool) {
+		for _, tick := range d.ticks {
+			if !yield(&tick) {
+				break
+			}
+		}
+	}
+}
+
 func LoadDataset(begin, end common.Month, symbol string) (*Dataset, error) {
 	beginTime := time.Now()
 
@@ -80,7 +90,14 @@ func LoadDataset(begin, end common.Month, symbol string) (*Dataset, error) {
 	log.Debug("⏱️  Read %d ticks from %d file(s) in %s.", tickCount, len(files), duration)
 	log.Info("📈 Loaded dataset from %s to %s", begin.String(), end.String())
 
-	return &Dataset{ticks: ticks}, nil
+	dataset := &Dataset{
+		ticks:     ticks,
+		symbol:    symbol,
+		beginDate: beginDate,
+		endDate:   endDate,
+	}
+
+	return dataset, nil
 }
 
 func markGaps(ticks []tick) {
@@ -95,12 +112,35 @@ func markGaps(ticks []tick) {
 	}
 }
 
+type Tick interface {
+	GetTimestamp() time.Time
+	GetBid() float64
+	GetAsk() float64
+	GetIsGap() bool
+}
+
 // Tick represents one row of tick data
 type tick struct {
 	Timestamp time.Time
 	Bid       float64
 	Ask       float64
 	IsGap     bool // Indicates if there is a gap in the data before or after this tick
+}
+
+func (t *tick) GetTimestamp() time.Time {
+	return t.Timestamp
+}
+
+func (t *tick) GetBid() float64 {
+	return t.Bid
+}
+
+func (t *tick) GetAsk() float64 {
+	return t.Ask
+}
+
+func (t *tick) GetIsGap() bool {
+	return t.IsGap
 }
 
 // Use intermediate struct with int64 timestamp
