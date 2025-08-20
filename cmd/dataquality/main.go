@@ -133,7 +133,7 @@ func doplot(data []*bucket) {
 	p.Draw(draw.New(canvas))
 
 	// Save as PNG
-	f, err := os.Create("ticks.png")
+	f, err := os.Create("output/ticks.png")
 	if err != nil {
 		log.Fatal(err)
 	}
